@@ -1,0 +1,23 @@
+{
+  "name": "mpvue",
+  "version": "1.0.0",
+  "description": "Vue Runtime for mini program",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Meituan-Dianping/mpvue.git"
+  },
+  "keywords": [
+    "vue",
+    "compiler",
+    "mp",
+    "mp",
+    "antmp"
+  ],
+  "author": "meituan.com",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Meituan-Dianping/mpvue/issues"
+  },
+  "homepage": "https://github.com/Meituan-Dianping/mpvue/"
+}

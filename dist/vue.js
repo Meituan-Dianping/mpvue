@@ -1,6 +1,6 @@
 /*!
  * Vue.js v2.4.1
- * (c) 2014-2017 Evan You
+ * (c) 2014-2018 Evan You
  * Released under the MIT License.
  */
 (function (global, factory) {
@@ -3494,6 +3494,7 @@ var componentVNodeHooks = {
   insert: function insert (vnode) {
     var context = vnode.context;
     var componentInstance = vnode.componentInstance;
+
     if (!componentInstance._isMounted) {
       componentInstance._isMounted = true;
       callHook(componentInstance, 'mounted');

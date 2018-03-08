@@ -14,7 +14,9 @@ let builds = require('./config').getAllBuilds()
 if (process.argv[2]) {
   const filters = process.argv[2].split(',')
   builds = builds.filter(b => {
-    return filters.some(f => b.dest.indexOf(f) > -1)
+    // fix the project name === floder name
+    // return filters.some(f => b.dest.indexOf(f) > -1)
+    return filters.some(f => b.dest.slice(path.resolve(__dirname, '../').length).indexOf(f) > -1)
   })
 } else {
   // filter out weex builds by default

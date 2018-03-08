@@ -7,6 +7,7 @@ module.exports = {
   shared: path.resolve(__dirname, '../src/shared'),
   web: path.resolve(__dirname, '../src/platforms/web'),
   weex: path.resolve(__dirname, '../src/platforms/weex'),
+  mp: path.resolve(__dirname, '../src/platforms/mp'),
   server: path.resolve(__dirname, '../src/server'),
   entries: path.resolve(__dirname, '../src/entries'),
   sfc: path.resolve(__dirname, '../src/sfc')

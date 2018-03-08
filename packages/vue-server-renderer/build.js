@@ -6657,6 +6657,7 @@ var componentVNodeHooks = {
   insert: function insert (vnode) {
     var context = vnode.context;
     var componentInstance = vnode.componentInstance;
+
     if (!componentInstance._isMounted) {
       componentInstance._isMounted = true;
       callHook(componentInstance, 'mounted');

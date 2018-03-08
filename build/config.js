@@ -7,6 +7,7 @@ const node = require('rollup-plugin-node-resolve')
 const flow = require('rollup-plugin-flow-no-whitespace')
 const version = process.env.VERSION || require('../package.json').version
 const weexVersion = process.env.WEEX_VERSION || require('../packages/weex-vue-framework/package.json').version
+const mpVueVersion = process.env.MP_VUE_VERSION || require('../packages/mpvue/package.json').version
 
 const banner =
   '/*!\n' +
@@ -14,6 +15,8 @@ const banner =
   ' * (c) 2014-' + new Date().getFullYear() + ' Evan You\n' +
   ' * Released under the MIT License.\n' +
   ' */'
+
+const { mpBanner, mpLifecycleHooks } = require('../src/platforms/mp/join-code-in-build')
 
 const weexFactoryPlugin = {
   intro () {
@@ -156,6 +159,24 @@ const builds = {
     dest: resolve('packages/weex-template-compiler/build.js'),
     format: 'cjs',
     external: Object.keys(require('../packages/weex-template-compiler/package.json').dependencies)
+  },
+  // Runtime only (ES Modules). Used by bundlers that support ES Modules,
+  // e.g. Rollup & Webpack 2
+  'mpvue': {
+    mp: true,
+    entry: resolve('mp/entry-runtime.js'),
+    dest: resolve('packages/mpvue/index.js'),
+    format: 'umd',
+    env: 'production',
+    banner: mpBanner
+  },
+  // MP compiler (CommonJS). Used by mpvue's Webpack loader.
+  'mpvue-template-compiler': {
+    mp: true,
+    entry: resolve('mp/entry-compiler.js'),
+    dest: resolve('packages/mpvue-template-compiler/build.js'),
+    format: 'cjs',
+    external: Object.keys(require('../packages/mpvue-template-compiler/package.json').dependencies)
   }
 }
 
@@ -171,7 +192,7 @@ function genConfig (opts) {
       replace({
         __WEEX__: !!opts.weex,
         __WEEX_VERSION__: weexVersion,
-        __VERSION__: version
+        __VERSION__: opts.mp ? mpVueVersion : version
       }),
       flow(),
       buble(),
@@ -182,6 +203,16 @@ function genConfig (opts) {
   if (opts.env) {
     config.plugins.push(replace({
       'process.env.NODE_ENV': JSON.stringify(opts.env)
+    }))
+  }
+
+  // hack fix MP LIFECYCLE_HOOKS
+  if (opts.mp) {
+    config.plugins.push(replace({
+      "'deactivated'\n]": `'deactivated', ${mpLifecycleHooks}\n]`
+    }))
+    config.plugins.push(replace({
+      'inBrowser && window.navigator.userAgent.toLowerCase': `['mpvue-runtime'].join`
     }))
   }
 
