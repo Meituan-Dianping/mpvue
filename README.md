@@ -31,7 +31,7 @@
 其它特性正在等着你去探索。
 
 ### H5 和小程序如何复用代码
-先来看一段视频：
+[先来看一段视频](http://mpvue.com/assets/20170810-022809-HD.mp4)
 <video src="http://mpvue.com/assets/20170810-022809-HD.mp4" width="863" height="480" controls="controls"></video>
 
 在左侧为已经上线的 H5 页面，右侧为同代码的小程序页面，其中只需要更改小部分平台差异代码和更新下 webpack 的建构配置就可以直接运行。
@@ -47,6 +47,8 @@
 - [mpvue-webpack-target](http://mpvue.com/build/mpvue-webpack-target) webpack 构建目标
 - [postcss-mpvue-wxss](http://mpvue.com/build/postcss-mpvue-wxss) 样式代码转换预处理工具
 - [px2rpx-loader](http://mpvue.com/build/px2rpx-loader) 样式转化插件
+- [mpvue-quickstart](http://mpvue.com/mpvue/quickstart) mpvue-quickstart
+- [mpvue-simple](http://mpvue.com/mpvue/simple) 辅助 mpvue 快速开发 Page / Component 级小程序页面的工具
 - 其它
 
 
