@@ -1,0 +1,27 @@
+{
+  "parser": "babel-eslint",
+  "parserOptions": {
+    "sourceType": "module"
+  },
+  "env": {
+    "browser": false,
+    "node": true,
+    "es6": true,
+    "jasmine": true
+  },
+  "plugins": [
+    "jasmine"
+  ],
+  "rules": {
+    "arrow-parens": 0,
+    "generator-star-spacing": 0,
+    "jasmine/no-focused-tests": 2
+  },
+  "globals": {
+    "App": true,
+    "Page": true,
+    "wx": true,
+    "getApp": true,
+    "getPage": true
+  }
+}

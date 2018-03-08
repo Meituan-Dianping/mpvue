@@ -1,122 +1,52 @@
-<p align="center"><a href="https://vuejs.org" target="_blank"><img width="100"src="https://vuejs.org/images/logo.png"></a></p>
+# mpvue
+> Vue.js in mini program
 
-<p align="center">
-  <a href="https://circleci.com/gh/vuejs/vue/tree/dev"><img src="https://img.shields.io/circleci/project/vuejs/vue/dev.svg" alt="Build Status"></a>
-  <a href="https://codecov.io/github/vuejs/vue?branch=dev"><img src="https://img.shields.io/codecov/c/github/vuejs/vue/dev.svg" alt="Coverage Status"></a>
-  <a href="https://www.npmjs.com/package/vue"><img src="https://img.shields.io/npm/dm/vue.svg" alt="Downloads"></a>
-  <a href="https://www.npmjs.com/package/vue"><img src="https://img.shields.io/npm/v/vue.svg" alt="Version"></a>
-  <a href="https://www.npmjs.com/package/vue"><img src="https://img.shields.io/npm/l/vue.svg" alt="License"></a>
-  <a href="https://chat.vuejs.org/"><img src="https://img.shields.io/badge/chat-on%20discord-7289da.svg" alt="Chat">
-  <br>
-  <a href="https://saucelabs.com/u/vuejs"><img src="https://saucelabs.com/browser-matrix/vuejs.svg" alt="Sauce Test Status"></a>
-</p>
+<img src="http://mpvue.com/assets/logo.png" width="80">
 
-## Supporting Vue.js
+`mpvue` 是一个使用 [Vue.js](https://vuejs.org) 开发小程序的前端框架。框架基于 `Vue.js` 核心，`mpvue` 修改了 `Vue.js` 的 [runtime](http://mpvue.com/mpvue) 和 [compiler](http://mpvue.com/mpvue-template-compiler) 实现，使其可以运行在小程序环境中，从而为小程序开发引入了整套 `Vue.js` 开发体验。
 
-Vue.js is an MIT-licensed open source project. Its ongoing development is made possible thanks to the support by these awesome [backers](https://github.com/vuejs/vue/blob/dev/BACKERS.md). If you'd like to join them, check out [Vue.js' Patreon campaign](https://www.patreon.com/evanyou).
+## 实践案例
 
-<p align="center">
-  <b>Special thanks to the generous sponsorship by:</b>
-  <br><br>
-  <a href="https://stdlib.com">
-    <img width="240px" src="https://raw.githubusercontent.com/vuejs/vuejs.org/master/themes/vue/source/images/stdlib.png">
-  </a>
-  <br><br>
-  <a href="https://www.upyun.com/?utm_source=vue&utm_medium=ad&utm_content=github">
-    <img width="160px" src="https://raw.githubusercontent.com/vuejs/cn.vuejs.org/master/themes/vue/source/images/upyun-small.png">
-  </a>
-  <br><br>
-  <a href="https://deepstreamhub.com" target="_blank">
-    <img width="140px" src="https://raw.githubusercontent.com/vuejs/vuejs.org/master/themes/vue/source/images/deepstream.png">
-  </a>
-  <br><br>
-  <a href="https://jsfiddle.net/">
-    <img width="120px" src="https://raw.githubusercontent.com/vuejs/vuejs.org/master/themes/vue/source/images/jsfiddle.png">
-  </a>
-  <br><br>
-  <a href="https://laravel.com/">
-    <img width="120px" src="https://raw.githubusercontent.com/vuejs/vuejs.org/master/themes/vue/source/images/laravel.png">
-  </a>
-  <br><br>
-  <a href="https://chaitin.cn/">
-    <img width="120px" src="https://raw.githubusercontent.com/vuejs/vuejs.org/master/themes/vue/source/images/chaitin.png">
-  </a>
-  <br><br>
-  <a href="https://htmlburger.com/">
-    <img width="120px" src="https://raw.githubusercontent.com/vuejs/vuejs.org/master/themes/vue/source/images/htmlburger.png">
-  </a>
-  <br><br>
-  <a href="https://starter.someline.com/">
-    <img width="120px" src="https://raw.githubusercontent.com/vuejs/vuejs.org/master/themes/vue/source/images/someline.png">
-  </a>
-  <br><br>
-  <a href="http://monterail.com/" target="_blank">
-    <img width="120px" src="https://raw.githubusercontent.com/vuejs/vuejs.org/master/themes/vue/source/images/monterail.png">
-  </a>
-  <br><br>
-  <a href="https://www.trisoft.ro/" target="_blank">
-    <img width="120px" src="https://raw.githubusercontent.com/vuejs/vuejs.org/master/themes/vue/source/images/trisoft.png">
-  </a>
-  <br><br>
-  <a href="https://www.2mhost.com/" target="_blank">
-    <img width="120px" src="https://raw.githubusercontent.com/vuejs/vuejs.org/master/themes/vue/source/images/2mhost.png">
-  </a>
-  <br><br>
-  <a href="https://vuejsjob.com/?ref=vuejs" target="_blank">
-    <img width="120px" src="https://raw.githubusercontent.com/vuejs/vuejs.org/master/themes/vue/source/images/vuejobs.png">
-  </a>
-  <br><br>
-  <a href="https://leanpub.com/vuejs2" target="_blank">
-    <img width="120px" src="https://raw.githubusercontent.com/vuejs/vuejs.org/master/themes/vue/source/images/tmvuejs2.png">
-  </a>
-  <br><br>
-  <a href="https://famebroker.com" target="_blank">
-    <img width="130px" src="https://raw.githubusercontent.com/vuejs/vuejs.org/master/themes/vue/source/images/famebroker.png">
-  </a>
-  <br><br>
-  <a href="https://component.io/" target="_blank">
-    <img width="130px" src="https://raw.githubusercontent.com/vuejs/vuejs.org/master/themes/vue/source/images/component_io.png">
-  </a>
-</p>
+美团旗下小程序：`美团汽车票` 和 `美团充电`，此外，正有一大批小程序正在接入中。
 
-## Intro
+## 快速开始
 
-Vue.js is a library for building interactive web interfaces. It provides data-reactive components with a simple and flexible API. Core features include:
+我们精心准备了一个简单的 [五分钟上手教程](http://mpvue.com/mpvue/quickstart) 方便你快速体验到 `mpvue` 带来的开发乐趣。
 
-- [Declarative rendering with a plain JavaScript object based reactivity system](https://vuejs.org/guide/index.html#Declarative-Rendering)
-- [Component-oriented development style with tooling support](https://vuejs.org/guide/index.html#Composing-with-Components)
-- Lean and extensible core
-- [Flexible transition effect system](https://vuejs.org/guide/transitions.html)
-- Fast without the need for complex optimization
+## 名称由来
+- `mp`：mini program 的缩写
+- `mpvue`：Vue.js in mini program
 
-Note that Vue.js only supports [ES5-compliant browsers](http://kangax.github.io/compat-table/es5/) (IE8 and below are not supported).
+## 主要特性
+使用 `mpvue` 开发小程序，你将在小程序技术体系的基础上获取到这样一些能力：
 
-## Documentation
+- 彻底的组件化开发能力：提高代码
+- 完整的 `Vue.js` 开发体验
+- 方便的 `Vuex` 数据管理方案：方便构建复杂应用
+- 快捷的 `webpack` 构建机制：自定义构建策略、开发阶段 hotReload
+- 支持使用 npm 外部依赖
+- 使用 `Vue.js` 命令行工具 vue-cli 快速初始化项目
+- H5 代码转换编译成小程序目标代码的能力
 
-To check out live examples and docs, visit [vuejs.org](https://vuejs.org).
+其它特性正在等着你去探索。
 
-## Questions
+### H5 和小程序如何复用代码
+先来看一段视频：
+<video src="http://mpvue.com/assets/20170810-022809-HD.mp4" width="863" height="480" controls="controls"></video>
 
-For questions and support please use the [the official forum](http://forum.vuejs.org) or [community chat](https://chat.vuejs.org/). The issue list of this repo is **exclusively** for bug reports and feature requests.
+在左侧为已经上线的 H5 页面，右侧为同代码的小程序页面，其中只需要更改小部分平台差异代码和更新下 webpack 的建构配置就可以直接运行。
 
-## Issues
+在未来最理想的状态是，可以一套代码可以直接跑在多端：WEB、小程序（微信和支付宝）、Native（借助weex）。
 
-Please make sure to read the [Issue Reporting Checklist](https://github.com/vuejs/vue/blob/dev/.github/CONTRIBUTING.md#issue-reporting-guidelines) before opening an issue. Issues not conforming to the guidelines may be closed immediately.
+当然从产品的层面，我们不建议这么做，各个端有自己的差异性，我们期望的只是开发和调试体验一致。
 
-## Contribution
+## 配套设施
+`mpvue` 作为小程序版本的 `Vue.js`，在框架 SDK 之外，完整的技术体系还包括如下设施。
 
-Please make sure to read the [Contributing Guide](https://github.com/vuejs/vue/blob/dev/.github/CONTRIBUTING.md) before making a pull request. If you have a Vue-related project/component/tool, add it with a pull-request to [this curated list](https://github.com/vuejs/awesome-vue)!
+- [mpvue-loader](http://mpvue.com/build/mpvue-loader) 提供 webpack 版本的加载器
+- [mpvue-webpack-target](http://mpvue.com/build/mpvue-webpack-target) webpack 构建目标
+- [postcss-mpvue-wxss](http://mpvue.com/build/postcss-mpvue-wxss) 样式代码转换预处理工具
+- [px2rpx-loader](http://mpvue.com/build/px2rpx-loader) 样式转化插件
+- 其它
 
-## Changelog
 
-Details changes for each release are documented in the [release notes](https://github.com/vuejs/vue/releases).
-
-## Stay In Touch
-
-For the latest releases and announcements, follow on Twitter: [@vuejs](https://twitter.com/vuejs)
-
-## License
-
-[MIT](http://opensource.org/licenses/MIT)
-
-Copyright (c) 2013-present, Yuxi (Evan) You
