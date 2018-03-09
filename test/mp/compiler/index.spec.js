@@ -290,13 +290,13 @@ describe('表单', () => {
 describe('template', () => {
   it('template', () => {
     assertCodegen(
-      `<div><Card v-for="i in 10"></Card></div>`,
-      `<import src="/components/card" /><template name="a"><view class="_div data-v-djskdksdksdjkksdks"><template data="{{...$root[$kk+'0-'+index], $root}}" is="Card" wx:for="{{10}}" wx:for-index="index" wx:for-item="i"></template></view></template>`,
+      `<div><card v-for="i in 10"></card></div>`,
+      `<import src="/components/card" /><template name="a"><view class="_div data-v-djskdksdksdjkksdks"><template data="{{...$root[$kk+'0-'+index], $root}}" is="card" wx:for="{{10}}" wx:for-index="index" wx:for-item="i"></template></view></template>`,
       {
         name: 'a',
         components: {
-          Card: {
-            name: 'Card',
+          card: {
+            name: 'card',
             src: '/components/card'
           }
         },
@@ -307,13 +307,13 @@ describe('template', () => {
 
   it('template', () => {
     assertCodegen(
-      `<div><Card :message="1"></Card></div>`,
-      `<import src="/components/card" /><template name="a"><view class="_div data-v-djskdksdksdjkksdks"><template data="{{...$root[$kk+'0'], $root}}" is="Card"></template></view></template>`,
+      `<div><card :message="1"></card></div>`,
+      `<import src="/components/card" /><template name="a"><view class="_div data-v-djskdksdksdjkksdks"><template data="{{...$root[$kk+'0'], $root}}" is="card"></template></view></template>`,
       {
         name: 'a',
         components: {
-          Card: {
-            name: 'Card',
+          card: {
+            name: 'card',
             src: '/components/card'
           }
         },
@@ -323,13 +323,13 @@ describe('template', () => {
   })
   it('template', () => {
     assertCodegen(
-      `<div><Card :message="1"></Card> <block><span>test</span></block></div>`,
-      `<import src="/components/card" /><template name="a"><view class="_div data-v-djskdksdksdjkksdks"><template data="{{...$root[$kk+'0'], $root}}" is="Card"></template> <block><label class="_span data-v-djskdksdksdjkksdks">test</label></block></view></template>`,
+      `<div><card :message="1"></card> <block><span>test</span></block></div>`,
+      `<import src="/components/card" /><template name="a"><view class="_div data-v-djskdksdksdjkksdks"><template data="{{...$root[$kk+'0'], $root}}" is="card"></template> <block><label class="_span data-v-djskdksdksdjkksdks">test</label></block></view></template>`,
       {
         name: 'a',
         components: {
-          Card: {
-            name: 'Card',
+          card: {
+            name: 'card',
             src: '/components/card'
           }
         },
@@ -450,6 +450,35 @@ describe('web-view', () => {
       `<web-view src="https://i.meituan.com"> </web-view>`,
       `<template name="a"><web-view src="https://i.meituan.com" class="_web-view"></web-view></template>`,
       { name: 'a' }
+    );
+  })
+})
+
+describe('组件', () => {
+  it('组件驼峰命名', () => {
+    assertCodegen(
+      `<div><aCard></aCard></div>`,
+      `<import src="card$3d556b2c" /><template name="index$c044a66a"><view class="_div data-v-5eca2e54"><template data="{{...$root[$kk+'0'], $root}}" is="card$3d556b2c"></template></view></template>`,
+      { components:
+        { 'a-card': { src: 'card$3d556b2c', name: 'card$3d556b2c' },
+          isCompleted: true,
+          slots: { src: 'slots', name: 'slots' } },
+       pageType: 'component',
+       name: 'index$c044a66a',
+       moduleId: 'data-v-5eca2e54' }
+    );
+  })
+  it('组件驼峰命名', () => {
+    assertCodegen(
+      `<div><Card></Card></div>`,
+      `<import src="card$3d556b2c" /><template name="index$c044a66a"><view class="_div data-v-5eca2e54"><template data="{{...$root[$kk+'0'], $root}}" is="card$3d556b2c"></template></view></template>`,
+      { components:
+        { 'card': { src: 'card$3d556b2c', name: 'card$3d556b2c' },
+          isCompleted: true,
+          slots: { src: 'slots', name: 'slots' } },
+       pageType: 'component',
+       name: 'index$c044a66a',
+       moduleId: 'data-v-5eca2e54' }
     );
   })
 })
