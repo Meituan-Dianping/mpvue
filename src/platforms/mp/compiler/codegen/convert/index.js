@@ -3,13 +3,15 @@ import tag from './tag'
 import component from './component'
 import convertFor from './for'
 import tagConfig from '../config/config'
+import { hyphenate } from 'shared/util'
 
 function convertAst (node, options = {}, util) {
-  const { children, ifConditions, tag: tagName, staticClass = '', mpcomid } = node
+  const { children, ifConditions, staticClass = '', mpcomid } = node
+  let { tag: tagName } = node
   const { log, deps, slots, slotTemplates } = util
   let wxmlAst = Object.assign({}, node)
   const { moduleId, components } = options
-
+  wxmlAst.tag = tagName = tagName ? hyphenate(tagName) : tagName
   // 引入 import, isSlot 是使用 slot 的编译地方，意即 <slot></slot> 的地方
   const isSlot = tagName === 'slot'
   if (isSlot) {
