@@ -136,7 +136,16 @@ var camelize = cached(function (str) {
  */
 
 
-
+/**
+ * Hyphenate a camelCase string.
+ */
+var hyphenateRE = /([^-])([A-Z])/g;
+var hyphenate = cached(function (str) {
+  return str
+    .replace(hyphenateRE, '$1-$2')
+    .replace(hyphenateRE, '$1-$2')
+    .toLowerCase()
+});
 
 /**
  * Simple bind, faster than native
@@ -4124,6 +4133,7 @@ function mark (path, deps, iteratorArr) {
   var iterator1 = path.iterator1;
   var events = path.events;
   var directives = path.directives;
+  var ifConditions = path.ifConditions;
 
   var currentArr = Object.assign([], iteratorArr);
 
@@ -4141,10 +4151,19 @@ function mark (path, deps, iteratorArr) {
     });
   }
 
+  // fix: v-else events
+  if (ifConditions && ifConditions.length && !ifConditions._handled) {
+    ifConditions._handled = true;
+    ifConditions.forEach(function (v, i) {
+      mark(v.block, deps, currentArr);
+    });
+  }
+
   // for mpvue-template-compiler
   // events || v-model
   var hasModel = directives && directives.find(function (v) { return v.name === 'model'; });
   var needEventsID = events || hasModel;
+
   if (needEventsID) {
     var eventId = getWxEleId(deps.eventIndex, currentArr);
     // const eventId = getWxEleId(eIndex, currentArr)
@@ -4600,9 +4619,9 @@ function convertAst (node, options, util) {
 
   var children = node.children;
   var ifConditions = node.ifConditions;
-  var tagName = node.tag;
   var staticClass = node.staticClass; if ( staticClass === void 0 ) staticClass = '';
   var mpcomid = node.mpcomid;
+  var tagName = node.tag;
   var log = util.log;
   var deps = util.deps;
   var slots = util.slots;
@@ -4610,7 +4629,7 @@ function convertAst (node, options, util) {
   var wxmlAst = Object.assign({}, node);
   var moduleId = options.moduleId;
   var components = options.components;
-
+  wxmlAst.tag = tagName = tagName ? hyphenate(tagName) : tagName;
   // 引入 import, isSlot 是使用 slot 的编译地方，意即 <slot></slot> 的地方
   var isSlot = tagName === 'slot';
   if (isSlot) {

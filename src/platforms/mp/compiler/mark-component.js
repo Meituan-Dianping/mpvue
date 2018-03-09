@@ -50,7 +50,7 @@ function addAttr (path, key, value, inVdom) {
 function mark (path, deps, iteratorArr = []) {
   fixDefaultIterator(path)
 
-  const { tag, children, iterator1, events, directives } = path
+  const { tag, children, iterator1, events, directives, ifConditions } = path
 
   const currentArr = Object.assign([], iteratorArr)
 
@@ -68,10 +68,19 @@ function mark (path, deps, iteratorArr = []) {
     })
   }
 
+  // fix: v-else events
+  if (ifConditions && ifConditions.length && !ifConditions._handled) {
+    ifConditions._handled = true
+    ifConditions.forEach((v, i) => {
+      mark(v.block, deps, currentArr)
+    })
+  }
+
   // for mpvue-template-compiler
   // events || v-model
   const hasModel = directives && directives.find(v => v.name === 'model')
   const needEventsID = events || hasModel
+
   if (needEventsID) {
     const eventId = getWxEleId(deps.eventIndex, currentArr)
     // const eventId = getWxEleId(eIndex, currentArr)
