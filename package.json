@@ -1,6 +1,6 @@
 {
   "name": "vue",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Vue.js in mini program",
   "main": "dist/vue.runtime.common.js",
   "module": "dist/vue.runtime.esm.js",
@@ -54,10 +54,10 @@
   "author": "anchengjian",
   "contributors": [
     {
-      "name" : "hucq"
+      "name": "hucq"
     },
     {
-      "name" : "aOrz"
+      "name": "aOrz"
     }
   ],
   "license": "MIT",
