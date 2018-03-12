@@ -4296,7 +4296,7 @@ var wxmlDirectiveMap = {
 
 var utils = {
   toLowerCase: function toLowerCase (str) {
-    return str.replace(/([A-Z])/g, '-$1').toLowerCase().trim()
+    return str.replace(/\B([A-Z])/g, '-$1').toLowerCase().trim()
   },
 
   getChar: function getChar (index) {

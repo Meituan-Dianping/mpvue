@@ -1,6 +1,6 @@
 export default {
   toLowerCase (str) {
-    return str.replace(/([A-Z])/g, '-$1').toLowerCase().trim()
+    return str.replace(/\B([A-Z])/g, '-$1').toLowerCase().trim()
   },
 
   getChar (index) {
