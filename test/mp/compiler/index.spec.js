@@ -232,6 +232,13 @@ describe('事件', () => {
       { name: 'a' }
     )
   })
+  it('v-else', () => {
+    assertCodegen(
+      `<div><div v-if="type === 'A'" @click="logger('A')">A</div><div v-else-if="type === 'B'" @click="logger('B')">B</div><div v-else-if="type === 'C'" @click="logger('C')">C</div><div v-else @click="logger('Not A/B/C')">Not A/B/C</div></div>`,
+      `<template name="a"><view class="_div"><view wx:if="{{type === 'A'}}" bindtap="handleProxy" data-eventid="{{'4'}}" data-comkey="{{$k}}" class="_div">A</view><view wx:elif="{{type === 'B'}}" bindtap="handleProxy" data-eventid="{{'1'}}" data-comkey="{{$k}}" class="_div">B</view><view wx:elif="{{type === 'C'}}" bindtap="handleProxy" data-eventid="{{'2'}}" data-comkey="{{$k}}" class="_div">C</view><view wx:else bindtap="handleProxy" data-eventid="{{'3'}}" data-comkey="{{$k}}" class="_div">Not A/B/C</view></view></template>`,
+      { name: 'a' }
+    )
+  })
 })
 
 describe('表单', () => {
