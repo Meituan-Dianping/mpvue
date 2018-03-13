@@ -1,8 +1,3 @@
-<!--
-Please make sure to read the Pull Request Guidelines:
-https://github.com/vuejs/vue/blob/dev/.github/CONTRIBUTING.md#pull-request-guidelines
--->
-
 <!-- PULL REQUEST TEMPLATE -->
 <!-- (Update "[ ]" to "[x]" to check a box) -->
 
@@ -26,7 +21,7 @@ If yes, please describe the impact and migration path for existing applications:
 
 - [ ] It's submitted to the `dev` branch for v2.x (or to a previous version branch), _not_ the `master` branch
 - [ ] When resolving a specific issue, it's referenced in the PR's title (e.g. `fix #xxx[,#xxx]`, where "xxx" is the issue number)
-- [ ] All tests are passing: https://github.com/vuejs/vue/blob/dev/.github/CONTRIBUTING.md#development-setup
+- [ ] All tests are passing
 - [ ] New/updated tests are included
 
 If adding a **new feature**, the PR's description includes:
