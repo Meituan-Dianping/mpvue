@@ -488,4 +488,17 @@ describe('组件', () => {
        moduleId: 'data-v-5eca2e54' }
     );
   })
+  it('组件驼峰命名', () => {
+    assertCodegen(
+      `<div><ACard></ACard></div>`,
+      `<import src="card$3d556b2c" /><template name="index$c044a66a"><view class="_div data-v-5eca2e54"><template data="{{...$root[$kk+'0'], $root}}" is="card$3d556b2c"></template></view></template>`,
+      { components:
+        { 'a-card': { src: 'card$3d556b2c', name: 'card$3d556b2c' },
+          isCompleted: true,
+          slots: { src: 'slots', name: 'slots' } },
+       pageType: 'component',
+       name: 'index$c044a66a',
+       moduleId: 'data-v-5eca2e54' }
+    );
+  })
 })
