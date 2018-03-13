@@ -4144,7 +4144,8 @@ Object.defineProperty(Vue$3.prototype, '$ssrContext', {
   }
 });
 
-Vue$3.version = '1.0.1';
+Vue$3.version = '2.4.1';
+Vue$3.mpvueVersion = '1.0.2';
 
 /* globals renderer */
 

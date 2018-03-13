@@ -1,10 +1,19 @@
-<!--
-IMPORTANT: Please use the following link to create a new issue:
+# [问题简单描述]
 
-  https://new-issue.vuejs.org/
+**问题复现步骤:**
 
-If your issue was not created using the app above, it will be closed immediately.
+1. [第一步]
+2. [第二步]
+3. [其他步骤...]
 
-中文用户请注意：
-请使用上面的链接来创建新的 issue。如果不是用上述工具创建的 issue 会被自动关闭。
--->
+**期望的表现:**
+
+[在这里描述期望的表现]
+
+**观察到的表现:**
+
+[在这里描述观察到的表现]
+
+**屏幕截图和动态 GIF 图**
+
+![复现步骤的屏幕截图和动态 GIF 图](图片的 url)
