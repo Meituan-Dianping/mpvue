@@ -1099,17 +1099,7 @@ var LIFECYCLE_HOOKS = [
   'beforeDestroy',
   'destroyed',
   'activated',
-  'deactivated', 'onLaunch',
-  'onLoad',
-  'onShow',
-  'onReady',
-  'onHide',
-  'onUnload',
-  'onPullDownRefresh',
-  'onReachBottom',
-  'onShareAppMessage',
-  'onPageScroll',
-  'onTabItemTap'
+  'deactivated'
 ];
 
 /*  */
@@ -4353,7 +4343,7 @@ function transformDynamicClass (staticClass, clsBinding) {
   var result = babel.transform(("!" + clsBinding), { plugins: [transformObjectToTernaryOperator] });
   // 先实现功能，再优化代码
   // https://github.com/babel/babel/issues/7138
-  var cls = prettier.format(result.code, { semi: false, singleQuote: true }).slice(1).slice(0, -1);
+  var cls = prettier.format(result.code, { semi: false, singleQuote: true }).slice(1).slice(0, -1).replace(/\n|\r/g, "");
   return (staticClass + " {{" + cls + "}}")
 }
 
@@ -4361,7 +4351,7 @@ function transformDynamicStyle (staticStyle, styleBinding) {
   if ( staticStyle === void 0 ) staticStyle = '';
 
   var result = babel.transform(("!" + styleBinding), { plugins: [transformObjectToString] });
-  var cls = prettier.format(result.code, { semi: false, singleQuote: true }).slice(2).slice(0, -2);
+  var cls = prettier.format(result.code, { semi: false, singleQuote: true }).slice(1).slice(0, -1).replace(/\n|\r/g, "");
   return (staticStyle + " {{" + cls + "}}")
 }
 
