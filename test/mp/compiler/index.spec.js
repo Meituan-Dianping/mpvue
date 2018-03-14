@@ -154,10 +154,16 @@ describe('指令', () => {
       { name: 'a' }
     )
     assertCodegen(
-      `<div><p class="static" v-bind:class="classObject">233</p></div>`,
-      `<template name="a"><view class="_div"><view class="_p static {{classObject}}">233</view></view></template>`,
+      `<div><p class="static" v-bind:class="computedClassStr">233</p></div>`,
+      `<template name="a"><view class="_div"><view class="_p static {{computedClassStr}}">233</view></view></template>`,
       { name: 'a' }
     )
+    // TODO, classObject 暂不支持
+    // assertCodegen(
+    //   `<div><p class="static" v-bind:class="classObject">233</p></div>`,
+    //   `<template name="a"><view class="_div static {{( isActive)? 'active' : ' '}} {{( hasError )? 'text-danger' : ' '}}"></view></template>`,
+    //   { name: 'a' }
+    // )
     // array
     assertCodegen(
       `<div><p class="static" :class="[activeClass, errorClass]">233</p></div>`,
@@ -188,11 +194,16 @@ describe('指令', () => {
       { name: 'a' }
     )
     assertCodegen(
-      `<div v-bind:style="styleObject">222</div>`,
-      `<template name="a"><view class="_div" style=" {{styleObject}}">222</view></template>`,
+      `<div v-bind:style="computedStyleStr">222</div>`,
+      `<template name="a"><view class="_div" style=" {{computedStyleStr}}">222</view></template>`,
       { name: 'a' }
     )
     // TODO, 等微信支持了再支持
+    // assertCodegen(
+    //   `<div v-bind:style="styleObject">222</div>`,
+    //   `<template name="a"><view class="_div" style=" {{tyleObjec}}">222</view></template>`,
+    //   { name: 'a' }
+    // )
     // assertCodegen(
     //   `<div v-bind:style="[baseStyles, overridingStyles]">333</div>`,
     //   `<template name="a"><view class="_div" style=" {{baseStyles, overridingStyles}}">333</view></template>`,
