@@ -15,7 +15,7 @@ function transformDynamicClass (staticClass = '', clsBinding) {
 
 function transformDynamicStyle (staticStyle = '', styleBinding) {
   const result = babel.transform(`!${styleBinding}`, { plugins: [transformObjectToString] })
-  const cls = prettier.format(result.code, { semi: false, singleQuote: true }).slice(1).slice(0, -1).replace(/\n|\r/g, "");
+  const cls = prettier.format(result.code, { semi: false, singleQuote: true }).slice(1).slice(0, -1).replace(/\n|\r/g, "")
   return `${staticStyle} {{${cls}}}`
 }
 
