@@ -1,6 +1,23 @@
 import wxmlDirectiveMap from '../config/wxmlDirectiveMap'
-import utils from '../utils'
 import tagConfig from '../config/config'
+
+import babel from 'babel-core'
+import prettier from 'prettier'
+
+import { transformObjectToTernaryOperator, transformObjectToString } from '../babel-plugins'
+function transformDynamicClass (staticClass = '', clsBinding) {
+  const result = babel.transform(`!${clsBinding}`, { plugins: [transformObjectToTernaryOperator] })
+  // 先实现功能，再优化代码
+  // https://github.com/babel/babel/issues/7138
+  const cls = prettier.format(result.code, { semi: false, singleQuote: true }).slice(1).slice(0, -1)
+  return `${staticClass} {{${cls}}}`
+}
+
+function transformDynamicStyle (staticStyle = '', styleBinding) {
+  const result = babel.transform(`!${styleBinding}`, { plugins: [transformObjectToString] })
+  const cls = prettier.format(result.code, { semi: false, singleQuote: true }).slice(2).slice(0, -2)
+  return `${staticStyle} {{${cls}}}`
+}
 
 export default {
   format (attrs = {}) {
@@ -17,7 +34,7 @@ export default {
   convertAttr (ast, log) {
     const { attrsMap = {}, tag, staticClass } = ast
     let attrs = {}
-    const wxClass = this.styleObj(attrsMap['v-bind:class'], staticClass)
+    const wxClass = this.classObj(attrsMap['v-bind:class'], staticClass)
     wxClass.length ? attrsMap['class'] = wxClass : ''
     const wxStyle = this.styleObj(attrsMap['v-bind:style'], attrsMap['style'])
     wxStyle.length ? attrsMap['style'] = wxStyle : ''
@@ -64,7 +81,7 @@ export default {
       } else if (/^v\-/.test(key)) {
         log(`不支持此属性-> ${key}="${val}"`, 'waring')
       } else {
-        if ((tagConfig.virtualTag.indexOf(tag) > -1) && (key === 'class' || key === 'data-mpcomid')) {
+        if ((tagConfig.virtualTag.indexOf(tag) > -1) && (key === 'class' || key === 'style' || key === 'data-mpcomid')) {
           if (key !== 'data-mpcomid') {
             log(`template 不支持此属性-> ${key}="${val}"`, 'waring')
           }
@@ -124,18 +141,26 @@ export default {
     return attrs
   },
 
-  styleObj (styleBinding = '', style) {
-    let _styleBinding = styleBinding.replace(/[\{\}]/g, '').replace(' ', '').replace(/\n/g, '')
-    _styleBinding = _styleBinding.split(',').map(v => {
-      return v.replace(/([^,^:]+)\:([^,]+)/g, (v, $1, $2) => {
-        const _$1 = utils.toLowerCase($1).replace(/^'|'$/g, '')
-        return `{{(${$2})\? '${_$1}' \: ' '}}`
-      })
-    }).join(' ')
-    if (_styleBinding.indexOf('{') === -1 && _styleBinding) {
-      _styleBinding = `{{${_styleBinding}}}`
+  classObj (clsBinding = '', staticCls) {
+    if (!clsBinding && !staticCls) {
+      return ''
     }
-    return `${style || ''} ${_styleBinding}`.trim()
+    if (!clsBinding && staticCls) {
+      return staticCls
+    }
+
+    return transformDynamicClass(staticCls, clsBinding)
+  },
+
+  styleObj (styleBinding = '', staticStyle) {
+    if (!styleBinding && !staticStyle) {
+      return ''
+    }
+    if (!styleBinding && staticStyle) {
+      return staticStyle
+    }
+
+    return transformDynamicStyle(staticStyle, styleBinding)
   },
 
   model (key, val, attrs, tag) {
