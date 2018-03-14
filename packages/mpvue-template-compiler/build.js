@@ -6,6 +6,11 @@ function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'defau
 
 var deindent = _interopDefault(require('de-indent'));
 var he = _interopDefault(require('he'));
+var babel = _interopDefault(require('babel-core'));
+var prettier = _interopDefault(require('prettier'));
+var t = require('babel-types');
+var generate = _interopDefault(require('babel-generator'));
+var template = _interopDefault(require('babel-template'));
 
 /*  */
 
@@ -1870,7 +1875,7 @@ var platformGetTagNamespace;
  * Convert HTML string to AST.
  */
 function parse (
-  template,
+  template$$1,
   options
 ) {
   warn$1 = options.warn || baseWarn;
@@ -1910,7 +1915,7 @@ function parse (
     }
   }
 
-  parseHTML(template, {
+  parseHTML(template$$1, {
     warn: warn$1,
     expectHTML: options.expectHTML,
     isUnaryTag: options.isUnaryTag,
@@ -2060,7 +2065,7 @@ function parse (
     chars: function chars (text) {
       if (!currentParent) {
         if (process.env.NODE_ENV !== 'production') {
-          if (text === template) {
+          if (text === template$$1) {
             warnOnce(
               'Component template requires a root element, rather than just text.'
             );
@@ -3259,7 +3264,7 @@ var CodegenState = function CodegenState (options) {
 
 
 
-function generate (
+function generate$1 (
   ast,
   options
 ) {
@@ -3516,7 +3521,7 @@ function genInlineTemplate (el, state) {
     state.warn('Inline-template components must have exactly one child element.');
   }
   if (ast.type === 1) {
-    var inlineRenderFns = generate(ast, state.options);
+    var inlineRenderFns = generate$1(ast, state.options);
     return ("inlineTemplate:{render:function(){" + (inlineRenderFns.render) + "},staticRenderFns:[" + (inlineRenderFns.staticRenderFns.map(function (code) { return ("function(){" + code + "}"); }).join(',')) + "]}")
   }
 }
@@ -3793,7 +3798,7 @@ function createCompileToFunctionFn (compile) {
   var cache = Object.create(null);
 
   return function compileToFunctions (
-    template,
+    template$$1,
     options,
     vm
   ) {
@@ -3819,20 +3824,20 @@ function createCompileToFunctionFn (compile) {
 
     // check cache
     var key = options.delimiters
-      ? String(options.delimiters) + template
-      : template;
+      ? String(options.delimiters) + template$$1
+      : template$$1;
     if (cache[key]) {
       return cache[key]
     }
 
     // compile
-    var compiled = compile(template, options);
+    var compiled = compile(template$$1, options);
 
     // check compilation errors/tips
     if (process.env.NODE_ENV !== 'production') {
       if (compiled.errors && compiled.errors.length) {
         warn$2(
-          "Error compiling template:\n\n" + template + "\n\n" +
+          "Error compiling template:\n\n" + template$$1 + "\n\n" +
           compiled.errors.map(function (e) { return ("- " + e); }).join('\n') + '\n',
           vm
         );
@@ -3878,7 +3883,7 @@ function createCompileToFunctionFn (compile) {
 function createCompilerCreator (baseCompile) {
   return function createCompiler (baseOptions) {
     function compile (
-      template,
+      template$$1,
       options
     ) {
       var finalOptions = Object.create(baseOptions);
@@ -3909,7 +3914,7 @@ function createCompilerCreator (baseCompile) {
         }
       }
 
-      var compiled = baseCompile(template, finalOptions);
+      var compiled = baseCompile(template$$1, finalOptions);
       if (process.env.NODE_ENV !== 'production') {
         errors.push.apply(errors, detectErrors(compiled.ast));
       }
@@ -4201,13 +4206,13 @@ function markComponent (ast) {
 // parser/optimizer/codegen, e.g the SSR optimizing compiler.
 // Here we just export a default compiler using the default parts.
 var createCompiler = createCompilerCreator(function baseCompile (
-  template,
+  template$$1,
   options
 ) {
-  var originAst = parse(template.trim(), options);
+  var originAst = parse(template$$1.trim(), options);
   var ast = markComponent(originAst);
   optimize(ast, options);
-  var code = generate(ast, options);
+  var code = generate$1(ast, options);
   return {
     ast: ast,
     render: code.render,
@@ -4294,32 +4299,71 @@ var wxmlDirectiveMap = {
   }
 };
 
-var utils = {
-  toLowerCase: function toLowerCase (str) {
-    return str.replace(/([A-Z])/g, '-$1').toLowerCase().trim()
-  },
-
-  getChar: function getChar (index) {
-    return String.fromCharCode(0x61 + index)
-  },
-
-  log: function log (compiled) {
-    compiled.mpErrors = [];
-    compiled.mpTips = [];
-
-    return function (str, type) {
-      if (type === 'waring') {
-        compiled.mpTips.push(str);
-      } else {
-        compiled.mpErrors.push(str);
-      }
-    }
-  }
-};
-
 var tagConfig = {
   virtualTag: ['slot', 'template', 'block']
 };
+
+// babel-plugin-transform-object-to-ternary-operator.js
+
+function getStrByNode (node, onlyStr) {
+  if ( onlyStr === void 0 ) onlyStr = false;
+
+  if (onlyStr) {
+    return node.value || node.name || ''
+  }
+  return node.type === 'StringLiteral' ? node : t.stringLiteral(node.name || '')
+}
+
+// 把 { key: value } 转换成 [ value ? 'key' : '' ]
+var objectVisitor = {
+  ObjectExpression: function (path) {
+    var elements = path.node.properties.map(function (propertyItem) {
+      return t.conditionalExpression(propertyItem.value, getStrByNode(propertyItem.key), t.stringLiteral(''))
+    });
+    path.replaceWith(t.arrayExpression(elements));
+  }
+};
+
+function transformObjectToTernaryOperator (babel$$1) {
+  return { visitor: objectVisitor }
+}
+
+// 把 { key: value } 转换成 'key:' + value + ';'
+var objectToStringVisitor = {
+  ObjectExpression: function (path) {
+    var expression = path.node.properties.map(function (propertyItem) {
+      var keyStr = getStrByNode(propertyItem.key, true);
+      var key = keyStr ? hyphenate(keyStr) : keyStr;
+      var ref = generate(t.ExpressionStatement(propertyItem.value));
+      var val = ref.code;
+      return ("'" + key + ":' + " + (val.slice(0, -1)) + " + ';'")
+    }).join('+');
+
+    var p = template(expression)({});
+    path.replaceWith(p.expression);
+  }
+};
+function transformObjectToString (babel$$1) {
+  return { visitor: objectToStringVisitor }
+}
+
+function transformDynamicClass (staticClass, clsBinding) {
+  if ( staticClass === void 0 ) staticClass = '';
+
+  var result = babel.transform(("!" + clsBinding), { plugins: [transformObjectToTernaryOperator] });
+  // 先实现功能，再优化代码
+  // https://github.com/babel/babel/issues/7138
+  var cls = prettier.format(result.code, { semi: false, singleQuote: true }).slice(1).slice(0, -1);
+  return (staticClass + " {{" + cls + "}}")
+}
+
+function transformDynamicStyle (staticStyle, styleBinding) {
+  if ( staticStyle === void 0 ) staticStyle = '';
+
+  var result = babel.transform(("!" + styleBinding), { plugins: [transformObjectToString] });
+  var cls = prettier.format(result.code, { semi: false, singleQuote: true }).slice(2).slice(0, -2);
+  return (staticStyle + " {{" + cls + "}}")
+}
 
 var attrs = {
   format: function format (attrs) {
@@ -4342,7 +4386,7 @@ var attrs = {
     var tag = ast.tag;
     var staticClass = ast.staticClass;
     var attrs = {};
-    var wxClass = this.styleObj(attrsMap['v-bind:class'], staticClass);
+    var wxClass = this.classObj(attrsMap['v-bind:class'], staticClass);
     wxClass.length ? attrsMap['class'] = wxClass : '';
     var wxStyle = this.styleObj(attrsMap['v-bind:style'], attrsMap['style']);
     wxStyle.length ? attrsMap['style'] = wxStyle : '';
@@ -4393,7 +4437,7 @@ var attrs = {
       } else if (/^v\-/.test(key)) {
         log(("不支持此属性-> " + key + "=\"" + val + "\""), 'waring');
       } else {
-        if ((tagConfig.virtualTag.indexOf(tag) > -1) && (key === 'class' || key === 'data-mpcomid')) {
+        if ((tagConfig.virtualTag.indexOf(tag) > -1) && (key === 'class' || key === 'style' || key === 'data-mpcomid')) {
           if (key !== 'data-mpcomid') {
             log(("template 不支持此属性-> " + key + "=\"" + val + "\""), 'waring');
           }
@@ -4456,20 +4500,30 @@ var attrs = {
     return attrs
   },
 
-  styleObj: function styleObj (styleBinding, style) {
+  classObj: function classObj (clsBinding, staticCls) {
+    if ( clsBinding === void 0 ) clsBinding = '';
+
+    if (!clsBinding && !staticCls) {
+      return ''
+    }
+    if (!clsBinding && staticCls) {
+      return staticCls
+    }
+
+    return transformDynamicClass(staticCls, clsBinding)
+  },
+
+  styleObj: function styleObj (styleBinding, staticStyle) {
     if ( styleBinding === void 0 ) styleBinding = '';
 
-    var _styleBinding = styleBinding.replace(/[\{\}]/g, '').replace(' ', '').replace(/\n/g, '');
-    _styleBinding = _styleBinding.split(',').map(function (v) {
-      return v.replace(/([^,^:]+)\:([^,]+)/g, function (v, $1, $2) {
-        var _$1 = utils.toLowerCase($1).replace(/^'|'$/g, '');
-        return ("{{(" + $2 + ")? '" + _$1 + "' : ' '}}")
-      })
-    }).join(' ');
-    if (_styleBinding.indexOf('{') === -1 && _styleBinding) {
-      _styleBinding = "{{" + _styleBinding + "}}";
+    if (!styleBinding && !staticStyle) {
+      return ''
     }
-    return ((style || '') + " " + _styleBinding).trim()
+    if (!styleBinding && staticStyle) {
+      return staticStyle
+    }
+
+    return transformDynamicStyle(staticStyle, styleBinding)
   },
 
   model: function model (key, val, attrs, tag) {
@@ -4727,7 +4781,7 @@ function wxmlAst (compiled, options, log) {
   }
 }
 
-function generate$1 (obj, options) {
+function generate$2 (obj, options) {
   if ( options === void 0 ) options = {};
 
   var tag = obj.tag;
@@ -4739,7 +4793,7 @@ function generate$1 (obj, options) {
   var child = '';
   if (children && children.length) {
     // 递归子节点
-    child = children.map(function (v) { return generate$1(v, options); }).join('');
+    child = children.map(function (v) { return generate$2(v, options); }).join('');
   }
 
   // v-if 指令
@@ -4747,7 +4801,7 @@ function generate$1 (obj, options) {
   if (ifConditions) {
     var length = ifConditions.length;
     for (var i = 1; i < length; i++) {
-      ifConditionsArr.push(generate$1(ifConditions[i].block, options));
+      ifConditionsArr.push(generate$2(ifConditions[i].block, options));
     }
   }
 
@@ -4764,6 +4818,29 @@ function convertAttr (key, val) {
   return (val === '' || typeof val === 'undefined') ? key : (key + "=\"" + val + "\"")
 }
 
+var utils = {
+  toLowerCase: function toLowerCase (str) {
+    return str.replace(/([A-Z])/g, '-$1').toLowerCase().trim()
+  },
+
+  getChar: function getChar (index) {
+    return String.fromCharCode(0x61 + index)
+  },
+
+  log: function log (compiled) {
+    compiled.mpErrors = [];
+    compiled.mpTips = [];
+
+    return function (str, type) {
+      if (type === 'waring') {
+        compiled.mpTips.push(str);
+      } else {
+        compiled.mpErrors.push(str);
+      }
+    }
+  }
+};
+
 function compileToWxml (compiled, options) {
   if ( options === void 0 ) options = {};
 
@@ -4775,7 +4852,7 @@ function compileToWxml (compiled, options) {
   var wxast = ref.wxast;
   var deps = ref.deps; if ( deps === void 0 ) deps = {};
   var slots = ref.slots; if ( slots === void 0 ) slots = {};
-  var code = generate$1(wxast, options);
+  var code = generate$2(wxast, options);
 
   // 引用子模版
   var importCode = Object.keys(deps).map(function (k) { return components[k] ? ("<import src=\"" + (components[k].src) + "\" />") : ''; }).join('');
@@ -4784,7 +4861,7 @@ function compileToWxml (compiled, options) {
   // 生成 slots code
   Object.keys(slots).forEach(function (k) {
     var slot = slots[k];
-    slot.code = generate$1(slot.node, options);
+    slot.code = generate$2(slot.node, options);
   });
 
   return { code: code, compiled: compiled, slots: slots }

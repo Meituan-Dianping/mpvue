@@ -2,10 +2,11 @@ const { compile, compileToWxml } = require('../../../packages/mpvue-template-com
 // const { strToRegExp } = require('../helpers/index')
 
 function assertCodegen (template, assertTemplate, options, parmas = {}) {
-  const { errors = [], mpErrors = [], slots = {}} = parmas
+  const { errors = [], mpErrors = [], slots = {}, mpTips = [] } = parmas
   const compiled = compile(template, {})
   const output = compileToWxml(compiled, options)
   expect(output.compiled.mpErrors).toEqual(mpErrors)
+  expect(output.compiled.mpTips).toEqual(mpTips)
   expect(output.compiled.errors).toEqual(errors)
   // console.log(JSON.stringify(output.slots))
   expect(JSON.stringify(output.slots)).toEqual(JSON.stringify(slots))
@@ -114,12 +115,12 @@ describe('指令', () => {
   it('v-bind:class', () => {
     assertCodegen(
       `<div v-bind:class="{ active: isActive }"></div>`,
-      `<template name="a"><view class="_div {{( isActive )? 'active' : ' '}}"></view></template>`,
+      `<template name="a"><view class="_div {{[isActive ? 'active' : '']}}"></view></template>`,
       { name: 'a' }
     )
     assertCodegen(
       `<div class="static"  v-bind:class="{ active: isActive, 'textDanger': hasError }"></div>`,
-      `<template name="a"><view class="_div static {{( isActive)? 'active' : ' '}} {{( hasError )? 'text-danger' : ' '}}"></view></template>`,
+      `<template name="a"><view class="_div static {{[isActive ? 'active' : '', hasError ? 'textDanger' : '']}}"></view></template>`,
       { name: 'a' }
     )
     assertCodegen(
@@ -137,6 +138,87 @@ describe('指令', () => {
       },
       {
         mpTips: ['template 不支持此属性-> class="baz boo"'],
+        mpErrors: []
+      }
+    )
+
+    // object
+    assertCodegen(
+      `<div><p :class="{ active: isActive }">233</p></div>`,
+      `<template name="a"><view class="_div"><view class="_p {{[isActive ? 'active' : '']}}">233</view></view></template>`,
+      { name: 'a' }
+    )
+    assertCodegen(
+      `<div><p class="static" v-bind:class="{ active: isActive, 'text-danger': hasError }">233</p></div>`,
+      `<template name="a"><view class="_div"><view class="_p static {{[isActive ? 'active' : '', hasError ? 'text-danger' : '']}}">233</view></view></template>`,
+      { name: 'a' }
+    )
+    // TODO, classObject 暂不支持
+    // assertCodegen(
+    //   `<div><p class="static" v-bind:class="classObject">233</p></div>`,
+    //   `<template name="a"><view class="_div static {{( isActive)? 'active' : ' '}} {{( hasError )? 'text-danger' : ' '}}"></view></template>`,
+    //   { name: 'a' }
+    // )
+    // array
+    assertCodegen(
+      `<div><p class="static" :class="[activeClass, errorClass]">233</p></div>`,
+      `<template name="a"><view class="_div"><view class="_p static {{[activeClass, errorClass]}}">233</view></view></template>`,
+      { name: 'a' }
+    )
+    assertCodegen(
+      `<div><p class="static" v-bind:class="[isActive ? activeClass : '', errorClass]">233</p></div>`,
+      `<template name="a"><view class="_div"><view class="_p static {{[isActive ? activeClass : '', errorClass]}}">233</view></view></template>`,
+      { name: 'a' }
+    )
+    assertCodegen(
+      `<div><p class="static" v-bind:class="[{ active: isActive }, errorClass]">233</p></div>`,
+      `<template name="a"><view class="_div"><view class="_p static {{[[isActive ? 'active' : ''], errorClass]}}">233</view></view></template>`,
+      { name: 'a' }
+    )
+  })
+
+  it('v-bind:style', () => {
+    assertCodegen(
+      `<div v-bind:style="{ color: activeColor, fontSize: fontSize + 'px' }">111</div>`,
+      `<template name="a"><view class="_div" style=" {{'color:' + activeColor + ';' + 'font-size:' + fontSize + 'px' + ';'}}">111</view></template>`,
+      { name: 'a' }
+    )
+    assertCodegen(
+      `<div v-bind:style="[{ color: activeColor, fontSize: fontSize + 'px' }]">111</div>`,
+      `<template name="a"><view class="_div" style=" {{'color:' + activeColor + ';' + 'font-size:' + fontSize + 'px' + ';'}}">111</view></template>`,
+      { name: 'a' }
+    )
+    // TODO, 等微信支持了再支持
+    // assertCodegen(
+    //   `<div v-bind:style="styleObject">222</div>`,
+    //   `<template name="a"><view class="_div" style=" {{tyleObjec}}">222</view></template>`,
+    //   { name: 'a' }
+    // )
+    // assertCodegen(
+    //   `<div v-bind:style="[baseStyles, overridingStyles]">333</div>`,
+    //   `<template name="a"><view class="_div" style=" {{baseStyles, overridingStyles}}">333</view></template>`,
+    //   { name: 'a' }
+    // )
+    // assertCodegen(
+    //   `<div :style="{ display: ['-webkit-box', '-ms-flexbox', 'flex'] }">444</div>`,
+    //   `<template name="a"><view class="_div" style=" {{'display:' + ['-webkit-box', '-ms-flexbox', 'flex'] + ';'}}">444</view></template>`,
+    //   { name: 'a' }
+    // )
+    assertCodegen(
+      `<my-component style="color: red;"></my-component>`,
+      `<import src="/components/card" /><template name="a"><template data="{{...$root[$kk+'0'], $root}}" is="my-component"></template></template>`,
+      {
+        name: 'a',
+        components: {
+          'my-component': {
+            name: 'my-component',
+            src: '/components/card'
+          }
+        },
+        moduleId: 'hashValue'
+      },
+      {
+        mpTips: ['template 不支持此属性-> style="color: red;"'],
         mpErrors: []
       }
     )
