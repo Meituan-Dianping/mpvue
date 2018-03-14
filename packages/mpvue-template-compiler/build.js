@@ -1099,7 +1099,17 @@ var LIFECYCLE_HOOKS = [
   'beforeDestroy',
   'destroyed',
   'activated',
-  'deactivated'
+  'deactivated', 'onLaunch',
+  'onLoad',
+  'onShow',
+  'onReady',
+  'onHide',
+  'onUnload',
+  'onPullDownRefresh',
+  'onReachBottom',
+  'onShareAppMessage',
+  'onPageScroll',
+  'onTabItemTap'
 ];
 
 /*  */

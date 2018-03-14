@@ -312,7 +312,17 @@ var LIFECYCLE_HOOKS = [
   'beforeDestroy',
   'destroyed',
   'activated',
-  'deactivated'
+  'deactivated', 'onLaunch',
+  'onLoad',
+  'onShow',
+  'onReady',
+  'onHide',
+  'onUnload',
+  'onPullDownRefresh',
+  'onReachBottom',
+  'onShareAppMessage',
+  'onPageScroll',
+  'onTabItemTap'
 ];
 
 /*  */
@@ -2129,7 +2139,7 @@ function mountComponent (
   vm.$el = el;
   if (!vm.$options.render) {
     vm.$options.render = createEmptyVNode;
-    
+
   }
   callHook(vm, 'beforeMount');
 
@@ -2224,7 +2234,7 @@ function updateChildComponent (
     vm.$forceUpdate();
   }
 
-  
+
 }
 
 function isInInactiveTree (vm) {
@@ -2835,7 +2845,7 @@ function initMethods (vm, methods) {
   var props = vm.$options.props;
   for (var key in methods) {
     vm[key] = methods[key] == null ? noop : bind(methods[key], vm);
-    
+
   }
 }
 
