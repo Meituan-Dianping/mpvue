@@ -98,7 +98,6 @@ export function initMP (mpType, next) {
       }
     })
   } else if (mpType === 'component') {
-    const app = global.getApp()
     global.Component({
       // 页面的初始数据
       data: {
@@ -107,7 +106,7 @@ export function initMP (mpType, next) {
       methods: {
         handleProxy (e) {
           rootVueVM.$handleProxyWithVue(e)
-        },
+        }
       },
       // mp lifecycle for vue
       // 组件生命周期函数，在组件实例进入页面节点树时执行，注意此时不能调用 setData
