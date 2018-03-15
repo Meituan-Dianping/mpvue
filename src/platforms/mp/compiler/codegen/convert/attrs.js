@@ -9,13 +9,13 @@ function transformDynamicClass (staticClass = '', clsBinding) {
   const result = babel.transform(`!${clsBinding}`, { plugins: [transformObjectToTernaryOperator] })
   // 先实现功能，再优化代码
   // https://github.com/babel/babel/issues/7138
-  const cls = prettier.format(result.code, { semi: false, singleQuote: true }).slice(1).slice(0, -1)
+  const cls = prettier.format(result.code, { semi: false, singleQuote: true }).slice(1).slice(0, -1).replace(/\n|\r/g, "")
   return `${staticClass} {{${cls}}}`
 }
 
 function transformDynamicStyle (staticStyle = '', styleBinding) {
   const result = babel.transform(`!${styleBinding}`, { plugins: [transformObjectToString] })
-  const cls = prettier.format(result.code, { semi: false, singleQuote: true }).slice(2).slice(0, -2)
+  const cls = prettier.format(result.code, { semi: false, singleQuote: true }).slice(1).slice(0, -1).replace(/\n|\r/g, "")
   return `${staticStyle} {{${cls}}}`
 }
 
