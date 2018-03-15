@@ -2139,7 +2139,7 @@ function mountComponent (
   vm.$el = el;
   if (!vm.$options.render) {
     vm.$options.render = createEmptyVNode;
-
+    
   }
   callHook(vm, 'beforeMount');
 
@@ -2234,7 +2234,7 @@ function updateChildComponent (
     vm.$forceUpdate();
   }
 
-
+  
 }
 
 function isInInactiveTree (vm) {
@@ -2845,7 +2845,7 @@ function initMethods (vm, methods) {
   var props = vm.$options.props;
   for (var key in methods) {
     vm[key] = methods[key] == null ? noop : bind(methods[key], vm);
-
+    
   }
 }
 
@@ -4145,7 +4145,7 @@ Object.defineProperty(Vue$3.prototype, '$ssrContext', {
 });
 
 Vue$3.version = '2.4.1';
-Vue$3.mpvueVersion = '1.0.3';
+Vue$3.mpvueVersion = '1.0.5';
 
 /* globals renderer */
 
