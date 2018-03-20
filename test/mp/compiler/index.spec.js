@@ -88,6 +88,38 @@ describe('指令', () => {
     )
   })
 
+  it('v-if && v-for', () => {
+    assertCodegen(
+      `<div><p v-if="item.length" v-for="item in list"></p></div>`,
+      `<template name="a"><view class="_div"><view wx:if="{{item.length}}" wx:for="{{list}}" wx:for-index="index" wx:for-item="item" class="_p"></view></view></template>`,
+      { name: 'a' }
+    )
+  })
+
+  it('v-if && event', () => {
+    assertCodegen(
+      `<div v-if="item.length" @click="clickHandle"></div>`,
+      `<template name="a"><view wx:if="{{item.length}}" bindtap="handleProxy" data-eventid="{{'0'}}" data-comkey="{{$k}}" class="_div"></view></template>`,
+      { name: 'a' }
+    )
+  })
+
+  it('v-if && v-for && event', () => {
+    assertCodegen(
+      `<div><p v-if="item.length" v-for="item in list" @click="clickHandle"></p></div>`,
+      `<template name="a"><view class="_div"><view wx:if="{{item.length}}" bindtap="handleProxy" data-eventid="{{'0-'+index}}" data-comkey="{{$k}}" wx:for="{{list}}" wx:for-index="index" wx:for-item="item" class="_p"></view></view></template>`,
+      { name: 'a' }
+    )
+  })
+
+  it('v-for && event', () => {
+    assertCodegen(
+      `<div><p v-for="item in list" @click="clickHandle"></p></div>`,
+      `<template name="a"><view class="_div"><view bindtap="handleProxy" data-eventid="{{'0-'+index}}" data-comkey="{{$k}}" wx:for="{{list}}" wx:for-index="index" wx:for-item="item" class="_p"></view></view></template>`,
+      { name: 'a' }
+    )
+  })
+
   it('v-bind', () => {
     assertCodegen(
       `<div :a="s"></div>`,
@@ -327,7 +359,7 @@ describe('事件', () => {
   it('v-else', () => {
     assertCodegen(
       `<div><div v-if="type === 'A'" @click="logger('A')">A</div><div v-else-if="type === 'B'" @click="logger('B')">B</div><div v-else-if="type === 'C'" @click="logger('C')">C</div><div v-else @click="logger('Not A/B/C')">Not A/B/C</div></div>`,
-      `<template name="a"><view class="_div"><view wx:if="{{type === 'A'}}" bindtap="handleProxy" data-eventid="{{'4'}}" data-comkey="{{$k}}" class="_div">A</view><view wx:elif="{{type === 'B'}}" bindtap="handleProxy" data-eventid="{{'1'}}" data-comkey="{{$k}}" class="_div">B</view><view wx:elif="{{type === 'C'}}" bindtap="handleProxy" data-eventid="{{'2'}}" data-comkey="{{$k}}" class="_div">C</view><view wx:else bindtap="handleProxy" data-eventid="{{'3'}}" data-comkey="{{$k}}" class="_div">Not A/B/C</view></view></template>`,
+      `<template name="a"><view class="_div"><view wx:if="{{type === 'A'}}" bindtap="handleProxy" data-eventid="{{'3'}}" data-comkey="{{$k}}" class="_div">A</view><view wx:elif="{{type === 'B'}}" bindtap="handleProxy" data-eventid="{{'0'}}" data-comkey="{{$k}}" class="_div">B</view><view wx:elif="{{type === 'C'}}" bindtap="handleProxy" data-eventid="{{'1'}}" data-comkey="{{$k}}" class="_div">C</view><view wx:else bindtap="handleProxy" data-eventid="{{'2'}}" data-comkey="{{$k}}" class="_div">Not A/B/C</view></view></template>`,
       { name: 'a' }
     )
   })
