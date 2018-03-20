@@ -4145,7 +4145,7 @@ Object.defineProperty(Vue$3.prototype, '$ssrContext', {
 });
 
 Vue$3.version = '2.4.1';
-Vue$3.mpvueVersion = '1.0.5';
+Vue$3.mpvueVersion = '1.0.6';
 
 /* globals renderer */
 
@@ -4924,6 +4924,9 @@ function patch () {
 
 function callHook$1 (vm, hook, params) {
   var handlers = vm.$options[hook];
+  if (hook === 'onError') {
+    handlers = [handlers];
+  }
 
   var ret;
   if (handlers) {
@@ -4999,8 +5002,7 @@ function initMP (mpType, next) {
         mp.app = this;
         mp.status = 'launch';
         this.globalData.appOptions = mp.appOptions = options;
-
-        callHook$1(rootVueVM, 'onLaunch');
+        callHook$1(rootVueVM, 'onLaunch', options);
         next();
       },
 
@@ -5010,7 +5012,7 @@ function initMP (mpType, next) {
 
         mp.status = 'show';
         this.globalData.appOptions = mp.appOptions = options;
-        callHook$1(rootVueVM, 'onShow');
+        callHook$1(rootVueVM, 'onShow', options);
       },
 
       // Do something when app hide.
@@ -5086,7 +5088,7 @@ function initMP (mpType, next) {
         mp.query = query;
         mp.status = 'load';
         getGlobalData(app, rootVueVM);
-        callHook$1(rootVueVM, 'onLoad');
+        callHook$1(rootVueVM, 'onLoad', query);
       },
 
       // 生命周期函数--监听页面显示
