@@ -3,6 +3,7 @@ const { createInstance } = require('../helpers/index')
 // 生命周期
 describe('init mpvue with lifecycle', function () {
   const onLifecycle = []
+  const getOptions = {}
 
   function getComponentOptions (key = '') {
     return {
@@ -38,13 +39,16 @@ describe('init mpvue with lifecycle', function () {
         onLifecycle.push(`destroyed${key}`)
       },
       // lifycycle for wxmp
-      onLaunch () {
+      onLaunch (opt) {
+        getOptions.onLaunch = opt
         onLifecycle.push(`onLaunch${key}`)
       },
-      onLoad () {
+      onLoad (opt) {
+        getOptions.onLoad = opt
         onLifecycle.push(`onLoad${key}`)
       },
-      onShow () {
+      onShow (opt) {
+        getOptions.onShow = opt
         onLifecycle.push(`onShow${key}`)
       },
       onReady () {
@@ -83,11 +87,14 @@ describe('init mpvue with lifecycle', function () {
     app.$mount()
     expect(onLifecycle).toEqual(['beforeCreate', 'created', 'onLaunch', 'beforeMount', 'mounted', 'onShow'])
     expect(!!app.$mp.app).toEqual(true)
-    expect(app.$mp.appOptions).toEqual({
+    const opt = {
       path: 'pages/index/index',
       scene: 1001,
       query: {}
-    })
+    }
+    expect(app.$mp.appOptions).toEqual(opt)
+    expect(getOptions.onLaunch).toEqual(opt)
+    expect(getOptions.onShow).toEqual(opt)
     expect(app.$mp.mpType).toEqual('app')
     expect(app.$mp.status).toEqual('show')
   })
@@ -108,6 +115,7 @@ describe('init mpvue with lifecycle', function () {
     expect(onLifecycle).toEqual(['beforeCreate', 'created', 'onLoad', 'onShow', 'onReady', 'beforeMount', 'mounted'])
     expect(!!app.$mp.page).toEqual(true)
     expect(app.$mp.query).toEqual({})
+    expect(getOptions.onLoad).toEqual({})
     expect(app.$mp.appOptions).toEqual({
       path: 'pages/index/index',
       scene: 1001,
