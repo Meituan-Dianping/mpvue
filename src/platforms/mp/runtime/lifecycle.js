@@ -1,7 +1,10 @@
 import { handleError } from '../../../core/util/index'
 
 export function callHook (vm, hook, params) {
-  const handlers = vm.$options[hook]
+  let handlers = vm.$options[hook]
+  if (hook === 'onError') {
+    handlers = [handlers]
+  }
 
   let ret
   if (handlers) {
@@ -75,8 +78,7 @@ export function initMP (mpType, next) {
         mp.app = this
         mp.status = 'launch'
         this.globalData.appOptions = mp.appOptions = options
-
-        callHook(rootVueVM, 'onLaunch')
+        callHook(rootVueVM, 'onLaunch', options)
         next()
       },
 
@@ -84,7 +86,7 @@ export function initMP (mpType, next) {
       onShow (options = {}) {
         mp.status = 'show'
         this.globalData.appOptions = mp.appOptions = options
-        callHook(rootVueVM, 'onShow')
+        callHook(rootVueVM, 'onShow', options)
       },
 
       // Do something when app hide.
@@ -160,7 +162,7 @@ export function initMP (mpType, next) {
         mp.query = query
         mp.status = 'load'
         getGlobalData(app, rootVueVM)
-        callHook(rootVueVM, 'onLoad')
+        callHook(rootVueVM, 'onLoad', query)
       },
 
       // 生命周期函数--监听页面显示
