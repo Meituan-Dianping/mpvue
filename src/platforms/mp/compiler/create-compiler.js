@@ -16,7 +16,7 @@ export const createCompiler = createCompilerCreator(function baseCompile (
   options: CompilerOptions
 ): CompiledResult {
   const originAst = parse(template.trim(), options)
-  const ast = markComponent(originAst)
+  const ast = markComponent(originAst, options)
   optimize(ast, options)
   const code = generate(ast, options)
   return {
