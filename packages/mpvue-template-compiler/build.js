@@ -4094,10 +4094,10 @@ function getWxEleId (index, arr) {
 }
 
 // 检查不允许在 v-for 的时候出现2个及其以上相同 iterator1
-function checkRepeatIterator (arr) {
+function checkRepeatIterator (arr, options) {
   var len = arr.length;
   if (len > 1 && len !== new Set(arr).size) {
-    console.log('\n', '\x1b[31m', 'error: ', '嵌套的 v-for 不能连续使用相同的 iterator:', arr);
+    options.warn(("同一组件内嵌套的 v-for 不能连续使用相同的索引，目前为: " + arr), false);
   }
 }
 
@@ -4128,7 +4128,7 @@ function addAttr$1 (path, key, value, inVdom) {
   path.attrs.push({ name: key, value: value });
 }
 
-function mark (path, deps, iteratorArr) {
+function mark (path, options, deps, iteratorArr) {
   if ( iteratorArr === void 0 ) iteratorArr = [];
 
   fixDefaultIterator(path);
@@ -4146,21 +4146,20 @@ function mark (path, deps, iteratorArr) {
     currentArr.push(iterator1);
   }
 
-  checkRepeatIterator(currentArr);
+  checkRepeatIterator(currentArr, options);
 
   // 递归子节点
   if (children && children.length) {
     children.forEach(function (v, i) {
       // const counterIterator = children.slice(0, i).filter(v => v.for).map(v => v.for + '.length').join(`+'-'+`)
-      mark(v, deps, currentArr);
+      mark(v, options, deps, currentArr);
     });
   }
 
   // fix: v-else events
-  if (ifConditions && ifConditions.length && !ifConditions._handled) {
-    ifConditions._handled = true;
-    ifConditions.forEach(function (v, i) {
-      mark(v.block, deps, currentArr);
+  if (ifConditions && ifConditions.length > 1) {
+    ifConditions.slice(1).forEach(function (v, i) {
+      mark(v.block, options, deps, currentArr);
     });
   }
 
@@ -4192,9 +4191,9 @@ function mark (path, deps, iteratorArr) {
 
 // 全局的事件触发器 ID
 // let eIndex = 0
-function markComponent (ast) {
+function markComponent (ast, options) {
   var deps = { comIndex: 0, eventIndex: 0 };
-  mark(ast, deps);
+  mark(ast, options, deps);
 
   return ast
 }
@@ -4210,7 +4209,7 @@ var createCompiler = createCompilerCreator(function baseCompile (
   options
 ) {
   var originAst = parse(template$$1.trim(), options);
-  var ast = markComponent(originAst);
+  var ast = markComponent(originAst, options);
   optimize(ast, options);
   var code = generate$1(ast, options);
   return {
