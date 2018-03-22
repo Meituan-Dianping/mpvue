@@ -73,7 +73,7 @@ function getWebEventByMP (e) {
 
 export function handleProxyWithVue (e) {
   const rootVueVM = this.$root
-  const { type, target = {}, currentTarget = {}} = e
+  const { type, target = {}, currentTarget } = e
   const { dataset = {}} = currentTarget || target
   const { comkey = '', eventid } = dataset
   const vm = getVM(rootVueVM, comkey.split(','))
