@@ -167,8 +167,14 @@ export function initMP (mpType, next) {
 
       // 生命周期函数--监听页面显示
       onShow () {
+        mp.page = this
         mp.status = 'show'
         callHook(rootVueVM, 'onShow')
+
+        // 只有页面需要 setData
+        rootVueVM.$nextTick(() => {
+          rootVueVM._initDataToMP()
+        })
       },
 
       // 生命周期函数--监听页面初次渲染完成
@@ -177,23 +183,20 @@ export function initMP (mpType, next) {
 
         callHook(rootVueVM, 'onReady')
         next()
-
-        // 只有页面需要 setData
-        rootVueVM.$nextTick(() => {
-          rootVueVM._initDataToMP()
-        })
       },
 
       // 生命周期函数--监听页面隐藏
       onHide () {
         mp.status = 'hide'
         callHook(rootVueVM, 'onHide')
+        mp.page = null
       },
 
       // 生命周期函数--监听页面卸载
       onUnload () {
         mp.status = 'unload'
         callHook(rootVueVM, 'onUnload')
+        mp.page = null
       },
 
       // 页面相关事件处理函数--监听用户下拉动作
