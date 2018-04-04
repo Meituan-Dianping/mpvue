@@ -1,9 +1,12 @@
+<p align="center"><a href="http://mpvue.com" target="_blank" rel="noopener noreferrer"><img width="100" src="http://mpvue.com/assets/logo.png" alt="mpvue logo"></a></p>
+<p align="center">
+   <a href="https://www.npmjs.com/package/mpvue"><img src="https://img.shields.io/npm/v/mpvue.svg?style=flat" alt="npm"></a>
+   <a href="https://www.npmjs.com/package/mpvue"><img src="https://img.shields.io/npm/dm/mpvue.svg?style=flat" alt="npm"></a>
+ </p>
+
 # mpvue 
 > Vue.js 小程序版, fork 自 [vuejs/vue@2.4.1](https://github.com/vuejs/vue)，保留了 vue runtime 能力，添加了小程序平台的支持。
 
-![npm version](https://img.shields.io/npm/v/mpvue.svg?style=flat)
-
-<img src="http://mpvue.com/assets/logo.png" width="80">
 
 `mpvue` 是一个使用 [Vue.js](https://vuejs.org) 开发小程序的前端框架。框架基于 `Vue.js` 核心，`mpvue` 修改了 `Vue.js` 的 runtime 和 compiler 实现，使其可以运行在小程序环境中，从而为小程序开发引入了整套 `Vue.js` 开发体验。
 
@@ -13,7 +16,7 @@
 
 ## 实践案例
 
-美团旗下小程序：`美团汽车票` 和 `美团充电`，此外，正有一大批小程序正在接入中。
+美团旗下小程序：`美团火车票12306抢票``美团汽车票` 和 `美团充电`，此外，正有一大批小程序正在接入中。
 
 ## 快速开始
 
