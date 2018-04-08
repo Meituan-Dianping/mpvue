@@ -476,7 +476,6 @@ function handleError (err, vm, info) {
 }
 
 /*  */
-/* globals MutationObserver */
 
 // can we use __proto__?
 var hasProto = '__proto__' in {};
@@ -5342,7 +5341,20 @@ function getHandle (vnode, eventid, eventTypes) {
   var children = ref.children; if ( children === void 0 ) children = [];
   var componentInstance = ref.componentInstance;
   if (componentInstance) {
-    return res
+    // 增加 slot 情况的处理
+    // Object.values 会多增加几行编译后的代码
+    Object.keys(componentInstance.$slots).forEach(function (slotKey) {
+      var slot = componentInstance.$slots[slotKey];
+      var slots = Array.isArray(slot) ? slot : [slot];
+      slots.forEach(function (node) {
+        res = res.concat(getHandle(node, eventid, eventTypes));
+      });
+    });
+  } else {
+    // 避免遍历超出当前组件的 vm
+    children.forEach(function (node) {
+      res = res.concat(getHandle(node, eventid, eventTypes));
+    });
   }
 
   var attrs = data.attrs;
@@ -5358,10 +5370,6 @@ function getHandle (vnode, eventid, eventTypes) {
     });
     return res
   }
-
-  children.forEach(function (node) {
-    res = res.concat(getHandle(node, eventid, eventTypes));
-  });
 
   return res
 }
