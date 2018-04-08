@@ -27,7 +27,20 @@ function getHandle (vnode, eventid, eventTypes = []) {
 
   const { data = {}, children = [], componentInstance } = vnode || {}
   if (componentInstance) {
-    return res
+    // 增加 slot 情况的处理
+    // Object.values 会多增加几行编译后的代码
+    Object.keys(componentInstance.$slots).forEach(slotKey => {
+      const slot = componentInstance.$slots[slotKey]
+      const slots = Array.isArray(slot) ? slot : [slot]
+      slots.forEach(node => {
+        res = res.concat(getHandle(node, eventid, eventTypes))
+      })
+    })
+  } else {
+    // 避免遍历超出当前组件的 vm
+    children.forEach(node => {
+      res = res.concat(getHandle(node, eventid, eventTypes))
+    })
   }
 
   const { attrs, on } = data
@@ -42,10 +55,6 @@ function getHandle (vnode, eventid, eventTypes = []) {
     })
     return res
   }
-
-  children.forEach(node => {
-    res = res.concat(getHandle(node, eventid, eventTypes))
-  })
 
   return res
 }
