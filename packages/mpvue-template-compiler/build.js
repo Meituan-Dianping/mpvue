@@ -1676,7 +1676,6 @@ function handleError (err, vm, info) {
 }
 
 /*  */
-/* globals MutationObserver */
 
 // can we use __proto__?
 var hasProto = '__proto__' in {};
@@ -4352,7 +4351,7 @@ function transformDynamicClass (staticClass, clsBinding) {
   var result = babel.transform(("!" + clsBinding), { plugins: [transformObjectToTernaryOperator] });
   // 先实现功能，再优化代码
   // https://github.com/babel/babel/issues/7138
-  var cls = prettier.format(result.code, { semi: false, singleQuote: true }).slice(1).slice(0, -1).replace(/\n|\r/g, "");
+  var cls = prettier.format(result.code, { semi: false, singleQuote: true }).slice(1).slice(0, -1).replace(/\n|\r/g, '');
   return (staticClass + " {{" + cls + "}}")
 }
 
@@ -4360,7 +4359,7 @@ function transformDynamicStyle (staticStyle, styleBinding) {
   if ( staticStyle === void 0 ) staticStyle = '';
 
   var result = babel.transform(("!" + styleBinding), { plugins: [transformObjectToString] });
-  var cls = prettier.format(result.code, { semi: false, singleQuote: true }).slice(1).slice(0, -1).replace(/\n|\r/g, "");
+  var cls = prettier.format(result.code, { semi: false, singleQuote: true }).slice(1).slice(0, -1).replace(/\n|\r/g, '');
   return (staticStyle + " {{" + cls + "}}")
 }
 
@@ -4863,7 +4862,8 @@ function compileToWxml (compiled, options) {
     slot.code = generate$2(slot.node, options);
   });
 
-  return { code: code, compiled: compiled, slots: slots }
+  // TODO: 后期优化掉这种暴力全部 import，虽然对性能没啥大影响
+  return { code: code, compiled: compiled, slots: slots, importCode: importCode }
 }
 
 /*  */
