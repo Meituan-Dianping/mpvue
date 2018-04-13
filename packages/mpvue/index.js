@@ -476,7 +476,6 @@ function handleError (err, vm, info) {
 }
 
 /*  */
-/* globals MutationObserver */
 
 // can we use __proto__?
 var hasProto = '__proto__' in {};
@@ -4145,7 +4144,7 @@ Object.defineProperty(Vue$3.prototype, '$ssrContext', {
 });
 
 Vue$3.version = '2.4.1';
-Vue$3.mpvueVersion = '1.0.7';
+Vue$3.mpvueVersion = '1.0.8';
 
 /* globals renderer */
 
@@ -5342,7 +5341,20 @@ function getHandle (vnode, eventid, eventTypes) {
   var children = ref.children; if ( children === void 0 ) children = [];
   var componentInstance = ref.componentInstance;
   if (componentInstance) {
-    return res
+    // 增加 slot 情况的处理
+    // Object.values 会多增加几行编译后的代码
+    Object.keys(componentInstance.$slots).forEach(function (slotKey) {
+      var slot = componentInstance.$slots[slotKey];
+      var slots = Array.isArray(slot) ? slot : [slot];
+      slots.forEach(function (node) {
+        res = res.concat(getHandle(node, eventid, eventTypes));
+      });
+    });
+  } else {
+    // 避免遍历超出当前组件的 vm
+    children.forEach(function (node) {
+      res = res.concat(getHandle(node, eventid, eventTypes));
+    });
   }
 
   var attrs = data.attrs;
@@ -5358,10 +5370,6 @@ function getHandle (vnode, eventid, eventTypes) {
     });
     return res
   }
-
-  children.forEach(function (node) {
-    res = res.concat(getHandle(node, eventid, eventTypes));
-  });
 
   return res
 }
@@ -5416,6 +5424,11 @@ function handleProxyWithVue (e) {
   if (handles.length) {
     var event = getWebEventByMP(e);
     handles.forEach(function (h) { return h(event); });
+  } else {
+    var currentPage = vm.$mp.page.route;
+    console.group(new Date() + ' 事件警告');
+    console.warn(("Do not have handler in current page: " + currentPage + ". Please make sure that handler has been defined in " + currentPage + ", or " + currentPage + " has been added into app.json"));
+    console.groupEnd();
   }
 }
 

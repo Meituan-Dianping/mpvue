@@ -20,5 +20,6 @@ export function compileToWxml (compiled, options = {}) {
     slot.code = generate(slot.node, options)
   })
 
-  return { code, compiled, slots }
+  // TODO: 后期优化掉这种暴力全部 import，虽然对性能没啥大影响
+  return { code, compiled, slots, importCode }
 }
