@@ -100,9 +100,9 @@ export function handleProxyWithVue (e) {
     const event = getWebEventByMP(e)
     handles.forEach(h => h(event))
   } else {
-    const currentPage = vm.$mp.page.route
+    const { route } = rootVueVM.$mp.page
     console.group(new Date() + ' 事件警告')
-    console.warn(`Do not have handler in current page: ${currentPage}. Please make sure that handler has been defined in ${currentPage}, or ${currentPage} has been added into app.json`)
+    console.warn(`Do not have handler in current page: ${route}. Please make sure that handler has been defined in ${route}, or ${route} has been added into app.json`)
     console.groupEnd()
   }
 }
