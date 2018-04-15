@@ -76,6 +76,7 @@ function getWebEventByMP (e) {
 
   if (touches && touches.length) {
     Object.assign(event, touches[0])
+    event.touches = touches
   }
   return event
 }
