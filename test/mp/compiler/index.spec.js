@@ -320,6 +320,30 @@ describe('事件', () => {
     )
   })
 
+  it('@click.stop', () => {
+    assertCodegen(
+      `<a @click.stop="ddd"></a>`,
+      `<template name="a"><view catchtap="handleProxy" data-eventid="{{'0'}}" data-comkey="{{$k}}" class="_a"></view></template>`,
+      { name: 'a' }
+    )
+  })
+
+  it('@click.stop.capture', () => {
+    assertCodegen(
+      `<a @click.stop.capture="ddd"></a>`,
+      `<template name="a"><view capture-catch:tap="handleProxy" data-eventid="{{'0'}}" data-comkey="{{$k}}" class="_a"></view></template>`,
+      { name: 'a' }
+    )
+  })
+
+  it('@click.capture', () => {
+    assertCodegen(
+      `<a @click.capture="ddd"></a>`,
+      `<template name="a"><view capture-bind:tap="handleProxy" data-eventid="{{'0'}}" data-comkey="{{$k}}" class="_a"></view></template>`,
+      { name: 'a' }
+    )
+  })
+
   it('@load', () => {
     assertCodegen(
       `<a @load="ddd"></a>`,
