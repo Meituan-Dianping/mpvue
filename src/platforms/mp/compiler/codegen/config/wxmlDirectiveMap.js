@@ -30,7 +30,10 @@ export default {
     name: '',
     type: 1
   },
-  'v-html': noSupport,
+  'v-html': {
+    name: '',
+    type: 1
+  },
   'v-on': {
     name: '',
     map: {
