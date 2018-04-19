@@ -2,7 +2,7 @@
 
 import * as nodeOps from './node-ops'
 import { createPatchFunction } from 'core/vdom/patch'
-// import baseModules from 'core/vdom/modules/index'
+import baseModules from 'core/vdom/modules/index'
 // const platformModules = []
 // import platformModules from 'web/runtime/modules/index'
 
@@ -10,7 +10,7 @@ import { createPatchFunction } from 'core/vdom/patch'
 // built-in modules have been applied.
 // const modules = platformModules.concat(baseModules)
 
-export const corePatch: Function = createPatchFunction({ nodeOps, modules: [] })
+export const corePatch: Function = createPatchFunction({ nodeOps, modules: baseModules })
 
 export function patch () {
   corePatch.apply(this, arguments)
