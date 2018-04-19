@@ -274,6 +274,14 @@ describe('指令', () => {
     )
   })
 
+  it('v-html', () => {
+    assertCodegen(
+      `<div v-html="s"></div>`,
+      `<template name="a"><rich-text nodes="{{s}}" class="_div"></rich-text></template>`,
+      { name: 'a' }
+    )
+  })
+
   it('v-if', () => {
     assertCodegen(
       `<div v-if="s"></div>`,
