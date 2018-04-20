@@ -49,6 +49,9 @@ export default {
           text: `{{${val}}}`,
           type: 3
         })
+      } else if (key === 'v-html') {
+        ast.tag = 'rich-text'
+        attrs['nodes'] = '{{' + val + '}}'
       } else if (key === 'v-show') {
         attrs['hidden'] = `{{!(${val})}}`
       } else if (/^v\-on\:/i.test(key)) {
@@ -115,7 +118,15 @@ export default {
       wxmlEventName = eventMap.map[eventName]
     }
 
-    wxmlEventName = (eventNameMap.includes('stop') ? 'catch' : 'bind') + (wxmlEventName || eventName)
+    let eventType = 'bind'
+    const isStop = eventNameMap.includes('stop')
+    if (eventNameMap.includes('capture')) {
+      eventType = isStop ? 'capture-catch:' : 'capture-bind:'
+    } else if (isStop) {
+      eventType = 'catch'
+    }
+
+    wxmlEventName = eventType + (wxmlEventName || eventName)
     attrs[wxmlEventName] = 'handleProxy'
 
     return attrs
