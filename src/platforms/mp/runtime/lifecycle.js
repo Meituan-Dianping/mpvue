@@ -210,9 +210,8 @@ export function initMP (mpType, next) {
       },
 
       // 用户点击右上角分享
-      onShareAppMessage (options) {
-        return callHook(rootVueVM, 'onShareAppMessage', options)
-      },
+      onShareAppMessage: rootVueVM.$options.onShareAppMessage
+        ? options => callHook(rootVueVM, 'onShareAppMessage', options) : null,
 
       // Do something when page scroll
       onPageScroll (options) {
