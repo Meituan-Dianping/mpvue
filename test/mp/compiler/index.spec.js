@@ -274,6 +274,14 @@ describe('指令', () => {
     )
   })
 
+  it('v-html', () => {
+    assertCodegen(
+      `<div v-html="s"></div>`,
+      `<template name="a"><rich-text nodes="{{s}}" class="_div"></rich-text></template>`,
+      { name: 'a' }
+    )
+  })
+
   it('v-if', () => {
     assertCodegen(
       `<div v-if="s"></div>`,
@@ -316,6 +324,30 @@ describe('事件', () => {
     assertCodegen(
       `<a @click="ddd"></a>`,
       `<template name="a"><view bindtap="handleProxy" data-eventid="{{'0'}}" data-comkey="{{$k}}" class="_a"></view></template>`,
+      { name: 'a' }
+    )
+  })
+
+  it('@click.stop', () => {
+    assertCodegen(
+      `<a @click.stop="ddd"></a>`,
+      `<template name="a"><view catchtap="handleProxy" data-eventid="{{'0'}}" data-comkey="{{$k}}" class="_a"></view></template>`,
+      { name: 'a' }
+    )
+  })
+
+  it('@click.stop.capture', () => {
+    assertCodegen(
+      `<a @click.stop.capture="ddd"></a>`,
+      `<template name="a"><view capture-catch:tap="handleProxy" data-eventid="{{'0'}}" data-comkey="{{$k}}" class="_a"></view></template>`,
+      { name: 'a' }
+    )
+  })
+
+  it('@click.capture', () => {
+    assertCodegen(
+      `<a @click.capture="ddd"></a>`,
+      `<template name="a"><view capture-bind:tap="handleProxy" data-eventid="{{'0'}}" data-comkey="{{$k}}" class="_a"></view></template>`,
       { name: 'a' }
     )
   })
