@@ -4250,7 +4250,10 @@ var wxmlDirectiveMap = {
     name: '',
     type: 1
   },
-  'v-html': noSupport,
+  'v-html': {
+    name: '',
+    type: 1
+  },
   'v-on': {
     name: '',
     map: {
@@ -4399,6 +4402,9 @@ var attrs = {
           text: ("{{" + val + "}}"),
           type: 3
         });
+      } else if (key === 'v-html') {
+        ast.tag = 'rich-text';
+        attrs['nodes'] = '{{' + val + '}}';
       } else if (key === 'v-show') {
         attrs['hidden'] = "{{!(" + val + ")}}";
       } else if (/^v\-on\:/i.test(key)) {
@@ -4472,7 +4478,15 @@ var attrs = {
       wxmlEventName = eventMap.map[eventName];
     }
 
-    wxmlEventName = (eventNameMap.includes('stop') ? 'catch' : 'bind') + (wxmlEventName || eventName);
+    var eventType = 'bind';
+    var isStop = eventNameMap.includes('stop');
+    if (eventNameMap.includes('capture')) {
+      eventType = isStop ? 'capture-catch:' : 'capture-bind:';
+    } else if (isStop) {
+      eventType = 'catch';
+    }
+
+    wxmlEventName = eventType + (wxmlEventName || eventName);
     attrs[wxmlEventName] = 'handleProxy';
 
     return attrs

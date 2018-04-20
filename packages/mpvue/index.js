@@ -4269,6 +4269,21 @@ var nodeOps = Object.freeze({
 
 /*  */
 
+var ref = {
+  create: function create (_, vnode) {
+    registerRef(vnode);
+  },
+  update: function update (oldVnode, vnode) {
+    if (oldVnode.data.ref !== vnode.data.ref) {
+      registerRef(oldVnode, true);
+      registerRef(vnode);
+    }
+  },
+  destroy: function destroy (vnode) {
+    registerRef(vnode, true);
+  }
+};
+
 function registerRef (vnode, isRemoval) {
   var key = vnode.data.ref;
   if (!key) { return }
@@ -4913,8 +4928,9 @@ function createPatchFunction (backend) {
 // the directive module should be applied last, after all
 // built-in modules have been applied.
 // const modules = platformModules.concat(baseModules)
+var modules = [ref];
 
-var corePatch = createPatchFunction({ nodeOps: nodeOps, modules: [] });
+var corePatch = createPatchFunction({ nodeOps: nodeOps, modules: modules });
 
 function patch () {
   corePatch.apply(this, arguments);
@@ -5135,9 +5151,8 @@ function initMP (mpType, next) {
       },
 
       // 用户点击右上角分享
-      onShareAppMessage: function onShareAppMessage (options) {
-        return callHook$1(rootVueVM, 'onShareAppMessage', options)
-      },
+      onShareAppMessage: rootVueVM.$options.onShareAppMessage
+        ? function (options) { return callHook$1(rootVueVM, 'onShareAppMessage', options); } : null,
 
       // Do something when page scroll
       onPageScroll: function onPageScroll (options) {
@@ -5397,6 +5412,7 @@ function getWebEventByMP (e) {
 
   if (touches && touches.length) {
     Object.assign(event, touches[0]);
+    event.touches = touches;
   }
   return event
 }
@@ -5425,9 +5441,10 @@ function handleProxyWithVue (e) {
     var event = getWebEventByMP(e);
     handles.forEach(function (h) { return h(event); });
   } else {
-    var currentPage = vm.$mp.page.route;
+    var ref$1 = rootVueVM.$mp.page;
+    var route = ref$1.route;
     console.group(new Date() + ' 事件警告');
-    console.warn(("Do not have handler in current page: " + currentPage + ". Please make sure that handler has been defined in " + currentPage + ", or " + currentPage + " has been added into app.json"));
+    console.warn(("Do not have handler in current page: " + route + ". Please make sure that handler has been defined in " + route + ", or " + route + " has been added into app.json"));
     console.groupEnd();
   }
 }
