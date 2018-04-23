@@ -2,7 +2,7 @@ import { handleError } from '../../../core/util/index'
 
 export function callHook (vm, hook, params) {
   let handlers = vm.$options[hook]
-  if (hook === 'onError') {
+  if (hook === 'onError' && handlers) {
     handlers = [handlers]
   }
 
