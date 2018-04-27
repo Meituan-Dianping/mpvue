@@ -4404,7 +4404,7 @@ var attrs = {
         });
       } else if (key === 'v-html') {
         ast.tag = 'rich-text';
-        attrs['nodes'] = '{{' + val + '}}';
+        attrs['nodes'] = "{{" + val + "}}";
       } else if (key === 'v-show') {
         attrs['hidden'] = "{{!(" + val + ")}}";
       } else if (/^v\-on\:/i.test(key)) {
