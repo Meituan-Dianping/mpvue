@@ -4144,7 +4144,7 @@ Object.defineProperty(Vue$3.prototype, '$ssrContext', {
 });
 
 Vue$3.version = '2.4.1';
-Vue$3.mpvueVersion = '1.0.8';
+Vue$3.mpvueVersion = '1.0.9';
 
 /* globals renderer */
 
@@ -4939,7 +4939,7 @@ function patch () {
 
 function callHook$1 (vm, hook, params) {
   var handlers = vm.$options[hook];
-  if (hook === 'onError') {
+  if (hook === 'onError' && handlers) {
     handlers = [handlers];
   }
 
@@ -5007,7 +5007,7 @@ function initMP (mpType, next) {
       },
 
       handleProxy: function handleProxy (e) {
-        rootVueVM.$handleProxyWithVue(e);
+        return rootVueVM.$handleProxyWithVue(e)
       },
 
       // Do something initial when launch.
@@ -5048,7 +5048,7 @@ function initMP (mpType, next) {
       },
       methods: {
         handleProxy: function handleProxy (e) {
-          rootVueVM.$handleProxyWithVue(e);
+          return rootVueVM.$handleProxyWithVue(e)
         }
       },
       // mp lifecycle for vue
@@ -5093,7 +5093,7 @@ function initMP (mpType, next) {
       },
 
       handleProxy: function handleProxy (e) {
-        rootVueVM.$handleProxyWithVue(e);
+        return rootVueVM.$handleProxyWithVue(e)
       },
 
       // mp lifecycle for vue
@@ -5439,12 +5439,17 @@ function handleProxyWithVue (e) {
   // https://developer.mozilla.org/zh-CN/docs/Web/API/Event
   if (handles.length) {
     var event = getWebEventByMP(e);
+    if (handles.length === 1) {
+      var result = handles[0](event);
+      return result
+    }
     handles.forEach(function (h) { return h(event); });
   } else {
+    // TODO, 在初始化时进行判断或直接使用 vue 本身的错误提示
     var ref$1 = rootVueVM.$mp.page;
     var route = ref$1.route;
     console.group(new Date() + ' 事件警告');
-    console.warn(("Do not have handler in current page: " + route + ". Please make sure that handler has been defined in " + route + ", or " + route + " has been added into app.json"));
+    console.warn(("Do not have handler in current page: " + route + ". Please make sure that handler has been defined in " + route + ", or not use handler with 'v-if'"));
     console.groupEnd();
   }
 }
