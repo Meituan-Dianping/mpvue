@@ -2,7 +2,7 @@ import { handleError } from '../../../core/util/index'
 
 export function callHook (vm, hook, params) {
   let handlers = vm.$options[hook]
-  if (hook === 'onError') {
+  if (hook === 'onError' && handlers) {
     handlers = [handlers]
   }
 
@@ -70,7 +70,7 @@ export function initMP (mpType, next) {
       },
 
       handleProxy (e) {
-        rootVueVM.$handleProxyWithVue(e)
+        return rootVueVM.$handleProxyWithVue(e)
       },
 
       // Do something initial when launch.
@@ -107,7 +107,7 @@ export function initMP (mpType, next) {
       },
       methods: {
         handleProxy (e) {
-          rootVueVM.$handleProxyWithVue(e)
+          return rootVueVM.$handleProxyWithVue(e)
         }
       },
       // mp lifecycle for vue
@@ -152,7 +152,7 @@ export function initMP (mpType, next) {
       },
 
       handleProxy (e) {
-        rootVueVM.$handleProxyWithVue(e)
+        return rootVueVM.$handleProxyWithVue(e)
       },
 
       // mp lifecycle for vue
