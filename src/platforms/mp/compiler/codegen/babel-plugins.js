@@ -33,7 +33,7 @@ const objectToStringVisitor = {
       const keyStr = getStrByNode(propertyItem.key, true)
       const key = keyStr ? hyphenate(keyStr) : keyStr
       const { code: val } = generate(t.ExpressionStatement(propertyItem.value))
-      return `'${key}:' + ${val.slice(0, -1)} + ';'`
+      return `'${key}:' + (${val.slice(0, -1)}) + ';'`
     }).join('+')
 
     const p = template(expression)({})
