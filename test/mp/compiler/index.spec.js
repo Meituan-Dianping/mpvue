@@ -217,12 +217,17 @@ describe('指令', () => {
   it('v-bind:style', () => {
     assertCodegen(
       `<div v-bind:style="{ color: activeColor, fontSize: fontSize + 'px' }">111</div>`,
-      `<template name="a"><view class="_div" style=" {{('color:' + activeColor + ';' + 'font-size:' + fontSize + 'px' + ';')}}">111</view></template>`,
+      `<template name="a"><view class="_div" style=" {{('color:' + activeColor + ';' + 'font-size:' + (fontSize + 'px') + ';')}}">111</view></template>`,
+      { name: 'a' }
+    )
+    assertCodegen(
+      `<div v-bind:style="{ color: a === b ? activeColor : color, fontSize: fontSize + 'px' }">111</div>`,
+      `<template name="a"><view class="_div" style=" {{(  'color:' +  (a === b ? activeColor : color) +  ';' +  'font-size:' +  (fontSize + 'px') +  ';')}}">111</view></template>`,
       { name: 'a' }
     )
     assertCodegen(
       `<div v-bind:style="[{ color: activeColor, fontSize: fontSize + 'px' }]">111</div>`,
-      `<template name="a"><view class="_div" style=" {{['color:' + activeColor + ';' + 'font-size:' + fontSize + 'px' + ';']}}">111</view></template>`,
+      `<template name="a"><view class="_div" style=" {{['color:' + activeColor + ';' + 'font-size:' + (fontSize + 'px') + ';']}}">111</view></template>`,
       { name: 'a' }
     )
     assertCodegen(
