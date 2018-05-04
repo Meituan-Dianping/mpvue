@@ -20,6 +20,42 @@ import { getComKey } from '../util/index'
 //   }
 // }
 
+const removeVModelDataKeys = (function () {
+  const cacheVModel = {}
+  return function (vModel, vm, dataKeys) {
+    vModel.forEach(function (item) {
+      if (vm[item] === cacheVModel[item]) {
+        const index = dataKeys.indexOf(item)
+        if (index !== -1) {
+          dataKeys.splice(index, 1)
+        }
+        return
+      }
+      cacheVModel[item] = vm[item]
+    })
+  }
+}())
+
+function extractVModelKey (vnode, vModel) {
+  const directiveName = 'v-model'
+  const filterTagName = 'input'
+  if (!vnode.tag) {
+    return vModel
+  }
+  if (vnode.tag === filterTagName && vnode.data.directives && vnode.data.directives.length) {
+    vnode.data.directives.forEach(function (item) {
+      if (item.rawName === directiveName && vModel.indexOf(item.expression) === -1) {
+        vModel.push(item.expression)
+      }
+    })
+  }
+  if (vnode.children && vnode.children.length) {
+    vnode.children.forEach(function (item) {
+      extractVModelKey(item, vModel)
+    })
+  }
+}
+
 function getVmData (vm) {
   // 确保当前 vm 所有数据被同步
   const dataKeys = [].concat(
@@ -27,6 +63,13 @@ function getVmData (vm) {
     Object.keys(vm._props || {}),
     Object.keys(vm._computedWatchers || {})
   )
+  // 修复 input 问题 https://github.com/Meituan-Dianping/mpvue/issues/353
+  // 默认值设置后不在执行setData
+  if (vm._vnode) {
+    const vModel = []
+    extractVModelKey(vm._vnode, vModel)
+    removeVModelDataKeys(vModel, vm, dataKeys)
+  }
   return dataKeys.reduce((res, key) => {
     res[key] = vm[key]
     return res
