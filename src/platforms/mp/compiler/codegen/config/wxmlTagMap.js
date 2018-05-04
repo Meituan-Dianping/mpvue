@@ -143,6 +143,7 @@ export default {
   'image': 'image',
   // 'video': 'video',
   'map': 'map',
+  'web-view': 'web-view',
   // 'canvas': 'canvas',
   'contact-button': 'contact-button',
   'block': 'block'
