@@ -4337,7 +4337,7 @@ var objectToStringVisitor = {
       var key = keyStr ? hyphenate(keyStr) : keyStr;
       var ref = generate(t.ExpressionStatement(propertyItem.value));
       var val = ref.code;
-      return ("'" + key + ":' + " + (val.slice(0, -1)) + " + ';'")
+      return ("'" + key + ":' + (" + (val.slice(0, -1)) + ") + ';'")
     }).join('+');
 
     var p = template(expression)({});
