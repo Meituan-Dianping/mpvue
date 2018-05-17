@@ -25,6 +25,7 @@ function getVmData (vm) {
   const dataKeys = [].concat(
     Object.keys(vm._data || {}),
     Object.keys(vm._props || {}),
+    Object.keys(vm._mpProps || {}),
     Object.keys(vm._computedWatchers || {})
   )
   return dataKeys.reduce((res, key) => {
