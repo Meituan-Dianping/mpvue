@@ -4580,7 +4580,7 @@ var component = {
     var mpcomid = ast.mpcomid;
     var slots = ast.slots;
     if (slotName) {
-      attrsMap['data'] = "{{...$root[$p], $root}}";
+      attrsMap['data'] = "{{...$root[$k], $root}}";
       attrsMap['is'] = "{{" + slotName + "}}";
     } else {
       var slotsName = getSlotsName(slots);

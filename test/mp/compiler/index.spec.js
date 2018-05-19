@@ -528,7 +528,7 @@ describe('slot', () => {
   it('插槽', () => {
     assertCodegen(
       `<div><slot>test</slot></div>`,
-      `<template name="a"><view class="_div testModuleId"><template name="default">test</template><template data="{{...$root[$p], $root}}" is="{{$slotdefault || 'default'}}"></template></view></template>`,
+      `<template name="a"><view class="_div testModuleId"><template name="default">test</template><template data="{{...$root[$k], $root}}" is="{{$slotdefault || 'default'}}"></template></view></template>`,
       {
         name: 'a',
         moduleId: 'testModuleId'
@@ -539,7 +539,7 @@ describe('slot', () => {
   it('使用', () => {
     assertCodegen(
       `<div><slot name="w">test</slot></div>`,
-      `<template name="a"><view class="_div"><template name="w">test</template><template data="{{...$root[$p], $root}}" is="{{$slotw || 'w'}}"></template></view></template>`,
+      `<template name="a"><view class="_div"><template name="w">test</template><template data="{{...$root[$k], $root}}" is="{{$slotw || 'w'}}"></template></view></template>`,
       {
         name: 'a'
       }

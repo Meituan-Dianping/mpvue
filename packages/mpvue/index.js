@@ -4144,7 +4144,7 @@ Object.defineProperty(Vue$3.prototype, '$ssrContext', {
 });
 
 Vue$3.version = '2.4.1';
-Vue$3.mpvueVersion = '1.0.9';
+Vue$3.mpvueVersion = '1.0.11';
 
 /* globals renderer */
 
@@ -4974,6 +4974,48 @@ function getGlobalData (app, rootVueVM) {
   }
 }
 
+/**
+ * 格式化 properties 属性，并给每个属性加上 observer 方法
+ */
+function normalizeProperties (vm) {
+  var properties = vm.$options.properties || {};
+  var res = {};
+  var val;
+  var loop = function ( key ) {
+    val = isPlainObject(properties[key])
+      ? properties[key]
+      : { type: properties[key] };
+    res[key] = {
+      type: val.type,
+      value: val.value,
+      observer: function observer (newVal, oldVal) {
+        vm[key] = newVal; // 先修改值再触发原始的 observer，跟 watch 行为保持一致
+        if (typeof val.observer === 'function') {
+          val.observer.call(vm, newVal, oldVal);
+        }
+      }
+    };
+  };
+
+  for (var key in properties) loop( key );
+  return res
+}
+
+/**
+ * 把 properties 中的属性 proxy 到 vm 上
+ */
+function initMpProps (vm) {
+  var mpProps = vm._mpProps = {};
+  var keys = Object.keys(vm.$options.properties || {});
+  keys.forEach(function (key) {
+    if (!(key in vm)) {
+      proxy(vm, '_mpProps', key);
+      mpProps[key] = undefined; // for observe
+    }
+  });
+  observe(mpProps, true);
+}
+
 function initMP (mpType, next) {
   var rootVueVM = this.$root;
   if (!rootVueVM.$mp) {
@@ -5041,7 +5083,11 @@ function initMP (mpType, next) {
       }
     });
   } else if (mpType === 'component') {
+    initMpProps(rootVueVM);
+
     global.Component({
+      // 小程序原生的组件属性
+      properties: normalizeProperties(rootVueVM),
       // 页面的初始数据
       data: {
         $root: {}
@@ -5192,6 +5238,7 @@ function getVmData (vm) {
   var dataKeys = [].concat(
     Object.keys(vm._data || {}),
     Object.keys(vm._props || {}),
+    Object.keys(vm._mpProps || {}),
     Object.keys(vm._computedWatchers || {})
   );
   return dataKeys.reduce(function (res, key) {
