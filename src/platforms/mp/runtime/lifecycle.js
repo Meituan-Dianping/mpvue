@@ -1,4 +1,7 @@
-import { handleError } from '../../../core/util/index'
+import { isPlainObject } from 'shared/util'
+import { handleError } from 'core/util/index'
+import { observe } from 'core/observer/index'
+import { proxy } from 'core/instance/state'
 
 export function callHook (vm, hook, params) {
   let handlers = vm.$options[hook]
@@ -35,6 +38,46 @@ function getGlobalData (app, rootVueVM) {
   if (app && app.globalData) {
     mp.appOptions = app.globalData.appOptions
   }
+}
+
+/**
+ * 格式化 properties 属性，并给每个属性加上 observer 方法
+ */
+function normalizeProperties (vm) {
+  const properties = vm.$options.properties || {}
+  const res = {}
+  let val
+  for (const key in properties) {
+    val = isPlainObject(properties[key])
+      ? properties[key]
+      : { type: properties[key] }
+    res[key] = {
+      type: val.type,
+      value: val.value,
+      observer (newVal, oldVal) {
+        vm[key] = newVal // 先修改值再触发原始的 observer，跟 watch 行为保持一致
+        if (typeof val.observer === 'function') {
+          val.observer.call(vm, newVal, oldVal)
+        }
+      }
+    }
+  }
+  return res
+}
+
+/**
+ * 把 properties 中的属性 proxy 到 vm 上
+ */
+function initMpProps (vm) {
+  const mpProps = vm._mpProps = {}
+  const keys = Object.keys(vm.$options.properties || {})
+  keys.forEach(key => {
+    if (!(key in vm)) {
+      proxy(vm, '_mpProps', key)
+      mpProps[key] = undefined // for observe
+    }
+  })
+  observe(mpProps, true)
 }
 
 export function initMP (mpType, next) {
@@ -100,7 +143,11 @@ export function initMP (mpType, next) {
       }
     })
   } else if (mpType === 'component') {
+    initMpProps(rootVueVM)
+
     global.Component({
+      // 小程序原生的组件属性
+      properties: normalizeProperties(rootVueVM),
       // 页面的初始数据
       data: {
         $root: {}
