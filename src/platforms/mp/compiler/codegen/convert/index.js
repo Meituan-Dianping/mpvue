@@ -53,13 +53,13 @@ function convertAst (node, options = {}, util) {
         const isDefault = Array.isArray(n)
         const slotName = isDefault ? 'default' : n.attrsMap.slot
         const slotId = `${moduleId}-${slotName}-${mpcomid.replace(/\'/g, '')}`
-        const node = isDefault ? { tag: 'slot', attrsMap: {}, children: n } : n
+        const _node = isDefault ? { tag: 'slot', attrsMap: {}, children: n } : n
 
-        node.tag = 'template'
-        node.attrsMap.name = slotId
-        delete node.attrsMap.slot
+        _node.tag = 'template'
+        _node.attrsMap.name = slotId
+        delete _node.attrsMap.slot
         // 缓存，会集中生成一个 slots 文件
-        slots[slotId] = { node: convertAst(node, options, util), name: slotName, slotId }
+        slots[slotId] = { node: convertAst(_node, options, util), name: slotName, slotId, depth: computeDepth(node, components) }
         wxmlAst.slots[slotName] = slotId
       })
     // 清理当前组件下的节点信息，因为 slot 都被转移了
@@ -103,5 +103,17 @@ export default function wxmlAst (compiled, options = {}, log) {
     wxast,
     deps,
     slots
+  }
+}
+
+// 计算当前slot嵌套组件的深度，因为是从父开始向上查找，所以从1开始，而且至少有1层
+function computeDepth (node, components, depth = 1) {
+  if (node.parent) {
+    if (component.isComponent(node.parent.tag, components)) {
+      depth++;
+    }
+    return computeDepth(node.parent, components, depth)
+  } else {
+    return depth
   }
 }
