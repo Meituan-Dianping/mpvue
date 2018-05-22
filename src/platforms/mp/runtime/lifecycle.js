@@ -172,7 +172,7 @@ export function initMP (mpType, next) {
       ready () {
         mp.status = 'ready'
 
-        callHook(rootVueVM, 'onReady')
+        callHook(rootVueVM, 'ready')
         next()
 
         // 只有页面需要 setData
