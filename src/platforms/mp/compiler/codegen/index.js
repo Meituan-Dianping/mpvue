@@ -18,15 +18,15 @@ export function compileToWxml (compiled, options = {}) {
   Object.keys(slots).forEach(k => {
     const slot = slots[k]
     let row = generate(slot.node, options)
-
     // slot中的表达式，即{{}}包裹的代码需要加上作用域
     slot.code = (row || '').split(splitExpressionReg).map(expression => {
-      if (isExpressionReg.test(expression) && !/\$root/.test(expression)) {
+      if (isExpression(expression) && !/\$root/.test(expression)) {
         return handleExpression(expression, slot.depth)
       } else {
         return expression
       }
     }).join('')
+    delete slot.depth
   })
 
   // TODO: 后期优化掉这种暴力全部 import，虽然对性能没啥大影响
@@ -34,23 +34,29 @@ export function compileToWxml (compiled, options = {}) {
 }
 
 const splitExpressionReg = /(\{\{.+?\}\})/
-const isExpressionReg = /\{\{(.+?)\}\}/
-const isStaticReg = /(^'.*'$)|(^".*"$)/
 const splitStaticWordReg = /('.+?')|(".+?")/
-const splitWordReg = /([\{\}\(\)\*\/\?\!\[\]\:\=\+\-><\s])/
+const splitWordReg = /([\{\}\(\)\*\/\?\!\[\]\:\=\+\-\|\&\^\~`><,;%\s])/
 
 function isVar (s) {
-  return /^[a-zA-Z_$]/.test(s)
+  return /^[a-zA-Z_$].+/.test(s)
+}
+
+function isExpression (s) {
+  return /\{\{(.+?)\}\}/.test(s)
 }
 
 function isKeyWord (s) {
   return ['null', 'undefined', 'false', 'true'].indexOf(s) >= 0
 }
 
+function isStatic (s) {
+  return /(^'.*'$)|(^".*"$)/.test(s)
+}
+
 // 处理表达式
 function handleExpression (ex, depth) {
   return ex.split(splitStaticWordReg).map(m => {
-    if (m && !isStaticReg.test(m)) {
+    if (m && !isStatic(m)) {
       // 非静态字段
       return m.split(splitWordReg).map(s => {
         if (s && !isKeyWord(s) && isVar(s)) {
