@@ -14,6 +14,13 @@ function assertCodegen (template, assertTemplate, options, parmas = {}) {
   // expect(output.code.replace(/\n/g, '')).toMatch(strToRegExp(assertTemplate))
 }
 
+function assertSlot (template, outputSlot, options) {
+  const compiled = compile(template, {})
+  const output = compileToWxml(compiled, options)
+  const slotWxml = Object.values(output.slots).map(({code}) => code).join('')
+  expect(slotWxml).toEqual(outputSlot)
+}
+
 describe('a', () => {
   it('tag a', () => {
     assertCodegen(
@@ -608,6 +615,62 @@ describe('slot', () => {
         errors: ['Cannot use <template> as component root element because it may contain multiple nodes.'],
         mpTips: ['template 不支持此属性-> class="baz boo"'],
         mpErrors: []
+      }
+    )
+  })
+  it('slot expression', () => {
+    assertSlot(
+      `<card><p v-if="test">1-{{test}}</p></card>`,
+      `<template name="hashValue-default-0"><view wx:if="{{$root[$p].test}}" class="_p hashValue">1-{{$root[$p].test}}</view></template>`,
+      {
+        name: 'a',
+        components: {
+          card: {
+            name: 'card',
+            src: '/components/card'
+          }
+        },
+        moduleId: 'hashValue'
+      }
+    )
+  })
+  it('slot nested', () => {
+    assertSlot(
+      `<child><flag><div><flag2><div><div>3层{{product.desc||product.desc}}3层{{product.desc}}</div></div></flag2><p>2层--{{product.desc}}</p></div></flag></child>`,
+      `<template name="hashValue-default-0"><view class="_div hashValue"><view class="_div hashValue">3层{{$root[$root[$root[$p].$p].$p].product.desc||$root[$root[$root[$p].$p].$p].product.desc}}3层{{$root[$root[$root[$p].$p].$p].product.desc}}</view></view></template><template name="hashValue-default-1"><view class="_div hashValue"><template data="{{...$root[$kk+'0'], $root, $slotdefault:'hashValue-default-0'}}" is="flag2$7da6dfb7"></template><view class="_p hashValue">2层--{{$root[$root[$p].$p].product.desc}}</view></view></template><template name="hashValue-default-2"><template data="{{...$root[$kk+'1'], $root, $slotdefault:'hashValue-default-1'}}" is="flag$784cf475"></template></template>`,
+      {
+        name: 'index$630730ba',
+        components: {
+          child: {
+            src: 'child$30dc213a',
+            name: 'child$30dc213a'
+          },
+          flag: {
+            src: 'flag$784cf475',
+            name: 'flag$784cf475'
+          },
+          flag2: {
+            src: 'flag2$7da6dfb7',
+            name: 'flag2$7da6dfb7',
+          }
+        },
+        moduleId: 'hashValue'
+      }
+    )
+  })
+  it('slot complex expression', () => {
+    assertSlot(
+      `<card><p>{{width + 12 === 20 ? '123' : width}}</p><p>{{(1 + width) * 12 / 11}}</p></card>`,
+      `<template name="hashValue-default-0"><view class="_p hashValue">{{$root[$p].width + 12 === 20 ? '123' : $root[$p].width}}</view><view class="_p hashValue">{{(1 + $root[$p].width) * 12 / 11}}</view></template>`,
+      {
+        name: 'a',
+        components: {
+          card: {
+            src: '/component/card',
+            name: 'card'
+          }
+        },
+        moduleId: 'hashValue'
       }
     )
   })
