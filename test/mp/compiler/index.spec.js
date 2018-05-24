@@ -674,6 +674,22 @@ describe('slot', () => {
       }
     )
   })
+  it('slot width props', () => {
+    assertSlot(
+      `<card><p v-if="test + '12'" :class="{'is-active': test + 1 === '2'}"></p></card>`,
+      `<template name="hashValue-default-0"><view wx:if="{{$root[$p].test + '12'}}" class="_p hashValue {{[$root[$p].test + 1 === '2' ? 'is-active' : '']}}"></view></template>`,
+      {
+        name: 'a',
+        components: {
+          card: {
+            src: '/component/card',
+            name: 'card'
+          }
+        },
+        moduleId: 'hashValue'
+      }
+    )
+  })
 })
 describe('web-view', () => {
   it('web-view', () => {
