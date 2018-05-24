@@ -23,4 +23,8 @@ exports.mpLifecycleHooks = `'onLaunch',
   'onReachBottom',
   'onShareAppMessage',
   'onPageScroll',
-  'onTabItemTap'`
+  'onTabItemTap',
+  'attached',
+  'ready',
+  'moved',
+  'detached'`
