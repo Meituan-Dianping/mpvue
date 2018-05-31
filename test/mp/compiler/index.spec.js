@@ -546,10 +546,43 @@ describe('slot', () => {
     )
   })
 
-  it('slot name', () => {
+  it('组件定义-默认slot和具名slot', () => {
     assertCodegen(
-      `<card class="baz boo"><a slot="header">test</a></card>`,
-      `<import src="/components/card" /><template name="a"><template data="{{...$root[$kk+'0'], $root, $slotdefault:'hashValue-default-0',$slotheader:'hashValue-header-0'}}" is="card"></template></template>`,
+      `<div class="child"><slot>{{text}}</slot><slot name="other">{{otherText}}</slot></div>`,
+      `<template name="a"><view class="_div child"><template name="default">{{text}}</template><template name="other">{{otherText}}</template><template data="{{...$root[$k], $root}}" is="{{$slotdefault || 'default'}}"></template><template data="{{...$root[$k], $root}}" is="{{$slotother || 'other'}}"></template></view></template>`,
+      {
+        name: 'a'
+      }
+    )
+  })
+
+  it('使用默认slot', () => {
+    assertCodegen(
+      `<card class="baz boo"><div>{{test}}</div></card>`,
+      `<import src="/components/card" /><template name="a"><template data="{{...$root[$kk+'0'], $root, $slotdefault:'hashValue-default-0'}}" is="card"></template></template>`,
+      {
+        name: 'a',
+        components: {
+          card: {
+            name: 'card',
+            src: '/components/card'
+          }
+        },
+        moduleId: 'hashValue'
+      },
+      {
+        mpTips: ['template 不支持此属性-> class="baz boo"'],
+        mpErrors: [],
+        /* eslint-disable */
+        slots: {"hashValue-default-0":{"node":{"tag":"template","attrsMap":{"name":"hashValue-default-0"},"children":[{"type":1,"tag":"view","attrsList":[],"attrsMap":{"class":"_div hashValue"},"parent":{"type":1,"tag":"card","attrsList":[],"attrsMap":{"class":"baz boo"},"children":[],"plain":false,"staticClass":"\"baz boo\"","mpcomid":"'0'","attrs":[{"name":"mpcomid","value":"'0'"}],"static":false,"staticRoot":false},"children":[{"type":2,"expression":"_s(test)","text":"{{test}}","staticClass":"hashValue","slots":{},"attrsMap":{"class":"hashValue"}}],"plain":true,"staticRoot":false,"staticClass":"_div hashValue","slots":{}}],"staticClass":"","slots":{}},"name":"default","slotId":"hashValue-default-0","code":"<template name=\"hashValue-default-0\"><view class=\"_div hashValue\">{{test}}</view></template>"}}
+      }
+    )
+  })
+
+  it('使用具名slot', () => {
+    assertCodegen(
+      `<card class="baz boo"><div slot="named">{{test}}</div></card>`,
+      `<import src="/components/card" /><template name="a"><template data="{{...$root[$kk+'0'], $root, $slotdefault:'hashValue-default-0',$slotnamed:'hashValue-named-0'}}" is="card"></template></template>`,
       {
         name: 'a',
         components: {
@@ -564,7 +597,7 @@ describe('slot', () => {
         mpTips: ['template 不支持此属性-> class="baz boo"'],
         mpErrors: [],
         /* eslint-disable */
-        slots: {"hashValue-default-0":{"node":{"tag":"template","attrsMap":{"name":"hashValue-default-0"},"children":[],"staticClass":"","slots":{}},"name":"default","slotId":"hashValue-default-0","code":"<template name=\"hashValue-default-0\"></template>"},"hashValue-header-0":{"node":{"type":1,"tag":"template","attrsList":[],"attrsMap":{"name":"hashValue-header-0"},"parent":{"type":1,"tag":"card","attrsList":[],"attrsMap":{"class":"baz boo"},"children":[],"plain":false,"staticClass":"\"baz boo\"","mpcomid":"'0'","attrs":[{"name":"mpcomid","value":"'0'"}],"static":false,"staticRoot":false},"children":[{"type":3,"text":"test","staticClass":"hashValue","slots":{},"attrsMap":{"class":"hashValue"}}],"plain":false,"slotTarget":"\"header\"","staticRoot":false,"staticClass":"","slots":{}},"name":"header","slotId":"hashValue-header-0","code":"<template name=\"hashValue-header-0\">test</template>"}}
+        slots: {"hashValue-default-0":{"node":{"tag":"template","attrsMap":{"name":"hashValue-default-0"},"children":[],"staticClass":"","slots":{}},"name":"default","slotId":"hashValue-default-0","code":"<template name=\"hashValue-default-0\"></template>"},"hashValue-named-0":{"node":{"tag":"template","attrsMap":{"name":"hashValue-named-0"},"children":[{"type":1,"tag":"view","attrsList":[],"attrsMap":{"class":"_div hashValue"},"parent":{"type":1,"tag":"card","attrsList":[],"attrsMap":{"class":"baz boo"},"children":[],"plain":false,"staticClass":"\"baz boo\"","mpcomid":"'0'","attrs":[{"name":"mpcomid","value":"'0'"}],"static":false,"staticRoot":false},"children":[{"type":2,"expression":"_s(test)","text":"{{test}}","staticClass":"hashValue","slots":{},"attrsMap":{"class":"hashValue"}}],"plain":false,"slotTarget":"\"named\"","staticRoot":false,"staticClass":"_div hashValue","slots":{}}],"staticClass":"","slots":{}},"name":"named","slotId":"hashValue-named-0","code":"<template name=\"hashValue-named-0\"><view class=\"_div hashValue\">{{test}}</view></template>"}}
       }
     )
   })

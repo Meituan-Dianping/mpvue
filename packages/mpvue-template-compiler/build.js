@@ -4738,11 +4738,9 @@ function convertAst (node, options, util) {
         var isDefault = Array.isArray(n);
         var slotName = isDefault ? 'default' : n.attrsMap.slot;
         var slotId = moduleId + "-" + slotName + "-" + (mpcomid.replace(/\'/g, ''));
-        var node = isDefault ? { tag: 'slot', attrsMap: {}, children: n } : n;
+        var node = { tag: 'template', attrsMap: { name: slotId }, children: isDefault ? n : [n] };
 
-        node.tag = 'template';
-        node.attrsMap.name = slotId;
-        delete node.attrsMap.slot;
+        !isDefault && delete n.attrsMap.slot;
         // 缓存，会集中生成一个 slots 文件
         slots[slotId] = { node: convertAst(node, options, util), name: slotName, slotId: slotId };
         wxmlAst.slots[slotName] = slotId;
