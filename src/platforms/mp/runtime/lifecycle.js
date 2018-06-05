@@ -51,13 +51,14 @@ function normalizeProperties (vm) {
     val = isPlainObject(properties[key])
       ? properties[key]
       : { type: properties[key] }
+    const { type, value, observer } = val
     res[key] = {
-      type: val.type,
-      value: val.value,
+      type,
+      value,
       observer (newVal, oldVal) {
         vm[key] = newVal // 先修改值再触发原始的 observer，跟 watch 行为保持一致
-        if (typeof val.observer === 'function') {
-          val.observer.call(vm, newVal, oldVal)
+        if (typeof observer === 'function') {
+          observer.call(vm, newVal, oldVal)
         }
       }
     }
