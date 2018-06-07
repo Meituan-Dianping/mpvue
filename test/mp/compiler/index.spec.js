@@ -74,7 +74,22 @@ describe('指令', () => {
     // bug mpcomid="'0-'+index"
     assertCodegen(
       `<div><my-component v-for="item in items" :key="item.id"></my-component></div>`,
-      `<import src="/components/card" /><template name="a"><view class="_div hashValue"><template wx:key="item.id" data="{{...$root[$kk+'0-'+index], $root}}" is="my-component" wx:for="{{items}}" wx:for-index="index" wx:for-item="item"></template></view></template>`,
+      `<import src="/components/card" /><template name="a"><view class="_div hashValue"><template wx:key="item.id" data="{{...$root[$kk+'0-'+$index_0], $root}}" is="my-component" wx:for="{{items}}" wx:for-index="$index_0" wx:for-item="item"></template></view></template>`,
+      {
+        name: 'a',
+        components: {
+          'my-component': {
+            name: 'my-component',
+            src: '/components/card'
+          }
+        },
+        moduleId: 'hashValue'
+      }
+    )
+    // bug mpcomid="'0-'+index"
+    assertCodegen(
+      `<div><div v-for="(a, i) in lista" :key="a.id"><div v-for="b in listb" :key="b.id" /></div></div>`,
+      `<template name="a"><view class="_div hashValue"><view wx:key="a.id" key="{{a.id}}" wx:for="{{lista}}" wx:for-index="i" wx:for-item="a" class="_div hashValue"><view wx:key="b.id" key="{{b.id}}" wx:for="{{listb}}" wx:for-index="$index_1" wx:for-item="b" class="_div hashValue"></view></view></view></template>`,
       {
         name: 'a',
         components: {
@@ -91,7 +106,7 @@ describe('指令', () => {
   it('v-if && v-for', () => {
     assertCodegen(
       `<div><p v-if="item.length" v-for="item in list"></p></div>`,
-      `<template name="a"><view class="_div"><view wx:if="{{item.length}}" wx:for="{{list}}" wx:for-index="index" wx:for-item="item" class="_p"></view></view></template>`,
+      `<template name="a"><view class="_div"><view wx:if="{{item.length}}" wx:for="{{list}}" wx:for-index="$index_0" wx:for-item="item" class="_p"></view></view></template>`,
       { name: 'a' }
     )
   })
@@ -107,7 +122,7 @@ describe('指令', () => {
   it('v-if && v-for && event', () => {
     assertCodegen(
       `<div><p v-if="item.length" v-for="item in list" @click="clickHandle"></p></div>`,
-      `<template name="a"><view class="_div"><view wx:if="{{item.length}}" bindtap="handleProxy" data-eventid="{{'0-'+index}}" data-comkey="{{$k}}" wx:for="{{list}}" wx:for-index="index" wx:for-item="item" class="_p"></view></view></template>`,
+      `<template name="a"><view class="_div"><view wx:if="{{item.length}}" bindtap="handleProxy" data-eventid="{{'0-'+$index_0}}" data-comkey="{{$k}}" wx:for="{{list}}" wx:for-index="$index_0" wx:for-item="item" class="_p"></view></view></template>`,
       { name: 'a' }
     )
   })
@@ -115,7 +130,7 @@ describe('指令', () => {
   it('v-for && event', () => {
     assertCodegen(
       `<div><p v-for="item in list" @click="clickHandle"></p></div>`,
-      `<template name="a"><view class="_div"><view bindtap="handleProxy" data-eventid="{{'0-'+index}}" data-comkey="{{$k}}" wx:for="{{list}}" wx:for-index="index" wx:for-item="item" class="_p"></view></view></template>`,
+      `<template name="a"><view class="_div"><view bindtap="handleProxy" data-eventid="{{'0-'+$index_0}}" data-comkey="{{$k}}" wx:for="{{list}}" wx:for-index="$index_0" wx:for-item="item" class="_p"></view></view></template>`,
       { name: 'a' }
     )
   })
@@ -459,7 +474,7 @@ describe('template', () => {
   it('template', () => {
     assertCodegen(
       `<div><card v-for="i in 10"></card></div>`,
-      `<import src="/components/card" /><template name="a"><view class="_div data-v-djskdksdksdjkksdks"><template data="{{...$root[$kk+'0-'+index], $root}}" is="card" wx:for="{{10}}" wx:for-index="index" wx:for-item="i"></template></view></template>`,
+      `<import src="/components/card" /><template name="a"><view class="_div data-v-djskdksdksdjkksdks"><template data="{{...$root[$kk+'0-'+$index_0], $root}}" is="card" wx:for="{{10}}" wx:for-index="$index_0" wx:for-item="i"></template></view></template>`,
       {
         name: 'a',
         components: {
