@@ -44,7 +44,7 @@ function getGlobalData (app, rootVueVM) {
  * 格式化 properties 属性，并给每个属性加上 observer 方法
  */
 function normalizeProperties (vm) {
-  const properties = vm.$options.properties || {}
+  const properties = vm.$options.properties || vm.$options.props || {}
   const res = {}
   let val
   for (const key in properties) {
