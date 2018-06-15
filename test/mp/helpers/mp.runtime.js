@@ -71,6 +71,19 @@ class MPApp extends MPPage {
   }
 }
 
+class MPComponent extends MPPage {
+  // component 与page生命周期不同
+  _initLifecycle () {
+    this._callHook('created')
+    this._callHook('attached')
+    this._callHook('ready')
+  }
+
+  _leaveAndBack () {
+    // 微信原生组件会进入后台，不会触发任何生命周期
+  }
+}
+
 function Page (config) {
   return new MPPage(config)
 }
@@ -84,8 +97,13 @@ function getApp () {
   return appVM
 }
 
+function Component (config) {
+  return new MPComponent(config)
+}
+
 module.exports = {
   Page,
   App,
-  getApp
+  getApp,
+  Component
 }
