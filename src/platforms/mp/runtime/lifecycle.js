@@ -45,6 +45,7 @@ function getGlobalData (app, rootVueVM) {
  */
 function normalizeProperties (vm) {
   const properties = vm.$options.properties || {}
+  const vueProps = vm.$options.props || {}
   const res = {}
   let val
   for (const key in properties) {
@@ -62,6 +63,38 @@ function normalizeProperties (vm) {
       }
     }
   }
+
+  // 如果是以vue props写法定义属性
+  // 纯数组定义属性 ['title', 'likes', 'isPublished', 'commentIds', 'author']
+  if (Array.isArray(vueProps)) {
+    for (const prop of vueProps) {
+      // vue props定义的属性不覆盖properties原生形式定义的属性
+      if (!res[prop]) {
+        res[prop] = {
+          type: null
+        }
+      }
+    }
+  } else {
+    for (const key in vueProps) {
+      val = isPlainObject(vueProps[key])
+        ? vueProps[key]
+        : { type: vueProps[key] }
+      res[key] = {
+        // vue props的type可以是数组代表支持多种类型，但是小程序不支持，因此切换为任意类型
+        type: Array.isArray(val.type) ? null : val.type,
+        value: typeof val.default === 'function' ? val.default() : val.default,
+        observer (newVal, oldVal) {
+          vm[key] = newVal
+          // 上面的赋值自带watch方法执行了，无需再调用watch方法
+          // if (typeof watches[key] === 'function') {
+          //   watches[key].call(vm, newVal, oldVal)
+          // }
+        }
+      }
+    }
+  }
+
   return res
 }
 
