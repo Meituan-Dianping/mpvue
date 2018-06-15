@@ -322,7 +322,11 @@ var LIFECYCLE_HOOKS = [
   'onReachBottom',
   'onShareAppMessage',
   'onPageScroll',
-  'onTabItemTap'
+  'onTabItemTap',
+  'attached',
+  'ready',
+  'moved',
+  'detached'
 ];
 
 /*  */
@@ -4144,7 +4148,7 @@ Object.defineProperty(Vue$3.prototype, '$ssrContext', {
 });
 
 Vue$3.version = '2.4.1';
-Vue$3.mpvueVersion = '1.0.11';
+Vue$3.mpvueVersion = '1.0.12';
 
 /* globals renderer */
 
@@ -4974,30 +4978,106 @@ function getGlobalData (app, rootVueVM) {
   }
 }
 
-/**
- * 格式化 properties 属性，并给每个属性加上 observer 方法
- */
-function normalizeProperties (vm) {
-  var properties = vm.$options.properties || {};
-  var res = {};
-  var val;
-  var loop = function ( key ) {
-    val = isPlainObject(properties[key])
-      ? properties[key]
-      : { type: properties[key] };
-    res[key] = {
-      type: val.type,
-      value: val.value,
-      observer: function observer (newVal, oldVal) {
-        vm[key] = newVal; // 先修改值再触发原始的 observer，跟 watch 行为保持一致
-        if (typeof val.observer === 'function') {
-          val.observer.call(vm, newVal, oldVal);
-        }
-      }
-    };
-  };
+// 格式化 properties 属性，并给每个属性加上 observer 方法
 
-  for (var key in properties) loop( key );
+// properties 的 一些类型 https://developers.weixin.qq.com/miniprogram/dev/framework/custom-component/component.html
+// properties: {
+//   paramA: Number,
+//   myProperty: { // 属性名
+//     type: String, // 类型（必填），目前接受的类型包括：String, Number, Boolean, Object, Array, null（表示任意类型）
+//     value: '', // 属性初始值（可选），如果未指定则会根据类型选择一个
+//     observer: function(newVal, oldVal, changedPath) {
+//        // 属性被改变时执行的函数（可选），也可以写成在methods段中定义的方法名字符串, 如：'_propertyChange'
+//        // 通常 newVal 就是新设置的数据， oldVal 是旧数据
+//     }
+//   },
+// }
+
+// props 的一些类型 https://cn.vuejs.org/v2/guide/components-props.html#ad
+// props: {
+//   // 基础的类型检查 (`null` 匹配任何类型)
+//   propA: Number,
+//   // 多个可能的类型
+//   propB: [String, Number],
+//   // 必填的字符串
+//   propC: {
+//     type: String,
+//     required: true
+//   },
+//   // 带有默认值的数字
+//   propD: {
+//     type: Number,
+//     default: 100
+//   },
+//   // 带有默认值的对象
+//   propE: {
+//     type: Object,
+//     // 对象或数组且一定会从一个工厂函数返回默认值
+//     default: function () {
+//       return { message: 'hello' }
+//     }
+//   },
+//   // 自定义验证函数
+//   propF: {
+//     validator: function (value) {
+//       // 这个值必须匹配下列字符串中的一个
+//       return ['success', 'warning', 'danger'].indexOf(value) !== -1
+//     }
+//   }
+// }
+
+// core/util/options
+function normalizeProps$1 (props, res, vm) {
+  if (!props) { return }
+  var i, val, name;
+  if (Array.isArray(props)) {
+    i = props.length;
+    while (i--) {
+      val = props[i];
+      if (typeof val === 'string') {
+        name = camelize(val);
+        res[name] = { type: null };
+      } else {}
+    }
+  } else if (isPlainObject(props)) {
+    for (var key in props) {
+      val = props[key];
+      name = camelize(key);
+      res[name] = isPlainObject(val)
+        ? val
+        : { type: val };
+    }
+  }
+
+  // fix vueProps to properties
+  for (var key$1 in res) {
+    if (res.hasOwnProperty(key$1)) {
+      var item = res[key$1];
+      if (item.default) {
+        item.value = item.default;
+      }
+      var oldObserver = item.observer;
+      item.observer = function (newVal, oldVal) {
+        vm[name] = newVal;
+        // 先修改值再触发原始的 observer，跟 watch 行为保持一致
+        if (typeof oldObserver === 'function') {
+          oldObserver.call(vm, newVal, oldVal);
+        }
+      };
+    }
+  }
+
+  return res
+}
+
+function normalizeProperties (vm) {
+  var properties = vm.$options.properties;
+  var vueProps = vm.$options.props;
+  var res = {};
+
+  normalizeProps$1(properties, res, vm);
+  normalizeProps$1(vueProps, res, vm);
+
   return res
 }
 
@@ -5112,7 +5192,7 @@ function initMP (mpType, next) {
       ready: function ready () {
         mp.status = 'ready';
 
-        callHook$1(rootVueVM, 'onReady');
+        callHook$1(rootVueVM, 'ready');
         next();
 
         // 只有页面需要 setData
@@ -5491,13 +5571,6 @@ function handleProxyWithVue (e) {
       return result
     }
     handles.forEach(function (h) { return h(event); });
-  } else {
-    // TODO, 在初始化时进行判断或直接使用 vue 本身的错误提示
-    var ref$1 = rootVueVM.$mp.page;
-    var route = ref$1.route;
-    console.group(new Date() + ' 事件警告');
-    console.warn(("Do not have handler in current page: " + route + ". Please make sure that handler has been defined in " + route + ", or not use handler with 'v-if'"));
-    console.groupEnd();
   }
 }
 

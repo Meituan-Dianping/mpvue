@@ -5,10 +5,11 @@ function strToRegExp (str) {
 
 // runtime
 // fix mp env
-const { App, Page, getApp } = require('./mp.runtime')
+const { App, Page, getApp, Component } = require('./mp.runtime')
 global.App = App
 global.Page = Page
 global.getApp = getApp
+global.Component = Component
 
 const Vue = require('../../../packages/mpvue')
 

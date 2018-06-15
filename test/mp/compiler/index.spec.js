@@ -453,6 +453,13 @@ describe('表单', () => {
       { name: 'a' }
     )
   })
+  it('radio', () => {
+    assertCodegen(
+      `<radio><text>233</text></radio>`,
+      `<template name="a"><radio class="_radio"><text class="_text">233</text></radio></template>`,
+      { name: 'a' }
+    )
+  })
 })
 
 describe('template', () => {
