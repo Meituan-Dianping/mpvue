@@ -104,11 +104,5 @@ export function handleProxyWithVue (e) {
       return result
     }
     handles.forEach(h => h(event))
-  } else {
-    // TODO, 在初始化时进行判断或直接使用 vue 本身的错误提示
-    const { route } = rootVueVM.$mp.page
-    console.group(new Date() + ' 事件警告')
-    console.warn(`Do not have handler in current page: ${route}. Please make sure that handler has been defined in ${route}, or not use handler with 'v-if'`)
-    console.groupEnd()
   }
 }

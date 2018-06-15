@@ -1,6 +1,6 @@
 {
   "name": "mpvue-template-compiler",
-  "version": "1.0.12",
+  "version": "1.0.13",
   "description": "mpvue template compiler for Vue",
   "main": "index.js",
   "repository": {
