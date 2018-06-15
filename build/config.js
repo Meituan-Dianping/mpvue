@@ -167,7 +167,6 @@ const builds = {
     entry: resolve('mp/entry-runtime.js'),
     dest: resolve('packages/mpvue/index.js'),
     format: 'umd',
-    env: 'production',
     banner: mpBanner
   },
   // MP compiler (CommonJS). Used by mpvue's Webpack loader.
