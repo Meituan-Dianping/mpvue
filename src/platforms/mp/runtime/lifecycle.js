@@ -301,12 +301,11 @@ export function initMP (mpType, next) {
       onShow () {
         mp.page = this
         mp.status = 'show'
-        callHook(rootVueVM, 'onShow')
 
-        // 只有页面需要 setData
-        rootVueVM.$nextTick(() => {
-          rootVueVM._initDataToMP()
-        })
+        // 将页面的数据恢复到VM上，保持VM与page数据一致
+        rootVueVM._restoreMPToData(this);
+
+        callHook(rootVueVM, 'onShow')
       },
 
       // 生命周期函数--监听页面初次渲染完成
@@ -314,6 +313,11 @@ export function initMP (mpType, next) {
         mp.status = 'ready'
 
         callHook(rootVueVM, 'onReady')
+
+        // 只有页面需要 setData
+        rootVueVM.$nextTick(function () {
+          rootVueVM._initDataToMP();
+        });
         next()
       },
 

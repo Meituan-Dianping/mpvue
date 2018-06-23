@@ -4,13 +4,7 @@ import Vue from 'core/index'
 // import config from 'core/config'
 import { mountComponent } from 'core/instance/lifecycle'
 
-import {
-  mustUseProp,
-  isReservedTag,
-  isReservedAttr,
-  getTagNamespace,
-  isUnknownElement
-} from 'mp/util/index'
+import { mustUseProp, isReservedTag, isReservedAttr, getTagNamespace, isUnknownElement } from 'mp/util/index'
 
 import { patch } from './patch'
 
@@ -46,9 +40,10 @@ Vue.prototype.$mount = function (el, hydrating) {
 import { initMP } from './lifecycle'
 Vue.prototype._initMP = initMP
 
-import { updateDataToMP, initDataToMP } from './render'
+import { updateDataToMP, initDataToMP, restoreMPToData } from './render'
 Vue.prototype.$updateDataToMP = updateDataToMP
 Vue.prototype._initDataToMP = initDataToMP
+Vue.prototype._restoreMPToData = restoreMPToData
 
 import { handleProxyWithVue } from './events'
 Vue.prototype.$handleProxyWithVue = handleProxyWithVue

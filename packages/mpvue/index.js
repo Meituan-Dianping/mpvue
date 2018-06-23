@@ -4148,7 +4148,7 @@ Object.defineProperty(Vue$3.prototype, '$ssrContext', {
 });
 
 Vue$3.version = '2.4.1';
-Vue$3.mpvueVersion = '1.0.12';
+Vue$3.mpvueVersion = '1.0.13';
 
 /* globals renderer */
 
@@ -5236,12 +5236,11 @@ function initMP (mpType, next) {
       onShow: function onShow () {
         mp.page = this;
         mp.status = 'show';
-        callHook$1(rootVueVM, 'onShow');
 
-        // 只有页面需要 setData
-        rootVueVM.$nextTick(function () {
-          rootVueVM._initDataToMP();
-        });
+        // 将页面的数据恢复到VM上，保持VM与page数据一致
+        rootVueVM._restoreMPToData(this);
+
+        callHook$1(rootVueVM, 'onShow');
       },
 
       // 生命周期函数--监听页面初次渲染完成
@@ -5249,6 +5248,11 @@ function initMP (mpType, next) {
         mp.status = 'ready';
 
         callHook$1(rootVueVM, 'onReady');
+
+        // 只有页面需要 setData
+        rootVueVM.$nextTick(function () {
+          rootVueVM._initDataToMP();
+        });
         next();
       },
 
@@ -5403,7 +5407,7 @@ function throttle (func, wait, options) {
       previous = now;
       result = func.apply(context, args);
       if (!timeout) { context = args = null; }
-    // 如果延迟执行不存在，且没有设定结尾边界不执行选项
+      // 如果延迟执行不存在，且没有设定结尾边界不执行选项
     } else if (!timeout && options.trailing !== false) {
       timeout = setTimeout(later, remaining);
     }
@@ -5448,6 +5452,24 @@ function initDataToMP () {
 
   var data = collectVmData(this.$root);
   page.setData(data);
+}
+
+function restoreMPToData (page) {
+  var $p = getParentComKey(this).join(',');
+  var $k = $p + ($p ? ',' : '') + getComKey(this);
+
+  var data = page.data.$root[$k];
+  if (data) {
+    Object.assign(
+      this.$data,
+      Object.keys(this.$data).reduce(function (res, key) {
+        if (data.hasOwnProperty(key)) {
+          res[key] = data[key];
+        }
+        return res
+      }, {})
+    );
+  }
 }
 
 function getVM (vm, comkeys) {
@@ -5611,6 +5633,7 @@ Vue$3.prototype._initMP = initMP;
 
 Vue$3.prototype.$updateDataToMP = updateDataToMP;
 Vue$3.prototype._initDataToMP = initDataToMP;
+Vue$3.prototype._restoreMPToData = restoreMPToData;
 
 Vue$3.prototype.$handleProxyWithVue = handleProxyWithVue;
 
