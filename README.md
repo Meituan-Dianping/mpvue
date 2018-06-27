@@ -85,3 +85,5 @@
 [更多项目征集](https://github.com/Meituan-Dianping/mpvue/issues/21)
 
 [分享交流群](https://github.com/Meituan-Dianping/mpvue/issues/14)
+
+微信群官方微信加入方法 添加微信# iMST1314 #(已设置好友自动通过,你的帐号需要设置为允许微信好添加我为好友) 好友通过后,回复# mpvue #机器人会自动拉你进群.
