@@ -62,6 +62,7 @@
 
 ## 使用 mpvue 的项目
 <div>
+    <img src="https://user-images.githubusercontent.com/1715463/42300198-c79e41ac-8041-11e8-9bf4-569901bc8c5d.jpeg" width="100" title="享物说"/>
     <img src="https://user-images.githubusercontent.com/13334618/38455900-d608df44-3ab0-11e8-94db-a5b7ac782612.jpg" width="100" />
     <img src="https://camo.githubusercontent.com/d0fe641cc98e6dcdff3b3e28f3f46ed47a3b5777/68747470733a2f2f7773312e73696e61696d672e636e2f6c617267652f36313134353733386c7931667139723334316a33356a323037363037363735392e6a7067" width="100" />
     <img src="https://user-images.githubusercontent.com/26051070/39106618-75ed54b4-46ef-11e8-834d-faf2629c218b.jpg" width="100" />
@@ -78,6 +79,12 @@
     <img src="https://camo.githubusercontent.com/735d3be145d2632dd010b5fe6e047bc1f5d1b56d/68747470733a2f2f692e6c6f6c692e6e65742f323031382f30362f30342f356231346536616634633537322e6a7067" width="100" />
     <img src="https://user-images.githubusercontent.com/5120505/41412484-ba85a04e-7012-11e8-9833-3ed4762073ea.png" width="100" />
     <img src="https://user-images.githubusercontent.com/22720942/40184432-da33291c-5a22-11e8-966c-c836d1dc8078.png" width="100" />
+    <img src="https://user-images.githubusercontent.com/2733269/41572435-5a1700d6-73aa-11e8-84fa-6ab95f8276fa.jpg" width="100" title="大智慧行情"/>
+    <img src="https://user-images.githubusercontent.com/16707486/41587965-0b984daa-73e3-11e8-8fee-c3a516733262.jpg" width="100" title="小亿买房"/>
+    <img src="https://github.com/Hzy0913/hanlibrary/raw/master/xcx.jpg" width="100" title="小程序日历组件"/>
+    <img src="https://user-images.githubusercontent.com/18204304/41755130-3edd141c-7608-11e8-9e20-596fd0c30262.jpg" width="100" title="速算练习小程序"/>
+    <img src="https://user-images.githubusercontent.com/1176855/41755510-62b9fc90-760a-11e8-89be-b6ddbee08e63.jpg" width="100" title="暖茶阿妈的占卜小屋"/>
+    <img src="https://user-images.githubusercontent.com/26002161/41972348-3798cbca-7a44-11e8-82ec-0dfd1c16c946.jpg" width="100" title="逗图Lite （表情包小程序）"/>
 </div>
 
 [贡献方法](./.github/CONTRIBUTING.md)
