@@ -347,7 +347,7 @@ function processFor (el) {
         el.iterator2 = iteratorMatch[3].trim()
       }
     } else {
-      el.alias = alias
+      el.alias = alias.replace(/^\(|\)$/g, '')
     }
   }
 }
