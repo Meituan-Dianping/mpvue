@@ -1109,7 +1109,11 @@ var LIFECYCLE_HOOKS = [
   'onReachBottom',
   'onShareAppMessage',
   'onPageScroll',
-  'onTabItemTap'
+  'onTabItemTap',
+  'attached',
+  'ready',
+  'moved',
+  'detached'
 ];
 
 /*  */
@@ -4820,7 +4824,7 @@ function generate$2 (obj, options) {
   var attrs = Object.keys(attrsMap).map(function (k) { return convertAttr(k, attrsMap[k]); }).join(' ');
 
   var tags = ['progress', 'checkbox', 'switch', 'input', 'radio', 'slider', 'textarea'];
-  if (tags.indexOf(tag) > -1) {
+  if (tags.indexOf(tag) > -1 && !(children && children.length)) {
     return ("<" + tag + (attrs ? ' ' + attrs : '') + " />" + (ifConditionsArr.join('')))
   }
   return ("<" + tag + (attrs ? ' ' + attrs : '') + ">" + (child || '') + "</" + tag + ">" + (ifConditionsArr.join('')))
