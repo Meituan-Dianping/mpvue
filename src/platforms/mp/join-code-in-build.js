@@ -5,10 +5,17 @@ try {
   if (!global) global = {};
   global.process = global.process || {};
   global.process.env = global.process.env || {};
-  global.App = global.App || App;
-  global.Page = global.Page || Page;
-  global.Component = global.Component || Component;
-  global.getApp = global.getApp || getApp;
+
+  global.initNativeConstructor = function (mpType) {
+    if (mpType === 'app') {
+      global.App = global.App || App
+    } else if (mpType === 'component') {
+      global.Component = global.Component || Component;
+    } else {
+      global.Page = global.Page || Page;
+      global.getApp = global.getApp || getApp;
+    }
+  }
 } catch (e) {}
 `
 

@@ -142,8 +142,8 @@ function normalizeProps (props, res, vm) {
 }
 
 function normalizeProperties (vm) {
-  const properties = vm.$options.properties
-  const vueProps = vm.$options.props
+  const properties = vm.$options.properties || {}
+  const vueProps = vm.$options.props || {}
   const res = {}
 
   normalizeProps(properties, res, vm)
@@ -168,6 +168,8 @@ function initMpProps (vm) {
 }
 
 export function initMP (mpType, next) {
+  global.initNativeConstructor(mpType)
+
   const rootVueVM = this.$root
   if (!rootVueVM.$mp) {
     rootVueVM.$mp = {}
@@ -325,7 +327,8 @@ export function initMP (mpType, next) {
       onHide () {
         mp.status = 'hide'
         callHook(rootVueVM, 'onHide')
-        mp.page = null
+        // 无法触发更新的这个操作
+        // mp.page = null
       },
 
       // 生命周期函数--监听页面卸载
