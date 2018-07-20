@@ -95,6 +95,8 @@
     <img src="https://user-images.githubusercontent.com/6629280/42795085-e5fae9f8-89b4-11e8-9514-7764428be788.jpg" width="100" title="义乌购优选"/>
     <img src="https://camo.githubusercontent.com/9103a160806c94ed0e5787ee3b197159b3ba9f80/687474703a2f2f792e70686f746f2e71712e636f6d2f696d673f733d6a4456653262784862266c3d792e6a7067" width="100" title="熊猫斗图助手"/>
     <img src="https://user-images.githubusercontent.com/5915245/42990083-437e3072-8c34-11e8-8f6a-69ea58522be8.jpg" width="100" title="SPC运动宝"/>
+    <img src="https://user-images.githubusercontent.com/5443058/42999490-9022a4dc-8c50-11e8-9e90-96bbc1bbbc8e.jpg" width="100" title="牛津阅读树点读版"/>
+
     <!-- 非标准小程序码 -->
     <img src="https://user-images.githubusercontent.com/1176855/41755510-62b9fc90-760a-11e8-89be-b6ddbee08e63.jpg" width="100" title="暖茶阿妈的占卜小屋"/>
     <img src="https://user-images.githubusercontent.com/22720942/40184432-da33291c-5a22-11e8-966c-c836d1dc8078.png" width="100" />
