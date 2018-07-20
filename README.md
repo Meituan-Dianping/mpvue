@@ -61,6 +61,7 @@
 - 其它
 
 ## 使用 mpvue 的项目
+
 <div>
     <img src="https://user-images.githubusercontent.com/1715463/42300198-c79e41ac-8041-11e8-9bf4-569901bc8c5d.jpeg" width="100" title="享物说"/>
     <img src="https://user-images.githubusercontent.com/13334618/38455900-d608df44-3ab0-11e8-94db-a5b7ac782612.jpg" width="100" />
@@ -78,13 +79,25 @@
     <img src="https://user-images.githubusercontent.com/652171/40602836-a064ab44-628c-11e8-962c-c5c75455c1c8.jpg" width="100" />
     <img src="https://camo.githubusercontent.com/735d3be145d2632dd010b5fe6e047bc1f5d1b56d/68747470733a2f2f692e6c6f6c692e6e65742f323031382f30362f30342f356231346536616634633537322e6a7067" width="100" />
     <img src="https://user-images.githubusercontent.com/5120505/41412484-ba85a04e-7012-11e8-9833-3ed4762073ea.png" width="100" />
-    <img src="https://user-images.githubusercontent.com/22720942/40184432-da33291c-5a22-11e8-966c-c836d1dc8078.png" width="100" />
     <img src="https://user-images.githubusercontent.com/2733269/41572435-5a1700d6-73aa-11e8-84fa-6ab95f8276fa.jpg" width="100" title="大智慧行情"/>
     <img src="https://user-images.githubusercontent.com/16707486/41587965-0b984daa-73e3-11e8-8fee-c3a516733262.jpg" width="100" title="小亿买房"/>
     <img src="https://github.com/Hzy0913/hanlibrary/raw/master/xcx.jpg" width="100" title="小程序日历组件"/>
     <img src="https://user-images.githubusercontent.com/18204304/41755130-3edd141c-7608-11e8-9e20-596fd0c30262.jpg" width="100" title="速算练习小程序"/>
-    <img src="https://user-images.githubusercontent.com/1176855/41755510-62b9fc90-760a-11e8-89be-b6ddbee08e63.jpg" width="100" title="暖茶阿妈的占卜小屋"/>
     <img src="https://user-images.githubusercontent.com/26002161/41972348-3798cbca-7a44-11e8-82ec-0dfd1c16c946.jpg" width="100" title="逗图Lite （表情包小程序）"/>
+    <img src="https://user-images.githubusercontent.com/14872348/42489167-29c4cae2-843c-11e8-8b28-b704907497a3.jpg" width="100" title="童学云校微海报"/>
+    <img src="https://user-images.githubusercontent.com/1220971/42721673-3bbd3080-8771-11e8-91dd-73622d9115cd.jpg" width="100" title="内涵段子Lite"/>
+    <img src="https://user-images.githubusercontent.com/2350193/42740747-00714598-88de-11e8-817d-3b91ca33003c.jpg" width="100" title="SINA诊股"/>
+    <img src="https://user-images.githubusercontent.com/2350193/42740748-00a6e2fc-88de-11e8-8642-2d73709fdb26.jpg" width="100" title="SINA资讯"/>
+    <img src="https://user-images.githubusercontent.com/2350193/42740749-00e0808e-88de-11e8-90a0-09f412f54e86.jpg" width="100" title="SINA行情"/>
+    <img src="https://user-images.githubusercontent.com/2350193/42801721-1fb5cabe-89d3-11e8-986b-a7e2a8b6f330.jpg" width="100" title="SINA课堂"/>
+    <img src="https://user-images.githubusercontent.com/2350193/42871520-21c125e4-8aad-11e8-8b8c-5ff98698069f.jpg" width="100" title="SINA视觉"/>
+    <img src="https://user-images.githubusercontent.com/2350193/42740746-00379c4e-88de-11e8-8958-c4c75d90ac36.jpg" width="100" title="我看涨"/>
+    <img src="https://user-images.githubusercontent.com/6629280/42795085-e5fae9f8-89b4-11e8-9514-7764428be788.jpg" width="100" title="义乌购优选"/>
+    <img src="https://camo.githubusercontent.com/9103a160806c94ed0e5787ee3b197159b3ba9f80/687474703a2f2f792e70686f746f2e71712e636f6d2f696d673f733d6a4456653262784862266c3d792e6a7067" width="100" title="熊猫斗图助手"/>
+    <img src="https://user-images.githubusercontent.com/5915245/42990083-437e3072-8c34-11e8-8f6a-69ea58522be8.jpg" width="100" title="SPC运动宝"/>
+    <!-- 非标准小程序码 -->
+    <img src="https://user-images.githubusercontent.com/1176855/41755510-62b9fc90-760a-11e8-89be-b6ddbee08e63.jpg" width="100" title="暖茶阿妈的占卜小屋"/>
+    <img src="https://user-images.githubusercontent.com/22720942/40184432-da33291c-5a22-11e8-966c-c836d1dc8078.png" width="100" />
 </div>
 
 [贡献方法](./.github/CONTRIBUTING.md)
