@@ -1,11 +1,11 @@
 {
-  "name": "cb-mpvue",
+  "name": "mpvue",
   "version": "1.0.13",
   "description": "Vue Runtime for mini program",
   "main": "index.js",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/shilin8805/mpvue.git"
+    "url": "git+https://github.com/Meituan-Dianping/mpvue.git"
   },
   "keywords": [
     "vue",
