@@ -1,0 +1,7 @@
+daysUntilStale: 30
+
+markComment: "issue超过30天无更新或响应，7天后将自动关闭，如果问题状态有更新请及时更新issue"
+
+limitPerRun: 24
+
+only: issues
