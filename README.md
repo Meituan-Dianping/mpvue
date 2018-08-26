@@ -96,10 +96,27 @@
     <img src="https://camo.githubusercontent.com/9103a160806c94ed0e5787ee3b197159b3ba9f80/687474703a2f2f792e70686f746f2e71712e636f6d2f696d673f733d6a4456653262784862266c3d792e6a7067" width="100" title="熊猫斗图助手"/>
     <img src="https://user-images.githubusercontent.com/5915245/42990083-437e3072-8c34-11e8-8f6a-69ea58522be8.jpg" width="100" title="SPC运动宝"/>
     <img src="https://user-images.githubusercontent.com/5443058/42999490-9022a4dc-8c50-11e8-9e90-96bbc1bbbc8e.jpg" width="100" title="牛津阅读树点读版"/>
+    <img src="https://camo.githubusercontent.com/c47426c0e0ad542f6399de4129682fed1f2b475c/68747470733a2f2f73312e617831782e636f6d2f323031382f30372f32312f50386f7368442e6a7067" width="100" title="花笙美妆"/>
+    <img src="https://camo.githubusercontent.com/64ce4dd31ab2edc9f3a2f6f7dc943bd1dfaefa21/687474703a2f2f7063397034717362322e626b742e636c6f7564646e2e636f6d2f77782d6769746875622e6a7067" width="100" title="gitHub01"/>
+    <img src="https://user-images.githubusercontent.com/15187909/43053228-29e08738-8e5e-11e8-8f91-377a28dcf771.jpg" width="100" title="极客教程"/>
+    <img src="https://user-images.githubusercontent.com/7599915/43298816-425635f4-918a-11e8-9f0f-380dca9401dd.jpg" width="100" title="gitee工具"/>
+    <img src="https://camo.githubusercontent.com/25a919d9549feb0b713ad86472c09e9c3f46aa83/687474703a2f2f696d616765732e70616e64616f6d656e672e636f6d2f32346665333339666662333936636662656238633136306435336261313539342e6a7067" width="100" title="销售神器"/>
+    <img src="https://user-images.githubusercontent.com/17445000/43376242-3715ce48-93ec-11e8-90be-a59fe9788a98.jpg" width="100" title="360旗下-南瓜屋"/>
+    <img src="https://user-images.githubusercontent.com/25244009/43445236-76c224be-94d8-11e8-9901-1ff399db7b70.jpg" width="100" title="地图小程序"/>
+    <img src="https://user-images.githubusercontent.com/1448308/43559485-cbd41390-9640-11e8-848e-69b662be8da7.jpg" width="100" title="微工具书"/>
+    <img src="https://user-images.githubusercontent.com/19870533/43562575-eed086f8-964f-11e8-8c39-20e604fd84fa.jpg" width="100" title="选课精灵"/>
+    <img src="https://user-images.githubusercontent.com/13146991/43621850-f1df6730-970b-11e8-9d07-4db4f2c4c52f.png" width="100" title="京东云技术新知"/>
+    <img src="https://user-images.githubusercontent.com/1627874/43621865-0df3a314-970c-11e8-8f1b-30cfdf6a9a47.jpg" width="100" title="运个货-互联网内贸集装箱海运物流平台"/>
+    <img src="https://user-images.githubusercontent.com/4090027/44255554-0e352680-a239-11e8-96fe-8316a1fb22f8.jpg" width="100" title="小桔有车违章查询"/>
+    <img src="https://user-images.githubusercontent.com/26808622/44326326-e1c61800-a48d-11e8-958f-d50ef7f45d62.png" width="100" title="餐饮，商超小程序"/>
+    <img src="https://camo.githubusercontent.com/6f1b397785cd88ec260509e2768f10604b5711b9/687474703a2f2f7777772e77636c696d622e736974652f63646e2f7863782e6a7065673f763d31" width="100" title="妹子趣图"/>
+    <img src="https://user-images.githubusercontent.com/12904977/44563258-02dd8000-a790-11e8-961d-fb50c4f27ba1.png" width="100" title="记工无忧"/>
+    <img src="https://user-images.githubusercontent.com/22048131/44619692-5994a800-a8bd-11e8-98f0-b2337ef49b35.png" width="100" title="北美省钱快报App"/>
 
     <!-- 非标准小程序码 -->
     <img src="https://user-images.githubusercontent.com/1176855/41755510-62b9fc90-760a-11e8-89be-b6ddbee08e63.jpg" width="100" title="暖茶阿妈的占卜小屋"/>
     <img src="https://user-images.githubusercontent.com/22720942/40184432-da33291c-5a22-11e8-966c-c836d1dc8078.png" width="100" />
+    <img src="https://camo.githubusercontent.com/25b2636179cd939461975ada9f996c77d15c4d2a/68747470733a2f2f7778342e73696e61696d672e636e2f6d773639302f373032643563616167793166746e323975797a38666a323037363038367439612e6a7067" width="100" title="扫域名的小程序，米农帮"/>
 </div>
 
 [贡献方法](./.github/CONTRIBUTING.md)
