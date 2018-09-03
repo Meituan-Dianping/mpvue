@@ -304,8 +304,12 @@ export function initMP (mpType, next) {
         callHook(rootVueVM, 'onShow')
 
         // 只有页面需要 setData
+        (function forceUpdate(vm){
+          vm.$forceUpdate();
+          vm.$children&&vm.$children.forEach(forceUpdate);
+        })(rootVueVM);
         rootVueVM.$nextTick(() => {
-          rootVueVM._initDataToMP()
+          rootVueVM._initDataToMP();
         })
       },
 
