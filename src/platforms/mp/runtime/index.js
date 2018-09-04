@@ -35,10 +35,18 @@ Vue.prototype.$mount = function (el, hydrating) {
   if (options && (options.render || options.mpType)) {
     const { mpType = 'page' } = options
     return this._initMP(mpType, () => {
+      cleanVm(this);
       return mountComponent(this, undefined, undefined)
     })
   } else {
+    cleanVm(this);
     return mountComponent(this, undefined, undefined)
+  }
+
+  function cleanVm(vm){
+    if(vm._watcher){
+      vm._watcher.teardown();
+    }
   }
 }
 

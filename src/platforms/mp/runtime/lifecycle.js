@@ -300,14 +300,17 @@ export function initMP (mpType, next) {
       // 生命周期函数--监听页面显示
       onShow () {
         mp.page = this
+        let lastStatus = mp.status;
         mp.status = 'show'
         callHook(rootVueVM, 'onShow')
-
+        //页面显示，强制更新
+        if(lastStatus=='hide'){
+          (function forceUpdate(vm){
+            vm.$forceUpdate();
+            vm.$children&&vm.$children.forEach(forceUpdate);
+          })(rootVueVM);
+        }
         // 只有页面需要 setData
-        (function forceUpdate(vm){
-          vm.$forceUpdate();
-          vm.$children&&vm.$children.forEach(forceUpdate);
-        })(rootVueVM);
         rootVueVM.$nextTick(() => {
           rootVueVM._initDataToMP();
         })
