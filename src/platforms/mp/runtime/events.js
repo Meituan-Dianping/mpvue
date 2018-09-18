@@ -43,7 +43,7 @@ function getHandle (vnode, eventid, eventTypes = []) {
     })
   }
 
-  const { attrs, on } = data
+  const { attrs, on, model } = data
   if (attrs && on && attrs['eventid'] === eventid) {
     eventTypes.forEach(et => {
       const h = on[et]
@@ -54,6 +54,12 @@ function getHandle (vnode, eventid, eventTypes = []) {
       }
     })
     return res
+  } else if (attrs && model && attrs['eventid'] === eventid) {
+    model.callback && res.push(function (event) {
+      if (event && event.mp) {
+        model.callback(event.mp.detail)
+      }
+    })
   }
 
   return res
