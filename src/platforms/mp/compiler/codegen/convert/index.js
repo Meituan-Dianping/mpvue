@@ -70,7 +70,7 @@ function convertAst (node, options = {}, util) {
   wxmlAst.attrsMap = attrs.format(wxmlAst.attrsMap)
   wxmlAst = tag(wxmlAst, options)
   wxmlAst = convertFor(wxmlAst, options)
-  wxmlAst = attrs.convertAttr(wxmlAst, log)
+  wxmlAst = attrs.convertAttr(wxmlAst, log, options)
   if (children && !isSlot) {
     wxmlAst.children = children.map((k) => convertAst(k, options, util))
   }

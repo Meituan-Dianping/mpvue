@@ -4384,7 +4384,7 @@ var attrs = {
     return obj
   },
 
-  convertAttr: function convertAttr (ast, log) {
+  convertAttr: function convertAttr (ast, log, options) {
     var this$1 = this;
 
     var attrsMap = ast.attrsMap; if ( attrsMap === void 0 ) attrsMap = {};
@@ -4759,7 +4759,7 @@ function convertAst (node, options, util) {
   wxmlAst.attrsMap = attrs.format(wxmlAst.attrsMap);
   wxmlAst = tag(wxmlAst, options);
   wxmlAst = convertFor(wxmlAst, options);
-  wxmlAst = attrs.convertAttr(wxmlAst, log);
+  wxmlAst = attrs.convertAttr(wxmlAst, log, options);
   if (children && !isSlot) {
     wxmlAst.children = children.map(function (k) { return convertAst(k, options, util); });
   }
@@ -4797,6 +4797,103 @@ function wxmlAst (compiled, options, log) {
   }
 }
 
+/*  */
+
+var validDivisionCharRE$1 = /[\w).+\-_$\]]/;
+
+function parseFilters$1 (exp, filterOptions) {
+  var inSingle = false;
+  var inDouble = false;
+  var inTemplateString = false;
+  var inRegex = false;
+  var curly = 0;
+  var square = 0;
+  var paren = 0;
+  var lastFilterIndex = 0;
+  var c, prev, i, expression, filters;
+
+  for (i = 0; i < exp.length; i++) {
+    prev = c;
+    c = exp.charCodeAt(i);
+    if (inSingle) {
+      if (c === 0x27 && prev !== 0x5C) { inSingle = false; }
+    } else if (inDouble) {
+      if (c === 0x22 && prev !== 0x5C) { inDouble = false; }
+    } else if (inTemplateString) {
+      if (c === 0x60 && prev !== 0x5C) { inTemplateString = false; }
+    } else if (inRegex) {
+      if (c === 0x2f && prev !== 0x5C) { inRegex = false; }
+    } else if (
+      c === 0x7C && // pipe
+      exp.charCodeAt(i + 1) !== 0x7C &&
+      exp.charCodeAt(i - 1) !== 0x7C &&
+      !curly && !square && !paren
+    ) {
+      if (expression === undefined) {
+        // first filter, end of expression
+        lastFilterIndex = i + 1;
+        expression = exp.slice(0, i).trim();
+      } else {
+        pushFilter();
+      }
+    } else {
+      switch (c) {
+        case 0x22: inDouble = true; break         // "
+        case 0x27: inSingle = true; break         // '
+        case 0x60: inTemplateString = true; break // `
+        case 0x28: paren++; break                 // (
+        case 0x29: paren--; break                 // )
+        case 0x5B: square++; break                // [
+        case 0x5D: square--; break                // ]
+        case 0x7B: curly++; break                 // {
+        case 0x7D: curly--; break                 // }
+      }
+      if (c === 0x2f) { // /
+        var j = i - 1;
+        var p = (void 0);
+        // find first non-whitespace prev char
+        for (; j >= 0; j--) {
+          p = exp.charAt(j);
+          if (p !== ' ') { break }
+        }
+        if (!p || !validDivisionCharRE$1.test(p)) {
+          inRegex = true;
+        }
+      }
+    }
+  }
+
+  if (expression === undefined) {
+    expression = exp.slice(0, i).trim();
+  } else if (lastFilterIndex !== 0) {
+    pushFilter();
+  }
+
+  function pushFilter () {
+    (filters || (filters = [])).push(exp.slice(lastFilterIndex, i).trim());
+    lastFilterIndex = i + 1;
+  }
+
+  if (filters) {
+    for (i = 0; i < filters.length; i++) {
+      expression = wrapFilter$1(expression, filters[i], filterOptions);
+    }
+  }
+
+  return expression
+}
+
+function wrapFilter$1 (exp, filter, filterOptions) {
+  var i = filter.indexOf('(');
+  if (i < 0) {
+    return ((filterOptions.module) + "." + filter + "(" + exp + ")")
+  } else {
+    var name = filter.slice(0, i);
+    var args = filter.slice(i + 1);
+    return ((filterOptions.module) + "." + name + "(" + exp + "," + args)
+  }
+}
+
 function generate$2 (obj, options) {
   if ( options === void 0 ) options = {};
 
@@ -4805,7 +4902,24 @@ function generate$2 (obj, options) {
   var children = obj.children;
   var text = obj.text;
   var ifConditions = obj.ifConditions;
-  if (!tag) { return text }
+  if (!tag) {
+    if (text !== null) {
+      var result = '';
+      var textSplit = text.split(/({{.*?}})/ig);
+      textSplit.forEach(function (temp) {
+        if (/^{{/.test(temp) && /}}$/.test(temp)) {
+          temp = temp.replace(/{|}/ig, '');
+          temp = parseFilters$1(temp, options.filters);
+          result += '{{' + temp + '}}';
+        } else {
+          result += temp;
+        }
+      });
+      return result
+    } else {
+      return text
+    }
+  }
   var child = '';
   if (children && children.length) {
     // 递归子节点
@@ -4862,6 +4976,7 @@ function compileToWxml (compiled, options) {
 
   // TODO, compiled is undefined
   var components = options.components; if ( components === void 0 ) components = {};
+  var filters = options.filters; if ( filters === void 0 ) filters = null;
   var log = utils.log(compiled);
 
   var ref = wxmlAst(compiled, options, log);
@@ -4872,7 +4987,8 @@ function compileToWxml (compiled, options) {
 
   // 引用子模版
   var importCode = Object.keys(deps).map(function (k) { return components[k] ? ("<import src=\"" + (components[k].src) + "\" />") : ''; }).join('');
-  code = importCode + "<template name=\"" + (options.name) + "\">" + code + "</template>";
+  var wxsCode = filters ? ("<wxs src=\"" + (filters.src) + "\" module=\"" + (filters.module) + "\" />") : '';
+  code = "" + wxsCode + importCode + "<template name=\"" + (options.name) + "\">" + code + "</template>";
 
   // 生成 slots code
   Object.keys(slots).forEach(function (k) {

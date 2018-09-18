@@ -4,7 +4,7 @@ import utils from './utils'
 
 export function compileToWxml (compiled, options = {}) {
   // TODO, compiled is undefined
-  const { components = {}} = options
+  const { components = {}, filters = null } = options
   const log = utils.log(compiled)
 
   const { wxast, deps = {}, slots = {}} = wxmlAst(compiled, options, log)
@@ -12,7 +12,8 @@ export function compileToWxml (compiled, options = {}) {
 
   // 引用子模版
   const importCode = Object.keys(deps).map(k => components[k] ? `<import src="${components[k].src}" />` : '').join('')
-  code = `${importCode}<template name="${options.name}">${code}</template>`
+  const wxsCode = filters ? `<wxs src="${filters.src}" module="${filters.module}" />` : ''
+  code = `${wxsCode}${importCode}<template name="${options.name}">${code}</template>`
 
   // 生成 slots code
   Object.keys(slots).forEach(k => {
