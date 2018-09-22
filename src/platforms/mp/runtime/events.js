@@ -95,7 +95,7 @@ export function handleProxyWithVue (e) {
   const webEventTypes = eventTypeMap[type] || [type]
   const handles = getHandle(vm._vnode, eventid, webEventTypes)
 
-  // TODO, enevt 还需要处理更多
+  // TODO, event 还需要处理更多
   // https://developer.mozilla.org/zh-CN/docs/Web/API/Event
   if (handles.length) {
     const event = getWebEventByMP(e)
