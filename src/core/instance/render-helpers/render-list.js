@@ -22,7 +22,7 @@ export function renderList (
   } else if (typeof val === 'number') {
     ret = new Array(val)
     for (i = 0; i < val; i++) {
-      ret[i] = render(i + 1, i)
+      ret[i] = render(i, i)
     }
   } else if (isObject(val)) {
     keys = Object.keys(val)
