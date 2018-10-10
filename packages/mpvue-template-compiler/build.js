@@ -4567,9 +4567,27 @@ function getSlotsName (obj) {
   if (!obj) {
     return ''
   }
-  return Object.keys(obj).map(function (k) {
-    return ("$slot" + k + ":'" + (obj[k]) + "'")
-  }).join(',')
+  // wxml模板中 data="{{ a:{a1:'string2'}, b:'string'}}" 键a不能放在最后，会出错
+  return tmplateSlotsObj(obj)
+    .concat(
+      Object.keys(obj).map(function(k) {
+        return '$slot' + k + ":'" + obj[k] + "'"
+      })
+    )
+    .join(',')
+}
+
+function tmplateSlotsObj(obj) {
+  if (!obj) {
+    return []
+  }
+  // wxml模板中 data="{{ a:{a1:'string2'}, b:'string'}}" 键a1不能写成 'a1' 带引号的形式，会出错
+  var $for = Object.keys(obj)
+    .map(function(k) {
+      return (k + ":'" + (obj[k]) + "'")
+    })
+    .join(',');
+  return $for ? [("$for:{" + $for + "}")] : []
 }
 
 var component = {
@@ -4585,7 +4603,13 @@ var component = {
     var slots = ast.slots;
     if (slotName) {
       attrsMap['data'] = "{{...$root[$k], $root}}";
-      attrsMap['is'] = "{{" + slotName + "}}";
+      // bindedName is available when rendering slot in v-for
+      var bindedName = attrsMap['v-bind:name'];
+      if(bindedName) {
+        attrsMap['is'] = "{{$for[" + bindedName + "]}}";
+      } else {
+        attrsMap['is'] = "{{" + slotName + "}}";
+      }
     } else {
       var slotsName = getSlotsName(slots);
       var restSlotsName = slotsName ? (", " + slotsName) : '';

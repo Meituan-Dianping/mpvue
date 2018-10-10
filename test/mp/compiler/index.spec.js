@@ -553,10 +553,20 @@ describe('slot', () => {
     )
   })
 
+  it('含`:name`的插槽组件', () => {
+    assertCodegen(
+      `<div><slot :name="tab.key">test</slot></div>`,
+      `<template name="a"><view class="_div"><template name="default">test</template><template data="{{...$root[$k], $root}}" is="{{$for[tab.key]}}"></template></view></template>`,
+      {
+        name: 'a'
+      }
+    )
+  })
+
   it('slot name', () => {
     assertCodegen(
       `<card class="baz boo"><a slot="header">test</a></card>`,
-      `<import src="/components/card" /><template name="a"><template data="{{...$root[$kk+'0'], $root, $slotdefault:'hashValue-default-0',$slotheader:'hashValue-header-0'}}" is="card"></template></template>`,
+      `<import src="/components/card" /><template name="a"><template data="{{...$root[$kk+'0'], $root, $for:{default:'hashValue-default-0',header:'hashValue-header-0'},$slotdefault:'hashValue-default-0',$slotheader:'hashValue-header-0'}}" is="card"></template></template>`,
       {
         name: 'a',
         components: {
@@ -579,7 +589,7 @@ describe('slot', () => {
   it('slot template', () => {
     assertCodegen(
       `<card class="baz boo"><template slot="header">test</template></card>`,
-      `<import src="/components/card" /><template name="a"><template data="{{...$root[$kk+'1'], $root, $slotdefault:'hashValue-default-1',$slotheader:'hashValue-header-1'}}" is="card"></template></template>`,
+      `<import src="/components/card" /><template name="a"><template data="{{...$root[$kk+'1'], $root, $for:{default:'hashValue-default-1',header:'hashValue-header-1'},$slotdefault:'hashValue-default-1',$slotheader:'hashValue-header-1'}}" is="card"></template></template>`,
       {
         name: 'a',
         components: {
@@ -619,6 +629,7 @@ describe('slot', () => {
     )
   })
 })
+
 describe('web-view', () => {
   it('web-view', () => {
     assertCodegen(
