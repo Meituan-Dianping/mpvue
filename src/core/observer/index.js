@@ -69,7 +69,12 @@ export class Observer {
    */
   observeArray (items: Array<any>) {
     for (let i = 0, l = items.length; i < l; i++) {
-      observe(items[i])
+      // TODO: 先试验标记一下 keyPath
+      const item = items[i]
+      if (typeof item === 'object' && item !== null) {
+        item.__keyPath = (items.__keyPath ? items.__keyPath + '.' : '') + `[${i}]`
+      }
+      observe(item)
     }
   }
 }
@@ -142,6 +147,12 @@ export function defineReactive (
     return
   }
 
+  // TODO: 先试验标记一下 keyPath
+  if (typeof val === 'object' && val !== null) {
+    val.__keyPath = (obj.__keyPath ? obj.__keyPath + '.' : '') + key
+  }
+  var currPathKey = obj.__keyPath + '.' + key
+
   // cater for pre-defined getter/setters
   const getter = property && property.get
   const setter = property && property.set
@@ -180,6 +191,7 @@ export function defineReactive (
       }
       childOb = !shallow && observe(newVal)
       dep.notify()
+      console.log(currPathKey, newVal)
     }
   })
 }
