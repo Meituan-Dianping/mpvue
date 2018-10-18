@@ -4947,6 +4947,10 @@ function callHook$1 (vm, hook, params) {
     handlers = [handlers];
   }
 
+  if (hook = 'onPageNotFound' && handlers) {
+    handlers = [handlers];
+  }
+
   var ret;
   if (handlers) {
     for (var i = 0, j = handlers.length; i < j; i++) {
@@ -5160,6 +5164,10 @@ function initMP (mpType, next) {
 
       onError: function onError (err) {
         callHook$1(rootVueVM, 'onError', err);
+      },
+
+      onPageNotFound: function onPageNotFound (err) {
+        callHook$1(rootVueVM, 'onPageNotFound', err)
       }
     });
   } else if (mpType === 'component') {
