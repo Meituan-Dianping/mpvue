@@ -111,9 +111,8 @@
     <img src="https://user-images.githubusercontent.com/26808622/44326326-e1c61800-a48d-11e8-958f-d50ef7f45d62.png" width="100" title="餐饮，商超小程序"/>
     <img src="https://camo.githubusercontent.com/6f1b397785cd88ec260509e2768f10604b5711b9/687474703a2f2f7777772e77636c696d622e736974652f63646e2f7863782e6a7065673f763d31" width="100" title="妹子趣图"/>
     <img src="https://user-images.githubusercontent.com/12904977/44563258-02dd8000-a790-11e8-961d-fb50c4f27ba1.png" width="100" title="记工无忧"/>
-    <img src="https://user-images.githubusercontent.com/22048131/44619692-5994a800-a8bd-11e8-98f0-b2337ef49b35.png" width="100" title="北美省钱快报App"/>
-
-    <!-- 非标准小程序码 -->
+    <img src="https://user-images.githubusercontent.com/22048131/44619692-5994a800-a8bd-11e8-98f0-b2337ef49b35.png" width="100" title="北美省钱快报App"/> 
+  <!-- 非标准小程序码 -->
     <img src="https://user-images.githubusercontent.com/1176855/41755510-62b9fc90-760a-11e8-89be-b6ddbee08e63.jpg" width="100" title="暖茶阿妈的占卜小屋"/>
     <img src="https://user-images.githubusercontent.com/22720942/40184432-da33291c-5a22-11e8-966c-c836d1dc8078.png" width="100" />
     <img src="https://camo.githubusercontent.com/25b2636179cd939461975ada9f996c77d15c4d2a/68747470733a2f2f7778342e73696e61696d672e636e2f6d773639302f373032643563616167793166746e323975797a38666a323037363038367439612e6a7067" width="100" title="扫域名的小程序，米农帮"/>
