@@ -136,7 +136,11 @@ export function updateDataToMP () {
   }
 
   const data = formatVmData(this)
+
+  console.log(data)
+  // if (this._data.__keyPath && this._data.__keyPath.shouldUpdateToMp) { // 更新监测，setter监测到变量变化才会调用setData
   throttleSetData(page.setData.bind(page), data)
+  // }
 }
 
 export function initDataToMP () {

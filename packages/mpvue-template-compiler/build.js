@@ -2843,6 +2843,10 @@ Observer.prototype.walk = function walk (obj) {
  */
 Observer.prototype.observeArray = function observeArray (items) {
   for (var i = 0, l = items.length; i < l; i++) {
+    // const item = items[i]
+    // if (typeof item === 'object' && item !== null) {
+    // item.__keyPath = (items.__keyPath ? items.__keyPath + '.' : '') + `[${i}]`
+    // }
     observe(items[i]);
   }
 };
@@ -2915,6 +2919,12 @@ function defineReactive$$1 (
     return
   }
 
+  // TODO: 先试验标记一下 keyPath
+  // if (typeof val === 'object' && val !== null) {
+  //   val.__keyPath = (obj.__keyPath ? obj.__keyPath + '.' : '') + key
+  // }
+  // var currPathKey = obj.__keyPath + '.' + key
+
   // cater for pre-defined getter/setters
   var getter = property && property.get;
   var setter = property && property.set;
@@ -2942,6 +2952,11 @@ function defineReactive$$1 (
       if (newVal === value || (newVal !== newVal && value !== value)) {
         return
       }
+      // $attrs['mpcomid'] 写值时无论是否有改动都会触发set,导致额外损失，stringfy后对比处理是否更新
+      if (typeof newVal === 'object' && typeof value === 'object' &&
+      JSON.stringify(newVal) === JSON.stringify(value)) {
+        return
+      }
       /* eslint-enable no-self-compare */
       if (process.env.NODE_ENV !== 'production' && customSetter) {
         customSetter();
@@ -2953,6 +2968,14 @@ function defineReactive$$1 (
       }
       childOb = !shallow && observe(newVal);
       dep.notify();
+      console.log(obj);
+      if (obj.__ob__ && obj.__ob__.dep && obj.__ob__.dep.id) {
+        obj.__keyPath = {
+          key: key,
+          id: obj.__ob__.dep.id,
+          shouldUpdateToMp: true
+        };
+      }
     }
   });
 }

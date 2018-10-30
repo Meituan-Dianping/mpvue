@@ -69,6 +69,10 @@ export class Observer {
    */
   observeArray (items: Array<any>) {
     for (let i = 0, l = items.length; i < l; i++) {
+      // const item = items[i]
+      // if (typeof item === 'object' && item !== null) {
+      //   item.__keyPath = (items.__keyPath ? items.__keyPath + '.' : '') + `[${i}]`
+      // }
       observe(items[i])
     }
   }
@@ -142,6 +146,12 @@ export function defineReactive (
     return
   }
 
+  // TODO: 先试验标记一下 keyPath
+  // if (typeof val === 'object' && val !== null) {
+  //   val.__keyPath = (obj.__keyPath ? obj.__keyPath + '.' : '') + key
+  // }
+  // var currPathKey = obj.__keyPath + '.' + key
+
   // cater for pre-defined getter/setters
   const getter = property && property.get
   const setter = property && property.set
@@ -169,6 +179,11 @@ export function defineReactive (
       if (newVal === value || (newVal !== newVal && value !== value)) {
         return
       }
+      // $attrs['mpcomid'] 写值时无论是否有改动都会触发set,导致额外损失，stringfy后对比处理是否更新
+      if (typeof newVal === 'object' && typeof value === 'object' &&
+      JSON.stringify(newVal) === JSON.stringify(value)) {
+        return
+      }
       /* eslint-enable no-self-compare */
       if (process.env.NODE_ENV !== 'production' && customSetter) {
         customSetter()
@@ -180,6 +195,14 @@ export function defineReactive (
       }
       childOb = !shallow && observe(newVal)
       dep.notify()
+      console.log(obj)
+      if (obj.__ob__ && obj.__ob__.dep && obj.__ob__.dep.id) {
+        obj.__keyPath = {
+          key: key,
+          id: obj.__ob__.dep.id,
+          shouldUpdateToMp: true
+        }
+      }
     }
   })
 }
