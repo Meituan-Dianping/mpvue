@@ -2,7 +2,7 @@ import wxmlAst from './convert/index'
 import generate from './generate'
 import utils from './utils'
 
-export function compileToWxml (compiled, options = {}) {
+export default function compileToWxml (compiled, options = {}) {
   // TODO, compiled is undefined
   const { components = {}} = options
   const log = utils.log(compiled)
