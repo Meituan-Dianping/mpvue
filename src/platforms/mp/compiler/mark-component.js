@@ -10,7 +10,7 @@ function getWxEleId (index, arr) {
   }
 
   const str = arr.join(`+'-'+`)
-  return `'${index}-'+${str}`
+  return `'${index}_'+${str}`
 }
 
 // 检查不允许在 v-for 的时候出现2个及其以上相同 iterator1
