@@ -763,10 +763,13 @@ var observerState = {
  * object's property keys into getter/setters that
  * collect dependencies and dispatches updates.
  */
-var Observer = function Observer (value) {
+var Observer = function Observer (value, key) {
   this.value = value;
   this.dep = new Dep();
   this.vmCount = 0;
+  if (key) {
+    this.key = key;
+  }
   def(value, '__ob__', this);
   if (Array.isArray(value)) {
     var augment = hasProto
@@ -833,7 +836,7 @@ function copyAugment (target, src, keys) {
  * returns the new observer if successfully observed,
  * or the existing observer if the value already has one.
  */
-function observe (value, asRootData) {
+function observe (value, asRootData, key) {
   if (!isObject(value)) {
     return
   }
@@ -847,7 +850,13 @@ function observe (value, asRootData) {
     Object.isExtensible(value) &&
     !value._isVue
   ) {
-    ob = new Observer(value);
+    ob = new Observer(value, key);
+    ob.__keyPath = ob.__keyPath ? ob.__keyPath : [];
+    ob.__keyPath.push({
+      key: key,
+      val: value,
+      shouldUpdateToMp: true
+    });
   }
   if (asRootData && ob) {
     ob.vmCount++;
@@ -882,7 +891,7 @@ function defineReactive$$1 (
   var getter = property && property.get;
   var setter = property && property.set;
 
-  var childOb = !shallow && observe(val);
+  var childOb = !shallow && observe(val, undefined, key);
   Object.defineProperty(obj, key, {
     enumerable: true,
     configurable: true,
@@ -905,11 +914,7 @@ function defineReactive$$1 (
       if (newVal === value || (newVal !== newVal && value !== value)) {
         return
       }
-      // $attrs['mpcomid'] 写值时无论是否有改动都会触发set,导致额外损失，stringfy后对比处理是否更新
-      if (typeof newVal === 'object' && typeof value === 'object' &&
-      JSON.stringify(newVal) === JSON.stringify(value)) {
-        return
-      }
+
       /* eslint-enable no-self-compare */
       if ("production" !== 'production' && customSetter) {
         customSetter();
@@ -919,16 +924,14 @@ function defineReactive$$1 (
       } else {
         val = newVal;
       }
-      childOb = !shallow && observe(newVal);
+      childOb = !shallow && observe(newVal, undefined, key);
       dep.notify();
-      console.log(obj);
-      if (obj.__ob__ && obj.__ob__.dep && obj.__ob__.dep.id) {
-        obj.__keyPath = {
-          key: key,
-          id: obj.__ob__.dep.id,
-          shouldUpdateToMp: true
-        };
-      }
+      obj.__keyPath = obj.__keyPath ? obj.__keyPath : [];
+      obj.__keyPath.push({
+        key: key,
+        val: newVal,
+        shouldUpdateToMp: true
+      });
     }
   });
 }
@@ -5452,6 +5455,42 @@ function getPage (vm) {
   return page
 }
 
+// 优化js变量动态变化时候引起全量更新
+function diffData (vm, data) {
+  var upDateList = [];
+  if (vm._data && vm._data.__keyPath && vm._data.__keyPath.length > 0) {
+    // _data上有需要更新的
+    upDateList = upDateList.concat(vm._data.__keyPath);
+    vm._data.__keyPath = [];
+  }
+  if (vm._props && vm._props.__keyPath && vm._props.__keyPath.length > 0) {
+  // _data上有需要更新的
+    upDateList = upDateList.concat(vm._props.__keyPath);
+    vm._props.__keyPath = [];
+  }
+  if (vm.__keyPath && vm.__keyPath.length > 0) {
+  // data有keyPath但是没有更新 返回
+    upDateList = upDateList.concat(vm.__keyPath);
+    vm.__keyPath = [];
+  }
+  if (upDateList.length === 0) {
+    // 都没有keyPath ,不是$set引起的变化，全量更新数据
+    return data
+  }
+  // 根组件前缀
+  var vnodeDataKey = '$root.0';
+  if (vm.$attrs && vm.$attrs['mpcomid']) {
+     // 子组件前缀
+    vnodeDataKey = vnodeDataKey + ',' + vm.$attrs['mpcomid'];
+  }
+  var res = {};
+  upDateList.forEach(function (item) {
+    var realKey = vnodeDataKey + '.' + item.key;
+    res[realKey] = item.val;
+  });
+  return res
+}
+
 // 优化每次 setData 都传递大量新数据
 function updateDataToMP () {
   var page = getPage(this);
@@ -5461,16 +5500,10 @@ function updateDataToMP () {
 
   var data = formatVmData(this);
 
-  if ((!this._data.__keyPath || this._data.__keyPath.shouldUpdateToMp === false) && this.$parent &&
-  this.$parent._data.__keyPath && this.$parent._data.__keyPath.shouldUpdateToMp === true) {
-    // 子节点没标记更新，父节点更新引起的path,不setData,减少负担
-    return
-  }
-  if (this._data.__keyPath && this._data.__keyPath.shouldUpdateToMp === true) {
-    this._data.__keyPath.shouldUpdateToMp = false; // 已更新了
-  }
-  console.log(data);
+  data = diffData(this, data);
+
   throttleSetData(page.setData.bind(page), data);
+  console.log(this);
 }
 
 function initDataToMP () {

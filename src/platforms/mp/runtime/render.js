@@ -128,6 +128,42 @@ function getPage (vm) {
   return page
 }
 
+// 优化js变量动态变化时候引起全量更新
+function diffData (vm, data) {
+  let upDateList = []
+  if (vm._data && vm._data.__keyPath && vm._data.__keyPath.length > 0) {
+    // _data上有需要更新的
+    upDateList = upDateList.concat(vm._data.__keyPath)
+    vm._data.__keyPath = []
+  }
+  if (vm._props && vm._props.__keyPath && vm._props.__keyPath.length > 0) {
+  // _data上有需要更新的
+    upDateList = upDateList.concat(vm._props.__keyPath)
+    vm._props.__keyPath = []
+  }
+  if (vm.__keyPath && vm.__keyPath.length > 0) {
+  // data有keyPath但是没有更新 返回
+    upDateList = upDateList.concat(vm.__keyPath)
+    vm.__keyPath = []
+  }
+  if (upDateList.length === 0) {
+    // 都没有keyPath ,不是$set引起的变化，全量更新数据
+    return data
+  }
+  // 根组件前缀
+  let vnodeDataKey = '$root.0'
+  if (vm.$attrs && vm.$attrs['mpcomid']) {
+     // 子组件前缀
+    vnodeDataKey = vnodeDataKey + ',' + vm.$attrs['mpcomid']
+  }
+  const res = {}
+  upDateList.forEach((item) => {
+    const realKey = vnodeDataKey + '.' + item.key
+    res[realKey] = item.val
+  })
+  return res
+}
+
 // 优化每次 setData 都传递大量新数据
 export function updateDataToMP () {
   const page = getPage(this)
@@ -135,17 +171,12 @@ export function updateDataToMP () {
     return
   }
 
-  const data = formatVmData(this)
+  let data = formatVmData(this)
 
-  if ((!this._data.__keyPath || this._data.__keyPath.shouldUpdateToMp === false) && this.$parent &&
-  this.$parent._data.__keyPath && this.$parent._data.__keyPath.shouldUpdateToMp === true) {
-    // 子节点没标记更新，父节点更新引起的path,不setData,减少负担
-    return
-  }
-  if (this._data.__keyPath && this._data.__keyPath.shouldUpdateToMp === true) {
-    this._data.__keyPath.shouldUpdateToMp = false // 已更新了
-  }
+  data = diffData(this, data)
+
   throttleSetData(page.setData.bind(page), data)
+  console.log(this)
 }
 
 export function initDataToMP () {

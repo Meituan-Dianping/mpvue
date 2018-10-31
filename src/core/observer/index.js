@@ -36,10 +36,13 @@ export class Observer {
   dep: Dep;
   vmCount: number; // number of vms that has this object as root $data
 
-  constructor (value: any) {
+  constructor (value: any, key: any) {
     this.value = value
     this.dep = new Dep()
     this.vmCount = 0
+    if (key) {
+      this.key = key
+    }
     def(value, '__ob__', this)
     if (Array.isArray(value)) {
       const augment = hasProto
@@ -107,7 +110,7 @@ function copyAugment (target: Object, src: Object, keys: Array<string>) {
  * returns the new observer if successfully observed,
  * or the existing observer if the value already has one.
  */
-export function observe (value: any, asRootData: ?boolean): Observer | void {
+export function observe (value: any, asRootData: ?boolean, key: any): Observer | void {
   if (!isObject(value)) {
     return
   }
@@ -121,7 +124,13 @@ export function observe (value: any, asRootData: ?boolean): Observer | void {
     Object.isExtensible(value) &&
     !value._isVue
   ) {
-    ob = new Observer(value)
+    ob = new Observer(value, key)
+    ob.__keyPath = ob.__keyPath ? ob.__keyPath : []
+    ob.__keyPath.push({
+      key: key,
+      val: value,
+      shouldUpdateToMp: true
+    })
   }
   if (asRootData && ob) {
     ob.vmCount++
@@ -156,7 +165,7 @@ export function defineReactive (
   const getter = property && property.get
   const setter = property && property.set
 
-  let childOb = !shallow && observe(val)
+  let childOb = !shallow && observe(val, undefined, key)
   Object.defineProperty(obj, key, {
     enumerable: true,
     configurable: true,
@@ -179,11 +188,7 @@ export function defineReactive (
       if (newVal === value || (newVal !== newVal && value !== value)) {
         return
       }
-      // $attrs['mpcomid'] 写值时无论是否有改动都会触发set,导致额外损失，stringfy后对比处理是否更新
-      if (typeof newVal === 'object' && typeof value === 'object' &&
-      JSON.stringify(newVal) === JSON.stringify(value)) {
-        return
-      }
+
       /* eslint-enable no-self-compare */
       if (process.env.NODE_ENV !== 'production' && customSetter) {
         customSetter()
@@ -193,16 +198,14 @@ export function defineReactive (
       } else {
         val = newVal
       }
-      childOb = !shallow && observe(newVal)
+      childOb = !shallow && observe(newVal, undefined, key)
       dep.notify()
-      console.log(obj)
-      if (obj.__ob__ && obj.__ob__.dep && obj.__ob__.dep.id) {
-        obj.__keyPath = {
-          key: key,
-          id: obj.__ob__.dep.id,
-          shouldUpdateToMp: true
-        }
-      }
+      obj.__keyPath = obj.__keyPath ? obj.__keyPath : []
+      obj.__keyPath.push({
+        key: key,
+        val: newVal,
+        shouldUpdateToMp: true
+      })
     }
   })
 }

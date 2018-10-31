@@ -2810,10 +2810,13 @@ var observerState = {
  * object's property keys into getter/setters that
  * collect dependencies and dispatches updates.
  */
-var Observer = function Observer (value) {
+var Observer = function Observer (value, key) {
   this.value = value;
   this.dep = new Dep();
   this.vmCount = 0;
+  if (key) {
+    this.key = key;
+  }
   def(value, '__ob__', this);
   if (Array.isArray(value)) {
     var augment = hasProto
@@ -2880,7 +2883,7 @@ function copyAugment (target, src, keys) {
  * returns the new observer if successfully observed,
  * or the existing observer if the value already has one.
  */
-function observe (value, asRootData) {
+function observe (value, asRootData, key) {
   if (!isObject(value)) {
     return
   }
@@ -2894,7 +2897,13 @@ function observe (value, asRootData) {
     Object.isExtensible(value) &&
     !value._isVue
   ) {
-    ob = new Observer(value);
+    ob = new Observer(value, key);
+    ob.__keyPath = ob.__keyPath ? ob.__keyPath : [];
+    ob.__keyPath.push({
+      key: key,
+      val: value,
+      shouldUpdateToMp: true
+    });
   }
   if (asRootData && ob) {
     ob.vmCount++;
@@ -2929,7 +2938,7 @@ function defineReactive$$1 (
   var getter = property && property.get;
   var setter = property && property.set;
 
-  var childOb = !shallow && observe(val);
+  var childOb = !shallow && observe(val, undefined, key);
   Object.defineProperty(obj, key, {
     enumerable: true,
     configurable: true,
@@ -2952,11 +2961,7 @@ function defineReactive$$1 (
       if (newVal === value || (newVal !== newVal && value !== value)) {
         return
       }
-      // $attrs['mpcomid'] 写值时无论是否有改动都会触发set,导致额外损失，stringfy后对比处理是否更新
-      if (typeof newVal === 'object' && typeof value === 'object' &&
-      JSON.stringify(newVal) === JSON.stringify(value)) {
-        return
-      }
+
       /* eslint-enable no-self-compare */
       if (process.env.NODE_ENV !== 'production' && customSetter) {
         customSetter();
@@ -2966,16 +2971,14 @@ function defineReactive$$1 (
       } else {
         val = newVal;
       }
-      childOb = !shallow && observe(newVal);
+      childOb = !shallow && observe(newVal, undefined, key);
       dep.notify();
-      console.log(obj);
-      if (obj.__ob__ && obj.__ob__.dep && obj.__ob__.dep.id) {
-        obj.__keyPath = {
-          key: key,
-          id: obj.__ob__.dep.id,
-          shouldUpdateToMp: true
-        };
-      }
+      obj.__keyPath = obj.__keyPath ? obj.__keyPath : [];
+      obj.__keyPath.push({
+        key: key,
+        val: newVal,
+        shouldUpdateToMp: true
+      });
     }
   });
 }
