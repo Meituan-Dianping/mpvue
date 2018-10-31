@@ -5486,7 +5486,30 @@ function diffData (vm, data) {
   var res = {};
   upDateList.forEach(function (item) {
     var realKey = vnodeDataKey + '.' + item.key;
-    res[realKey] = item.val;
+    if (typeof item.val === 'object' && item.val.__keyPath && item.val.__keyPath.length > 0) {
+      var deployedRes = deployObjectVal(realKey, item.val, item.val.__keyPath);
+      res = Object.assign({}, res, deployedRes);
+      // 用delete清理__keyPath 防止递归引用
+      delete item.val.__keyPath;
+    } else {
+      res[realKey] = item.val;
+    }
+  });
+  return res
+}
+
+function deployObjectVal (realKey, val, __keyPath) {
+   // 展开object类型 val值
+  var res = {};
+  __keyPath.forEach(function (item) {
+    if (typeof item.val === 'object' && item.val.__keyPath && item.val.__keyPath.length > 0) {
+      var deployedRes = deployObjectVal(realKey + '.' + item.key, item.val, item.val.__keyPath);
+      res = Object.assign({}, res, deployedRes);
+      // 用delete清理__keyPath 防止递归引用
+      delete item.val.__keyPath;
+    } else {
+      res[realKey + '.' + item.key] = item.val;
+    }
   });
   return res
 }
@@ -5501,9 +5524,8 @@ function updateDataToMP () {
   var data = formatVmData(this);
 
   data = diffData(this, data);
-
-  throttleSetData(page.setData.bind(page), data);
   console.log(this);
+  throttleSetData(page.setData.bind(page), data);
 }
 
 function initDataToMP () {
