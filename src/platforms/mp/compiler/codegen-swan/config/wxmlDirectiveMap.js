@@ -15,15 +15,15 @@ const noSupport = {
 }
 export default {
   'v-if': {
-    name: 'wx:if',
-    type: 0
+    name: 's-if',
+    type: 2
   },
   'v-else-if': {
-    name: 'wx:elif',
-    type: 0
+    name: 's-elif',
+    type: 2
   },
   'v-else': {
-    name: 'wx:else',
+    name: 'w-else',
     type: 1
   },
   'v-text': {

@@ -6,7 +6,6 @@ import codeGenWx from './codegen/index'
 import codeGenSwan from './codegen-swan/index'
 
 function compileToWxml (compiled, options, fileExt) {
-    debugger
     let code
     switch(fileExt.platform) {
         case 'swan':

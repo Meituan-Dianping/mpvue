@@ -1,7 +1,7 @@
 export default {
-  if: 'wx:if',
-  iterator1: 'wx:for-index',
-  key: 'wx:key',
-  alias: 'wx:for-item',
-  'v-for': 'wx:for'
+  // 'if': 's-if',
+  'v-for': 's-for',
+  'alias': 's-for-item',
+  'iterator1': 's-for-index',
+  'key': 's-key'
 }
