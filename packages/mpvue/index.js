@@ -5461,10 +5461,16 @@ function updateDataToMP () {
 
   var data = formatVmData(this);
 
+  if ((!this._data.__keyPath || this._data.__keyPath.shouldUpdateToMp === false) && this.$parent &&
+  this.$parent._data.__keyPath && this.$parent._data.__keyPath.shouldUpdateToMp === true) {
+    // 子节点没标记更新，父节点更新引起的path,不setData,减少负担
+    return
+  }
+  if (this._data.__keyPath && this._data.__keyPath.shouldUpdateToMp === true) {
+    this._data.__keyPath.shouldUpdateToMp = false; // 已更新了
+  }
   console.log(data);
-  // if (this._data.__keyPath && this._data.__keyPath.shouldUpdateToMp) { // 更新监测，setter监测到变量变化才会调用setData
   throttleSetData(page.setData.bind(page), data);
-  // }
 }
 
 function initDataToMP () {
