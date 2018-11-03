@@ -2785,6 +2785,13 @@ var arrayMethods = Object.create(arrayProto);[
     }
     if (inserted) { ob.observeArray(inserted); }
     // notify change
+    ob.__keyPath = ob.__keyPath ? ob.__keyPath : [];
+    ob.__keyPath.push({
+      key: ob.key,
+      val: ob.value,
+      type: 'array',
+      shouldUpdateToMp: true
+    });
     ob.dep.notify();
     return result
   });
@@ -3011,6 +3018,13 @@ function set (target, key, val) {
     return val
   }
   defineReactive$$1(ob.value, key, val);
+  // Vue.set 添加对象属性，渲染时候把val传给小程序渲染
+  target.__keyPath = target.__keyPath ? target.__keyPath : [];
+  target.__keyPath.push({
+    key: key,
+    val: val,
+    shouldUpdateToMp: true
+  });
   ob.dep.notify();
   return val
 }

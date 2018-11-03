@@ -38,6 +38,13 @@ export const arrayMethods = Object.create(arrayProto)
     }
     if (inserted) ob.observeArray(inserted)
     // notify change
+    ob.__keyPath = ob.__keyPath ? ob.__keyPath : []
+    ob.__keyPath.push({
+      key: ob.key,
+      val: ob.value,
+      type: 'array',
+      shouldUpdateToMp: true
+    })
     ob.dep.notify()
     return result
   })

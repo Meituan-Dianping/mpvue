@@ -238,6 +238,13 @@ export function set (target: Array<any> | Object, key: any, val: any): any {
     return val
   }
   defineReactive(ob.value, key, val)
+  // Vue.set 添加对象属性，渲染时候把val传给小程序渲染
+  target.__keyPath = target.__keyPath ? target.__keyPath : []
+  target.__keyPath.push({
+    key: key,
+    val: val,
+    shouldUpdateToMp: true
+  })
   ob.dep.notify()
   return val
 }
@@ -265,6 +272,13 @@ export function del (target: Array<any> | Object, key: any) {
   if (!ob) {
     return
   }
+  target.__keyPath = target.__keyPath ? target.__keyPath : []
+  // Vue.del 删除对象属性，渲染时候把这个属性设置为undefined
+  target.__keyPath.push({
+    key: key,
+    val: undefined,
+    shouldUpdateToMp: true
+  })
   ob.dep.notify()
 }
 

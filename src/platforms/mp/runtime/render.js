@@ -1,6 +1,8 @@
 // 节流方法，性能优化
 import { getComKey } from '../util/index'
 
+import { diffData } from './diff-data'
+
 // 全局的命名约定，为了节省编译的包大小一律采取形象的缩写，说明如下。
 // $c === $child
 // $k === $comKey
@@ -129,63 +131,6 @@ function getPage (vm) {
 }
 
 // 优化js变量动态变化时候引起全量更新
-function diffData (vm, data) {
-  let upDateList = []
-  if (vm._data && vm._data.__keyPath && vm._data.__keyPath.length > 0) {
-    // _data上有需要更新的
-    upDateList = upDateList.concat(vm._data.__keyPath)
-    vm._data.__keyPath = []
-  }
-  if (vm._props && vm._props.__keyPath && vm._props.__keyPath.length > 0) {
-  // _data上有需要更新的
-    upDateList = upDateList.concat(vm._props.__keyPath)
-    vm._props.__keyPath = []
-  }
-  if (vm.__keyPath && vm.__keyPath.length > 0) {
-  // data有keyPath但是没有更新 返回
-    upDateList = upDateList.concat(vm.__keyPath)
-    vm.__keyPath = []
-  }
-  if (upDateList.length === 0) {
-    // 都没有keyPath ,不是$set引起的变化，全量更新数据
-    return data
-  }
-  // 根组件前缀
-  let vnodeDataKey = '$root.0'
-  if (vm.$attrs && vm.$attrs['mpcomid']) {
-     // 子组件前缀
-    vnodeDataKey = vnodeDataKey + ',' + vm.$attrs['mpcomid']
-  }
-  let res = {}
-  upDateList.forEach((item) => {
-    const realKey = vnodeDataKey + '.' + item.key
-    if (typeof item.val === 'object' && item.val.__keyPath && item.val.__keyPath.length > 0) {
-      const deployedRes = deployObjectVal(realKey, item.val, item.val.__keyPath)
-      res = Object.assign({}, res, deployedRes)
-      // 用delete清理__keyPath 防止递归引用
-      delete item.val.__keyPath
-    } else {
-      res[realKey] = item.val
-    }
-  })
-  return res
-}
-
-function deployObjectVal (realKey, val, __keyPath) {
-   // 展开object类型 val值
-  let res = {}
-  __keyPath.forEach((item) => {
-    if (typeof item.val === 'object' && item.val.__keyPath && item.val.__keyPath.length > 0) {
-      const deployedRes = deployObjectVal(realKey + '.' + item.key, item.val, item.val.__keyPath)
-      res = Object.assign({}, res, deployedRes)
-      // 用delete清理__keyPath 防止递归引用
-      delete item.val.__keyPath
-    } else {
-      res[realKey + '.' + item.key] = item.val
-    }
-  })
-  return res
-}
 
 // 优化每次 setData 都传递大量新数据
 export function updateDataToMP () {
@@ -194,10 +139,10 @@ export function updateDataToMP () {
     return
   }
 
-  let data = formatVmData(this)
+  const data = formatVmData(this)
 
-  data = diffData(this, data)
-  console.log(this)
+  diffData(this, data)
+
   throttleSetData(page.setData.bind(page), data)
 }
 
