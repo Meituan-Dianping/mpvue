@@ -1,8 +1,8 @@
-function depolyRootData (rootKey, data) {
-  Object.keys(data[rootKey]).forEach((_key) => {
+function depolyRootData (rootKey, data, vmProps) {
+  Object.keys(vmProps).forEach((_key) => {
     if (_key === '__keyPath') { return }
-    if (data[rootKey][_key] instanceof Array) { return }
-    data[rootKey + '.' + _key] = data[rootKey][_key]
+    if (vmProps[_key] instanceof Array) { return }
+    data[rootKey + '.' + _key] = vmProps[_key]
   })
   delete data[rootKey]
 }
@@ -21,7 +21,19 @@ function depolyArrayData (rootKey, originKey, vmData, data) {
 function minifyDeepData (rootKey, originKey, vmData, data, root, _mpValueSet) {
   if (vmData instanceof Array) {
        // 数组
-    depolyArrayData(rootKey, originKey, vmData, data)
+    let ArrayNeedDeploy = false
+    vmData.forEach((item) => {
+      if (item instanceof Object) {
+        ArrayNeedDeploy = true
+        return
+      }
+    })
+    if (ArrayNeedDeploy) {
+      depolyArrayData(rootKey, originKey, vmData, data)
+    } else {
+      // 全是值类型的 保持root.0.list = [2,2]格式setData
+      data[rootKey + '.' + originKey] = vmData
+    }
   } else {
       // Object
     let __keyPathOnThis = [] // 存储这层对象的keyPath
@@ -75,9 +87,10 @@ export function diffData (vm, data) {
     rootKey = rootKey + ',' + vm.$attrs.mpcomid
   }
     // 值类型变量不考虑优化，还是直接更新
-  vm.__keyPath = null
-  vmData.__keyPath = null
-  vmProps.__keyPath = null
+  const _onDataKeyPath = vmData.__keyPath || vm.__keyPath || []
+  delete vm.__keyPath
+  delete vmData.__keyPath
+  delete vmProps.__keyPath
   if (vm._mpValueSet === 'done') {
     // 第二次赋值才进行缩减操作
     Object.keys(vmData).forEach((vmDataItemKey) => {
@@ -85,6 +98,13 @@ export function diffData (vm, data) {
         // 引用类型
         if (vmDataItemKey === '__keyPath') { return }
         minifyDeepData(rootKey, vmDataItemKey, vmData[vmDataItemKey], data, true, vm._mpValueSet)
+      } else {
+        // _data上的值属性只有要更新的时候才赋值
+        _onDataKeyPath.forEach((item) => {
+          if (item.key === vmDataItemKey) {
+            data[rootKey + '.' + vmDataItemKey] = vmData[vmDataItemKey]
+          }
+        })
       }
     })
     Object.keys(vmProps).forEach((vmPropsItemKey) => {
@@ -93,9 +113,10 @@ export function diffData (vm, data) {
         if (vmPropsItemKey === '__keyPath') { return }
         minifyDeepData(rootKey, vmPropsItemKey, vmProps[vmPropsItemKey], data, true, vm._mpValueSet)
       }
+      // _props上的值属性只有要更新的时候才赋值
     })
       // 更新的时候要平铺$root.0:{},否则会覆盖原正确数据
-    depolyRootData(rootKey, data)
+    depolyRootData(rootKey, data, vmProps)
   }
   if (vm._mpValueSet === undefined) {
       // 第一次设置数据成功后，标记位置true,再更新到这个节点如果没有keyPath数组认为不需要更新
