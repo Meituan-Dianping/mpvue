@@ -5333,8 +5333,6 @@ function initMP (mpType, next) {
   }
 }
 
-var vmDataMap = {};// 存放所有vmData
-
 function depolyRootData (rootKey, data, vmProps) {
   Object.keys(vmProps).forEach(function (_key) {
     if (_key === '__keyPath') { return }
@@ -5344,18 +5342,18 @@ function depolyRootData (rootKey, data, vmProps) {
   delete data[rootKey];
 }
 
-function depolyArrayData (rootKey, originKey, vmData, data) {
+function depolyArrayData (rootKey, originKey, vmData, data, vm) {
   for (var i = 0; i < vmData.length; i++) {
     if (vmData[i] instanceof Object) {
            // 引用类型 递归
-      minifyDeepData(rootKey + '.' + originKey + '[' + i + ']', null, vmData[i], data);
+      minifyDeepData(rootKey + '.' + originKey + '[' + i + ']', null, vmData[i], data, null, null, vm);
     } else {
       data[rootKey + '.' + originKey + '[' + i + ']'] = vmData[i];
     }
   }
 }
 
-function minifyDeepData (rootKey, originKey, vmData, data, root, _mpValueSet) {
+function minifyDeepData (rootKey, originKey, vmData, data, root, _mpValueSet, vm) {
   try {
     if (vmData instanceof Array) {
        // 数组
@@ -5367,7 +5365,7 @@ function minifyDeepData (rootKey, originKey, vmData, data, root, _mpValueSet) {
         }
       });
       if (ArrayNeedDeploy) {
-        depolyArrayData(rootKey, originKey, vmData, data);
+        depolyArrayData(rootKey, originKey, vmData, data, vm);
       } else {
       // 全是值类型的 保持root.0.list = [2,2]格式setData
         data[rootKey + '.' + originKey] = vmData;
@@ -5383,7 +5381,8 @@ function minifyDeepData (rootKey, originKey, vmData, data, root, _mpValueSet) {
           delete data[rootKey][originKey];
         }
       // 根节点可能有父子引用同一个引用类型数据，依赖树都遍历完后清理
-        vmDataMap[vmData.__ob__.dep.id] = vmData;
+        vm['__mpKeyPath'] = vm['__mpKeyPath'] || {};
+        vm['__mpKeyPath'][vmData.__ob__.dep.id] = vmData;
       } else {
         // 没有更新列表
         if (root && _mpValueSet === 'done') {
@@ -5400,7 +5399,7 @@ function minifyDeepData (rootKey, originKey, vmData, data, root, _mpValueSet) {
           if (_key === '__keyPath') {
             return
           }
-          minifyDeepData(rootKey + '.' + originKey, _key, vmData[_key], data);
+          minifyDeepData(rootKey + '.' + originKey, _key, vmData[_key], data, null, null, vm);
         } else {
           // 更新列表中的 加入data
           _keyPathOnThis.forEach(function (item) {
@@ -5420,8 +5419,12 @@ function minifyDeepData (rootKey, originKey, vmData, data, root, _mpValueSet) {
   }
 }
 
-function cleanKeyPath () {
-  console.log(vmDataMap);
+function cleanKeyPath (vm) {
+  if (vm.__mpKeyPath) {
+    Object.keys(vm.__mpKeyPath).forEach(function (_key) {
+      delete vm.__mpKeyPath[_key]['__keyPath'];
+    });
+  }
 }
 
 function getRootKey (vm, rootKey) {
@@ -5435,6 +5438,12 @@ function getRootKey (vm, rootKey) {
 }
 
 function diffData (vm, data) {
+  if (vm._mpValueSet === 'setDataReady') {
+    vm._mpValueSet = 'done';
+    vm.$nextTick(function () {
+      cleanKeyPath(vm);
+    });
+  }
   var vmData = vm._data || {};
   var vmProps = vm._props || {};
   var rootKey = '';
@@ -5443,7 +5452,7 @@ function diffData (vm, data) {
   } else {
     rootKey = getRootKey(vm, vm.$attrs.mpcomid);
   }
-  console.log(rootKey);
+  // console.log(rootKey)
 
     // 值类型变量不考虑优化，还是直接更新
   var _onDataKeyPath = vmData.__keyPath || vm.__keyPath || [];
@@ -5456,7 +5465,7 @@ function diffData (vm, data) {
       if (vmData[vmDataItemKey] instanceof Object) {
           // 引用类型
         if (vmDataItemKey === '__keyPath') { return }
-        minifyDeepData(rootKey, vmDataItemKey, vmData[vmDataItemKey], data, true, vm._mpValueSet);
+        minifyDeepData(rootKey, vmDataItemKey, vmData[vmDataItemKey], data, true, vm._mpValueSet, vm);
       } else {
           // _data上的值属性只有要更新的时候才赋值
         _onDataKeyPath.forEach(function (item) {
@@ -5471,7 +5480,7 @@ function diffData (vm, data) {
       if (vmProps[vmPropsItemKey] instanceof Object) {
         // 引用类型
         if (vmPropsItemKey === '__keyPath') { return }
-        minifyDeepData(rootKey, vmPropsItemKey, vmProps[vmPropsItemKey], data, true, vm._mpValueSet);
+        minifyDeepData(rootKey, vmPropsItemKey, vmProps[vmPropsItemKey], data, true, vm._mpValueSet, vm);
       }
       // _props上的值属性只有要更新的时候才赋值
     });
@@ -5481,8 +5490,9 @@ function diffData (vm, data) {
   if (vm._mpValueSet === undefined) {
       // 第一次设置数据成功后，标记位置true,再更新到这个节点如果没有keyPath数组认为不需要更新
     vm._mpValueSet = 'done';
+  } else if (vm._mpValueSet === 'done') {
+    vm._mpValueSet = 'setDataReady';
   }
-  cleanKeyPath();
   console.log(vm);
   console.log(data);
 }
