@@ -5333,10 +5333,12 @@ function initMP (mpType, next) {
   }
 }
 
+var vmDataMap = {};// 存放所有vmData
+
 function depolyRootData (rootKey, data, vmProps) {
   Object.keys(vmProps).forEach(function (_key) {
     if (_key === '__keyPath') { return }
-    if (vmProps[_key] instanceof Array) { return }
+    if (vmProps[_key] instanceof Object) { return }
     data[rootKey + '.' + _key] = vmProps[_key];
   });
   delete data[rootKey];
@@ -5379,8 +5381,8 @@ function minifyDeepData (rootKey, originKey, vmData, data, root, _mpValueSet) {
           // 根数据节点，有更新列表情况下，删除原来的大JSONObject属性，改用扁平赋值
         delete data[rootKey][originKey];
       }
-      // 根节点可能有父子引用同一个引用类型数据，检查清理__keyPath
-      vmData.__keyPath;
+      // 根节点可能有父子引用同一个引用类型数据，依赖树都遍历完后清理
+      vmDataMap[vmData.__ob__.dep.id] = vmData;
     } else {
         // 没有更新列表
       if (root && _mpValueSet === 'done') {
@@ -5414,6 +5416,10 @@ function minifyDeepData (rootKey, originKey, vmData, data, root, _mpValueSet) {
   }
 }
 
+function cleanKeyPath () {
+  console.log(vmDataMap);
+}
+
 function diffData (vm, data) {
   var vmData = vm._data || {};
   var vmProps = vm._props || {};
@@ -5428,20 +5434,25 @@ function diffData (vm, data) {
   delete vmProps.__keyPath;
   if (vm._mpValueSet === 'done') {
     // 第二次赋值才进行缩减操作
-    Object.keys(vmData).forEach(function (vmDataItemKey) {
-      if (vmData[vmDataItemKey] instanceof Object) {
-        // 引用类型
-        if (vmDataItemKey === '__keyPath') { return }
-        minifyDeepData(rootKey, vmDataItemKey, vmData[vmDataItemKey], data, true, vm._mpValueSet);
-      } else {
-        // _data上的值属性只有要更新的时候才赋值
-        _onDataKeyPath.forEach(function (item) {
-          if (item.key === vmDataItemKey) {
-            data[rootKey + '.' + vmDataItemKey] = vmData[vmDataItemKey];
-          }
-        });
-      }
-    });
+    try {
+      Object.keys(vmData).forEach(function (vmDataItemKey) {
+        if (vmData[vmDataItemKey] instanceof Object) {
+          // 引用类型
+          if (vmDataItemKey === '__keyPath') { return }
+          minifyDeepData(rootKey, vmDataItemKey, vmData[vmDataItemKey], data, true, vm._mpValueSet);
+        } else {
+          // _data上的值属性只有要更新的时候才赋值
+          _onDataKeyPath.forEach(function (item) {
+            if (item.key === vmDataItemKey) {
+              data[rootKey + '.' + vmDataItemKey] = vmData[vmDataItemKey];
+            }
+          });
+        }
+      });
+    } catch (e) {
+      console.log(vmData);
+    }
+
     Object.keys(vmProps).forEach(function (vmPropsItemKey) {
       if (vmProps[vmPropsItemKey] instanceof Object) {
         // 引用类型
@@ -5457,6 +5468,7 @@ function diffData (vm, data) {
       // 第一次设置数据成功后，标记位置true,再更新到这个节点如果没有keyPath数组认为不需要更新
     vm._mpValueSet = 'done';
   }
+  cleanKeyPath();
   console.log(vm);
   console.log(data);
 }
