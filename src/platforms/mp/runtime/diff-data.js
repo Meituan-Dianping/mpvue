@@ -21,63 +21,67 @@ function depolyArrayData (rootKey, originKey, vmData, data) {
 }
 
 function minifyDeepData (rootKey, originKey, vmData, data, root, _mpValueSet) {
-  if (vmData instanceof Array) {
+  try {
+    if (vmData instanceof Array) {
        // 数组
-    let ArrayNeedDeploy = false
-    vmData.forEach((item) => {
-      if (item instanceof Object) {
-        ArrayNeedDeploy = true
-        return
-      }
-    })
-    if (ArrayNeedDeploy) {
-      depolyArrayData(rootKey, originKey, vmData, data)
-    } else {
-      // 全是值类型的 保持root.0.list = [2,2]格式setData
-      data[rootKey + '.' + originKey] = vmData
-    }
-  } else {
-      // Object
-    let __keyPathOnThis = [] // 存储这层对象的keyPath
-    if (vmData.__keyPath) {
-        // 有更新列表 ，按照更新列表更新
-      __keyPathOnThis = vmData.__keyPath
-      if (root) {
-          // 根数据节点，有更新列表情况下，删除原来的大JSONObject属性，改用扁平赋值
-        delete data[rootKey][originKey]
-      }
-      // 根节点可能有父子引用同一个引用类型数据，依赖树都遍历完后清理
-      vmDataMap[vmData.__ob__.dep.id] = vmData
-    } else {
-        // 没有更新列表
-      if (root && _mpValueSet === 'done') {
-          // 设置过值的 没更新列表，从data中去除
-        delete data[rootKey][originKey]
-        return
-      } else {
-        return
-      }
-    }
-    Object.keys(vmData).forEach((_key) => {
-      if (vmData[_key] instanceof Object) {
-          // 引用类型 递归
-        if (_key === '__keyPath') {
+      let ArrayNeedDeploy = false
+      vmData.forEach((item) => {
+        if (item instanceof Object) {
+          ArrayNeedDeploy = true
           return
         }
-        minifyDeepData(rootKey + '.' + originKey, _key, vmData[_key], data)
+      })
+      if (ArrayNeedDeploy) {
+        depolyArrayData(rootKey, originKey, vmData, data)
       } else {
-          // 更新列表中的 加入data
-        __keyPathOnThis.forEach((item) => {
-          if (item.key === _key) {
-            if (originKey) {
-              data[rootKey + '.' + originKey + '.' + _key] = vmData[_key]
-            } else {
-              data[rootKey + '.' + _key] = vmData[_key]
-            }
-          }
-        })
+      // 全是值类型的 保持root.0.list = [2,2]格式setData
+        data[rootKey + '.' + originKey] = vmData
       }
-    })
+    } else {
+      // Object
+      let __keyPathOnThis = [] // 存储这层对象的keyPath
+      if (vmData.__keyPath) {
+        // 有更新列表 ，按照更新列表更新
+        __keyPathOnThis = vmData.__keyPath
+        if (root) {
+          // 根数据节点，有更新列表情况下，删除原来的大JSONObject属性，改用扁平赋值
+          delete data[rootKey][originKey]
+        }
+      // 根节点可能有父子引用同一个引用类型数据，依赖树都遍历完后清理
+        vmDataMap[vmData.__ob__.dep.id] = vmData
+      } else {
+        // 没有更新列表
+        if (root && _mpValueSet === 'done') {
+          // 设置过值的 没更新列表，从data中去除
+          delete data[rootKey][originKey]
+          return
+        } else {
+          return
+        }
+      }
+      Object.keys(vmData).forEach((_key) => {
+        if (vmData[_key] instanceof Object) {
+          // 引用类型 递归
+          if (_key === '__keyPath') {
+            return
+          }
+          minifyDeepData(rootKey + '.' + originKey, _key, vmData[_key], data)
+        } else {
+          // 更新列表中的 加入data
+          __keyPathOnThis.forEach((item) => {
+            if (item.key === _key) {
+              if (originKey) {
+                data[rootKey + '.' + originKey + '.' + _key] = vmData[_key]
+              } else {
+                data[rootKey + '.' + _key] = vmData[_key]
+              }
+            }
+          })
+        }
+      })
+    }
+  } catch (e) {
+    console.log(e, rootKey, originKey, vmData, data, root)
   }
 }
 
@@ -85,13 +89,27 @@ function cleanKeyPath () {
   console.log(vmDataMap)
 }
 
+function getRootKey (vm, rootKey) {
+  if (!vm.$parent.$attrs) {
+    rootKey = '$root.0' + ',' + rootKey
+    return rootKey
+  } else {
+    rootKey = vm.$parent.$attrs.mpcomid + ',' + rootKey
+    return getRootKey(vm.$parent, rootKey)
+  }
+}
+
 export function diffData (vm, data) {
   const vmData = vm._data || {}
   const vmProps = vm._props || {}
-  let rootKey = '$root.0'
-  if (vm.$attrs && vm.$attrs.mpcomid) {
-    rootKey = rootKey + ',' + vm.$attrs.mpcomid
+  let rootKey = ''
+  if (!vm.$attrs) {
+    rootKey = '$root.0'
+  } else {
+    rootKey = getRootKey(vm, vm.$attrs.mpcomid)
   }
+  console.log(rootKey)
+
     // 值类型变量不考虑优化，还是直接更新
   const _onDataKeyPath = vmData.__keyPath || vm.__keyPath || []
   delete vm.__keyPath
