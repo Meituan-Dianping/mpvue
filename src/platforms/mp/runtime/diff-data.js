@@ -1,3 +1,5 @@
+import Vue from 'core/index'
+
 function depolyRootData (rootKey, data, vmProps) {
   Object.keys(vmProps).forEach((_key) => {
     if (_key === '__keyPath') { return }
@@ -105,7 +107,7 @@ function getRootKey (vm, rootKey) {
 export function diffData (vm, data) {
   if (vm._mpValueSet === 'setDataReady') {
     vm._mpValueSet = 'done'
-    vm.$nextTick(() => {
+    Vue.nextTick(() => {
       cleanKeyPath(vm)
     })
   }
@@ -158,6 +160,8 @@ export function diffData (vm, data) {
   } else if (vm._mpValueSet === 'done') {
     vm._mpValueSet = 'setDataReady'
   }
-  console.log(vm)
-  console.log(data)
+  if (Vue.config.devtools) {
+    console.log(vm)
+    console.log(data)
+  }
 }

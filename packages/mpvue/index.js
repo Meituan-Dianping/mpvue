@@ -5344,7 +5344,7 @@ function depolyRootData (rootKey, data, vmProps) {
 
 function depolyArrayData (rootKey, originKey, vmData, data, vm) {
   for (var i = 0; i < vmData.length; i++) {
-    if (vmData[i] instanceof Object) {
+    if (vmData[i] instanceof Object && !!vmData[i].__keyPath) {
            // 引用类型 递归
       minifyDeepData(rootKey + '.' + originKey + '[' + i + ']', null, vmData[i], data, null, null, vm);
     } else {
@@ -5422,7 +5422,7 @@ function minifyDeepData (rootKey, originKey, vmData, data, root, _mpValueSet, vm
 function cleanKeyPath (vm) {
   if (vm.__mpKeyPath) {
     Object.keys(vm.__mpKeyPath).forEach(function (_key) {
-      delete vm.__mpKeyPath[_key]['__keyPath'];
+      vm.__mpKeyPath[_key]['__keyPath'] = [];
     });
   }
 }
@@ -5440,7 +5440,7 @@ function getRootKey (vm, rootKey) {
 function diffData (vm, data) {
   if (vm._mpValueSet === 'setDataReady') {
     vm._mpValueSet = 'done';
-    vm.$nextTick(function () {
+    Vue$3.nextTick(function () {
       cleanKeyPath(vm);
     });
   }
@@ -5493,8 +5493,10 @@ function diffData (vm, data) {
   } else if (vm._mpValueSet === 'done') {
     vm._mpValueSet = 'setDataReady';
   }
-  console.log(vm);
-  console.log(data);
+  if (Vue$3.config.devtools) {
+    console.log(vm);
+    console.log(data);
+  }
 }
 
 // 节流方法，性能优化
