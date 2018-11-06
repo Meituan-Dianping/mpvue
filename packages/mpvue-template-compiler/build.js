@@ -2846,10 +2846,6 @@ Observer.prototype.walk = function walk (obj) {
  */
 Observer.prototype.observeArray = function observeArray (items) {
   for (var i = 0, l = items.length; i < l; i++) {
-    // const item = items[i]
-    // if (typeof item === 'object' && item !== null) {
-    // item.__keyPath = (items.__keyPath ? items.__keyPath + '.' : '') + `[${i}]`
-    // }
     observe(items[i]);
   }
 };
@@ -2898,12 +2894,8 @@ function observe (value, asRootData, key) {
     !value._isVue
   ) {
     ob = new Observer(value, key);
-    ob.__keyPath = ob.__keyPath ? ob.__keyPath : [];
-    ob.__keyPath.push({
-      key: key,
-      val: value,
-      shouldUpdateToMp: true
-    });
+    ob.__keyPath = ob.__keyPath ? ob.__keyPath : {};
+    ob.__keyPath[key] = true;
   }
   if (asRootData && ob) {
     ob.vmCount++;
@@ -2929,10 +2921,6 @@ function defineReactive$$1 (
   }
 
   // TODO: 先试验标记一下 keyPath
-  // if (typeof val === 'object' && val !== null) {
-  //   val.__keyPath = (obj.__keyPath ? obj.__keyPath + '.' : '') + key
-  // }
-  // var currPathKey = obj.__keyPath + '.' + key
 
   // cater for pre-defined getter/setters
   var getter = property && property.get;
@@ -2973,12 +2961,8 @@ function defineReactive$$1 (
       }
       childOb = !shallow && observe(newVal, undefined, key);
       dep.notify();
-      obj.__keyPath = obj.__keyPath ? obj.__keyPath : [];
-      obj.__keyPath.push({
-        key: key,
-        val: newVal,
-        shouldUpdateToMp: true
-      });
+      obj.__keyPath = obj.__keyPath ? obj.__keyPath : {};
+      obj.__keyPath[key] = true;
     }
   });
 }
@@ -3012,12 +2996,8 @@ function set (target, key, val) {
   }
   defineReactive$$1(ob.value, key, val);
   // Vue.set 添加对象属性，渲染时候把val传给小程序渲染
-  target.__keyPath = target.__keyPath ? target.__keyPath : [];
-  target.__keyPath.push({
-    key: key,
-    val: val,
-    shouldUpdateToMp: true
-  });
+  target.__keyPath = target.__keyPath ? target.__keyPath : {};
+  target.__keyPath[key] = true;
   ob.dep.notify();
   return val
 }

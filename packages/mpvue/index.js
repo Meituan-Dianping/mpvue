@@ -799,10 +799,6 @@ Observer.prototype.walk = function walk (obj) {
  */
 Observer.prototype.observeArray = function observeArray (items) {
   for (var i = 0, l = items.length; i < l; i++) {
-    // const item = items[i]
-    // if (typeof item === 'object' && item !== null) {
-    // item.__keyPath = (items.__keyPath ? items.__keyPath + '.' : '') + `[${i}]`
-    // }
     observe(items[i]);
   }
 };
@@ -851,12 +847,8 @@ function observe (value, asRootData, key) {
     !value._isVue
   ) {
     ob = new Observer(value, key);
-    ob.__keyPath = ob.__keyPath ? ob.__keyPath : [];
-    ob.__keyPath.push({
-      key: key,
-      val: value,
-      shouldUpdateToMp: true
-    });
+    ob.__keyPath = ob.__keyPath ? ob.__keyPath : {};
+    ob.__keyPath[key] = true;
   }
   if (asRootData && ob) {
     ob.vmCount++;
@@ -882,10 +874,6 @@ function defineReactive$$1 (
   }
 
   // TODO: 先试验标记一下 keyPath
-  // if (typeof val === 'object' && val !== null) {
-  //   val.__keyPath = (obj.__keyPath ? obj.__keyPath + '.' : '') + key
-  // }
-  // var currPathKey = obj.__keyPath + '.' + key
 
   // cater for pre-defined getter/setters
   var getter = property && property.get;
@@ -926,12 +914,8 @@ function defineReactive$$1 (
       }
       childOb = !shallow && observe(newVal, undefined, key);
       dep.notify();
-      obj.__keyPath = obj.__keyPath ? obj.__keyPath : [];
-      obj.__keyPath.push({
-        key: key,
-        val: newVal,
-        shouldUpdateToMp: true
-      });
+      obj.__keyPath = obj.__keyPath ? obj.__keyPath : {};
+      obj.__keyPath[key] = true;
     }
   });
 }
@@ -965,12 +949,8 @@ function set (target, key, val) {
   }
   defineReactive$$1(ob.value, key, val);
   // Vue.set 添加对象属性，渲染时候把val传给小程序渲染
-  target.__keyPath = target.__keyPath ? target.__keyPath : [];
-  target.__keyPath.push({
-    key: key,
-    val: val,
-    shouldUpdateToMp: true
-  });
+  target.__keyPath = target.__keyPath ? target.__keyPath : {};
+  target.__keyPath[key] = true;
   ob.dep.notify();
   return val
 }
@@ -998,13 +978,9 @@ function del (target, key) {
   if (!ob) {
     return
   }
-  target.__keyPath = target.__keyPath ? target.__keyPath : [];
+  target.__keyPath = target.__keyPath ? target.__keyPath : {};
   // Vue.del 删除对象属性，渲染时候把这个属性设置为undefined
-  target.__keyPath.push({
-    key: key,
-    val: undefined,
-    shouldUpdateToMp: true
-  });
+  target.__keyPath[key] = 'del';
   ob.dep.notify();
 }
 
@@ -5333,97 +5309,72 @@ function initMP (mpType, next) {
   }
 }
 
-function depolyRootData (rootKey, data, vmProps) {
-  Object.keys(vmProps).forEach(function (_key) {
-    if (_key === '__keyPath') { return }
-    if (vmProps[_key] instanceof Object) { return }
-    data[rootKey + '.' + _key] = vmProps[_key];
-  });
-  delete data[rootKey];
-}
-
-function depolyArrayData (rootKey, originKey, vmData, data, vm) {
-  for (var i = 0; i < vmData.length; i++) {
-    if (vmData[i] instanceof Object && !!vmData[i].__keyPath) {
-           // 引用类型 递归
-      minifyDeepData(rootKey + '.' + originKey + '[' + i + ']', null, vmData[i], data, null, null, vm);
+function getDeepData (keyList, viewData) {
+  if (keyList.length > 1) {
+    var _key = keyList.splice(0, 1);
+    var _viewData = viewData[_key];
+    if (_viewData) {
+      return getDeepData(keyList, _viewData)
     } else {
-      data[rootKey + '.' + originKey + '[' + i + ']'] = vmData[i];
+      return null
+    }
+  } else {
+    if (viewData[keyList[0]]) {
+      return viewData[keyList[0]]
+    } else {
+      return null
     }
   }
 }
+function compareAndSetDeepData (key, newData, vm, data) {
+  // 比较引用类型数据
+  try {
+    var keyList = key.split('.');
+    var oldData = getDeepData(keyList, vm.$root.$mp.page.__viewData__);
+    if (oldData === null || JSON.stringify(oldData) !== JSON.stringify(newData)) {
+      data[key] = newData;
+    }
+  } catch (e) {
+    console.log(e, key, newData, vm);
+  }
+}
 
-function minifyDeepData (rootKey, originKey, vmData, data, root, _mpValueSet, vm) {
+function minifyDeepData (rootKey, originKey, vmData, data, _mpValueSet, vm) {
   try {
     if (vmData instanceof Array) {
        // 数组
-      var ArrayNeedDeploy = false;
-      vmData.forEach(function (item) {
-        if (item instanceof Object) {
-          ArrayNeedDeploy = true;
-          return
-        }
-      });
-      if (ArrayNeedDeploy) {
-        depolyArrayData(rootKey, originKey, vmData, data, vm);
-      } else {
-      // 全是值类型的 保持root.0.list = [2,2]格式setData
-        data[rootKey + '.' + originKey] = vmData;
-      }
+      compareAndSetDeepData(rootKey + '.' + originKey, vmData, vm, data);
     } else {
       // Object
-      var _keyPathOnThis = []; // 存储这层对象的keyPath
+      var _keyPathOnThis = {}; // 存储这层对象的keyPath
       if (vmData.__keyPath) {
         // 有更新列表 ，按照更新列表更新
         _keyPathOnThis = vmData.__keyPath;
-        if (root) {
-          // 根数据节点，有更新列表情况下，删除原来的大JSONObject属性，改用扁平赋值
-          delete data[rootKey][originKey];
-        }
-      // 根节点可能有父子引用同一个引用类型数据，依赖树都遍历完后清理
-        vm['__mpKeyPath'] = vm['__mpKeyPath'] || {};
-        vm['__mpKeyPath'][vmData.__ob__.dep.id] = vmData;
-      } else {
-        // 没有更新列表
-        if (root && _mpValueSet === 'done') {
-          // 设置过值的 没更新列表，从data中去除
-          delete data[rootKey][originKey];
-          return
-        } else {
-          return
-        }
-      }
-      Object.keys(vmData).forEach(function (_key) {
-        if (vmData[_key] instanceof Object) {
-          // 引用类型 递归
-          if (_key === '__keyPath') {
-            return
-          }
-          minifyDeepData(rootKey + '.' + originKey, _key, vmData[_key], data, null, null, vm);
-        } else {
-          // 更新列表中的 加入data
-          _keyPathOnThis.forEach(function (item) {
-            if (item.key === _key) {
+        Object.keys(vmData).forEach(function (_key) {
+          if (vmData[_key] instanceof Object) {
+            // 引用类型 递归
+            if (_key === '__keyPath') {
+              return
+            }
+            minifyDeepData(rootKey + '.' + originKey, _key, vmData[_key], data, null, vm);
+          } else {
+            // 更新列表中的 加入data
+            if (_keyPathOnThis[_key] === true) {
               if (originKey) {
                 data[rootKey + '.' + originKey + '.' + _key] = vmData[_key];
               } else {
                 data[rootKey + '.' + _key] = vmData[_key];
               }
             }
-          });
-        }
-      });
+          }
+        });
+      } else {
+        // 没有更新列表
+        compareAndSetDeepData(rootKey + '.' + originKey, vmData, vm, data);
+      }
     }
   } catch (e) {
-    console.log(e, rootKey, originKey, vmData, data, root);
-  }
-}
-
-function cleanKeyPath (vm) {
-  if (vm.__mpKeyPath) {
-    Object.keys(vm.__mpKeyPath).forEach(function (_key) {
-      vm.__mpKeyPath[_key]['__keyPath'] = [];
-    });
+    console.log(e, rootKey, originKey, vmData, data);
   }
 }
 
@@ -5438,12 +5389,6 @@ function getRootKey (vm, rootKey) {
 }
 
 function diffData (vm, data) {
-  if (vm._mpValueSet === 'setDataReady') {
-    vm._mpValueSet = 'done';
-    Vue$3.nextTick(function () {
-      cleanKeyPath(vm);
-    });
-  }
   var vmData = vm._data || {};
   var vmProps = vm._props || {};
   var rootKey = '';
@@ -5455,7 +5400,7 @@ function diffData (vm, data) {
   // console.log(rootKey)
 
     // 值类型变量不考虑优化，还是直接更新
-  var _onDataKeyPath = vmData.__keyPath || vm.__keyPath || [];
+  var __keyPathOnThis = vmData.__keyPath || vm.__keyPath || {};
   delete vm.__keyPath;
   delete vmData.__keyPath;
   delete vmProps.__keyPath;
@@ -5465,14 +5410,12 @@ function diffData (vm, data) {
       if (vmData[vmDataItemKey] instanceof Object) {
           // 引用类型
         if (vmDataItemKey === '__keyPath') { return }
-        minifyDeepData(rootKey, vmDataItemKey, vmData[vmDataItemKey], data, true, vm._mpValueSet, vm);
+        minifyDeepData(rootKey, vmDataItemKey, vmData[vmDataItemKey], data, vm._mpValueSet, vm);
       } else {
           // _data上的值属性只有要更新的时候才赋值
-        _onDataKeyPath.forEach(function (item) {
-          if (item.key === vmDataItemKey) {
-            data[rootKey + '.' + vmDataItemKey] = vmData[vmDataItemKey];
-          }
-        });
+        if (__keyPathOnThis[vmDataItemKey] === true) {
+          data[rootKey + '.' + vmDataItemKey] = vmData[vmDataItemKey];
+        }
       }
     });
 
@@ -5480,18 +5423,28 @@ function diffData (vm, data) {
       if (vmProps[vmPropsItemKey] instanceof Object) {
         // 引用类型
         if (vmPropsItemKey === '__keyPath') { return }
-        minifyDeepData(rootKey, vmPropsItemKey, vmProps[vmPropsItemKey], data, true, vm._mpValueSet, vm);
+        minifyDeepData(rootKey, vmPropsItemKey, vmProps[vmPropsItemKey], data, vm._mpValueSet, vm);
+      } else {
+        data[rootKey + '.' + vmPropsItemKey] = vmProps[vmPropsItemKey];
       }
       // _props上的值属性只有要更新的时候才赋值
     });
-      // 更新的时候要平铺$root.0:{},否则会覆盖原正确数据
-    depolyRootData(rootKey, data, vmProps);
+
+    // 检查完data和props,最后补上_mpProps & _computedWatchers
+    var vmMpProps = vm._mpProps || {};
+    var vmComputedWatchers = vm._computedWatchers || {};
+    Object.keys(vmMpProps).forEach(function (mpItemKey) {
+      data[rootKey + '.' + mpItemKey] = vmMpProps[mpItemKey];
+    });
+    Object.keys(vmComputedWatchers).forEach(function (computedItemKey) {
+      data[rootKey + '.' + computedItemKey] = vmComputedWatchers[computedItemKey];
+    });
+      // 更新的时候要删除$root.0:{},否则会覆盖原正确数据
+    delete data[rootKey];
   }
   if (vm._mpValueSet === undefined) {
       // 第一次设置数据成功后，标记位置true,再更新到这个节点如果没有keyPath数组认为不需要更新
     vm._mpValueSet = 'done';
-  } else if (vm._mpValueSet === 'done') {
-    vm._mpValueSet = 'setDataReady';
   }
   if (Vue$3.config.devtools) {
     console.log(vm);
