@@ -5478,8 +5478,8 @@ function diffData (vm, data) {
     vm._mpValueSet = 'done';
   }
   if (Vue$3.config.devtools) {
-    console.log('更新VM节点', vm);
-    console.log('实际传到Page.setData数据', data);
+    // console.log('更新VM节点', vm)
+    // console.log('实际传到Page.setData数据', data)
     diffLog(data);
   }
 }
