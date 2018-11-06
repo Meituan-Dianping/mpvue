@@ -30,6 +30,14 @@ function compareAndSetDeepData (key, newData, vm, data) {
   }
 }
 
+function cleanKeyPath (vm) {
+  if (vm.__mpKeyPath) {
+    Object.keys(vm.__mpKeyPath).forEach((_key) => {
+      delete vm.__mpKeyPath[_key]['__keyPath']
+    })
+  }
+}
+
 function minifyDeepData (rootKey, originKey, vmData, data, _mpValueSet, vm) {
   try {
     if (vmData instanceof Array) {
@@ -59,6 +67,9 @@ function minifyDeepData (rootKey, originKey, vmData, data, _mpValueSet, vm) {
             }
           }
         })
+         // 根节点可能有父子引用同一个引用类型数据，依赖树都遍历完后清理
+        vm['__mpKeyPath'] = vm['__mpKeyPath'] || {}
+        vm['__mpKeyPath'][vmData.__ob__.dep.id] = vmData
       } else {
         // 没有更新列表
         compareAndSetDeepData(rootKey + '.' + originKey, vmData, vm, data)
@@ -88,6 +99,9 @@ export function diffData (vm, data) {
   } else {
     rootKey = getRootKey(vm, vm.$attrs.mpcomid)
   }
+  Vue.nextTick(() => {
+    cleanKeyPath(vm)
+  })
   // console.log(rootKey)
 
     // 值类型变量不考虑优化，还是直接更新
