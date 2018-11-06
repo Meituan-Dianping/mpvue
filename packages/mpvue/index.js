@@ -5309,6 +5309,23 @@ function initMP (mpType, next) {
   }
 }
 
+var updateDataTotal = 0; // 总共更新的数据量
+function diffLog (updateData) {
+  updateData = JSON.stringify(updateData);
+  if (!Vue$3._mpvueTraceTimer) {
+    Vue$3._mpvueTraceTimer = setTimeout(function () {
+      clearTimeout(Vue$3._mpvueTraceTimer);
+      updateDataTotal = (updateDataTotal / 1024).toFixed(1);
+      console.log('这次操作引发500ms内数据更新量:' + updateDataTotal + 'kb');
+      Vue$3._mpvueTraceTimer = 0;
+      updateDataTotal = 0;
+    }, 500);
+  } else if (Vue$3._mpvueTraceTimer) {
+    updateData = updateData.replace(/[^\u0000-\u00ff]/g, 'aa'); // 中文占2字节，中文替换成两个字母计算占用空间
+    updateDataTotal += updateData.length;
+  }
+}
+
 function getDeepData (keyList, viewData) {
   if (keyList.length > 1) {
     var _key = keyList.splice(0, 1);
@@ -5461,8 +5478,9 @@ function diffData (vm, data) {
     vm._mpValueSet = 'done';
   }
   if (Vue$3.config.devtools) {
-    console.log(vm);
-    console.log(data);
+    console.log('更新VM节点', vm);
+    console.log('实际传到Page.setData数据', data);
+    diffLog(data);
   }
 }
 

@@ -1,4 +1,5 @@
 import Vue from 'core/index'
+import { diffLog } from './runtime-trace'
 
 function getDeepData (keyList, viewData) {
   if (keyList.length > 1) {
@@ -152,7 +153,8 @@ export function diffData (vm, data) {
     vm._mpValueSet = 'done'
   }
   if (Vue.config.devtools) {
-    console.log(vm)
-    console.log(data)
+    console.log('更新VM节点', vm)
+    console.log('实际传到Page.setData数据', data)
+    diffLog(data)
   }
 }
