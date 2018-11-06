@@ -36,10 +36,13 @@ export class Observer {
   dep: Dep;
   vmCount: number; // number of vms that has this object as root $data
 
-  constructor (value: any) {
+  constructor (value: any, key: any) {
     this.value = value
     this.dep = new Dep()
     this.vmCount = 0
+    if (key) {
+      this.key = key
+    }
     def(value, '__ob__', this)
     if (Array.isArray(value)) {
       const augment = hasProto
@@ -103,7 +106,7 @@ function copyAugment (target: Object, src: Object, keys: Array<string>) {
  * returns the new observer if successfully observed,
  * or the existing observer if the value already has one.
  */
-export function observe (value: any, asRootData: ?boolean): Observer | void {
+export function observe (value: any, asRootData: ?boolean, key: any): Observer | void {
   if (!isObject(value)) {
     return
   }
@@ -117,7 +120,9 @@ export function observe (value: any, asRootData: ?boolean): Observer | void {
     Object.isExtensible(value) &&
     !value._isVue
   ) {
-    ob = new Observer(value)
+    ob = new Observer(value, key)
+    ob.__keyPath = ob.__keyPath ? ob.__keyPath : {}
+    ob.__keyPath[key] = true
   }
   if (asRootData && ob) {
     ob.vmCount++
@@ -142,11 +147,13 @@ export function defineReactive (
     return
   }
 
+  // TODO: 先试验标记一下 keyPath
+
   // cater for pre-defined getter/setters
   const getter = property && property.get
   const setter = property && property.set
 
-  let childOb = !shallow && observe(val)
+  let childOb = !shallow && observe(val, undefined, key)
   Object.defineProperty(obj, key, {
     enumerable: true,
     configurable: true,
@@ -169,6 +176,7 @@ export function defineReactive (
       if (newVal === value || (newVal !== newVal && value !== value)) {
         return
       }
+
       /* eslint-enable no-self-compare */
       if (process.env.NODE_ENV !== 'production' && customSetter) {
         customSetter()
@@ -178,8 +186,10 @@ export function defineReactive (
       } else {
         val = newVal
       }
-      childOb = !shallow && observe(newVal)
+      childOb = !shallow && observe(newVal, undefined, key)
       dep.notify()
+      obj.__keyPath = obj.__keyPath ? obj.__keyPath : {}
+      obj.__keyPath[key] = true
     }
   })
 }
@@ -212,6 +222,9 @@ export function set (target: Array<any> | Object, key: any, val: any): any {
     return val
   }
   defineReactive(ob.value, key, val)
+  // Vue.set 添加对象属性，渲染时候把val传给小程序渲染
+  target.__keyPath = target.__keyPath ? target.__keyPath : {}
+  target.__keyPath[key] = true
   ob.dep.notify()
   return val
 }
@@ -239,6 +252,9 @@ export function del (target: Array<any> | Object, key: any) {
   if (!ob) {
     return
   }
+  target.__keyPath = target.__keyPath ? target.__keyPath : {}
+  // Vue.del 删除对象属性，渲染时候把这个属性设置为undefined
+  target.__keyPath[key] = 'del'
   ob.dep.notify()
 }
 
