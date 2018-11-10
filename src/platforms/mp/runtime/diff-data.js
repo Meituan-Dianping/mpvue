@@ -118,7 +118,7 @@ export function diffData (vm, data) {
           // 引用类型
         if (vmDataItemKey === '__keyPath') { return }
         minifyDeepData(rootKey, vmDataItemKey, vmData[vmDataItemKey], data, vm._mpValueSet, vm)
-      } else {
+      } else if(vmData[vmDataItemKey] !== undefined){
           // _data上的值属性只有要更新的时候才赋值
         if (__keyPathOnThis[vmDataItemKey] === true) {
           data[rootKey + '.' + vmDataItemKey] = vmData[vmDataItemKey]
@@ -131,7 +131,7 @@ export function diffData (vm, data) {
         // 引用类型
         if (vmPropsItemKey === '__keyPath') { return }
         minifyDeepData(rootKey, vmPropsItemKey, vmProps[vmPropsItemKey], data, vm._mpValueSet, vm)
-      } else {
+      } else if(vmProps[vmPropsItemKey] !== undefined){
         data[rootKey + '.' + vmPropsItemKey] = vmProps[vmPropsItemKey]
       }
       // _props上的值属性只有要更新的时候才赋值
