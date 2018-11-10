@@ -22,7 +22,8 @@ function compareAndSetDeepData (key, newData, vm, data) {
   // 比较引用类型数据
   try {
     const keyList = key.split('.')
-    const oldData = getDeepData(keyList, vm.$root.$mp.page.__viewData__)
+     //page.__viewData__老版小程序不存在，使用mpvue里绑的data比对
+    const oldData = getDeepData(keyList, vm.$root.$mp.page.data)
     if (oldData === null || JSON.stringify(oldData) !== JSON.stringify(newData)) {
       data[key] = newData
     }
