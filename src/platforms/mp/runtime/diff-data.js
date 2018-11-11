@@ -144,7 +144,7 @@ export function diffData (vm, data) {
       data[rootKey + '.' + mpItemKey] = vmMpProps[mpItemKey]
     })
     Object.keys(vmComputedWatchers).forEach((computedItemKey) => {
-      data[rootKey + '.' + computedItemKey] = vmComputedWatchers[computedItemKey]
+      data[rootKey + '.' + computedItemKey] = vmComputedWatchers[computedItemKey]['value']
     })
       // 更新的时候要删除$root.0:{},否则会覆盖原正确数据
     delete data[rootKey]
