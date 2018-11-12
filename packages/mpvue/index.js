@@ -5466,10 +5466,10 @@ function diffData (vm, data) {
     var vmMpProps = vm._mpProps || {};
     var vmComputedWatchers = vm._computedWatchers || {};
     Object.keys(vmMpProps).forEach(function (mpItemKey) {
-      data[rootKey + '.' + mpItemKey] = vmMpProps[mpItemKey];
+      data[rootKey + '.' + mpItemKey] = vm[mpItemKey];
     });
     Object.keys(vmComputedWatchers).forEach(function (computedItemKey) {
-      data[rootKey + '.' + computedItemKey] = vmComputedWatchers[computedItemKey]['value'];
+      data[rootKey + '.' + computedItemKey] = vm[computedItemKey];
     });
       // 更新的时候要删除$root.0:{},否则会覆盖原正确数据
     delete data[rootKey];
