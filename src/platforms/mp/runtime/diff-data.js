@@ -18,11 +18,12 @@ function getDeepData (keyList, viewData) {
     }
   }
 }
+
 function compareAndSetDeepData (key, newData, vm, data) {
   // 比较引用类型数据
   try {
     const keyList = key.split('.')
-     //page.__viewData__老版小程序不存在，使用mpvue里绑的data比对
+    // page.__viewData__老版小程序不存在，使用mpvue里绑的data比对
     const oldData = getDeepData(keyList, vm.$root.$mp.page.data)
     if (oldData === null || JSON.stringify(oldData) !== JSON.stringify(newData)) {
       data[key] = newData
@@ -106,7 +107,7 @@ export function diffData (vm, data) {
   })
   // console.log(rootKey)
 
-    // 值类型变量不考虑优化，还是直接更新
+  // 值类型变量不考虑优化，还是直接更新
   const __keyPathOnThis = vmData.__keyPath || vm.__keyPath || {}
   delete vm.__keyPath
   delete vmData.__keyPath
@@ -115,11 +116,11 @@ export function diffData (vm, data) {
     // 第二次赋值才进行缩减操作
     Object.keys(vmData).forEach((vmDataItemKey) => {
       if (vmData[vmDataItemKey] instanceof Object) {
-          // 引用类型
+        // 引用类型
         if (vmDataItemKey === '__keyPath') { return }
         minifyDeepData(rootKey, vmDataItemKey, vmData[vmDataItemKey], data, vm._mpValueSet, vm)
-      } else if(vmData[vmDataItemKey] !== undefined){
-          // _data上的值属性只有要更新的时候才赋值
+      } else if (vmData[vmDataItemKey] !== undefined) {
+        // _data上的值属性只有要更新的时候才赋值
         if (__keyPathOnThis[vmDataItemKey] === true) {
           data[rootKey + '.' + vmDataItemKey] = vmData[vmDataItemKey]
         }
@@ -131,7 +132,7 @@ export function diffData (vm, data) {
         // 引用类型
         if (vmPropsItemKey === '__keyPath') { return }
         minifyDeepData(rootKey, vmPropsItemKey, vmProps[vmPropsItemKey], data, vm._mpValueSet, vm)
-      } else if(vmProps[vmPropsItemKey] !== undefined){
+      } else if (vmProps[vmPropsItemKey] !== undefined) {
         data[rootKey + '.' + vmPropsItemKey] = vmProps[vmPropsItemKey]
       }
       // _props上的值属性只有要更新的时候才赋值
@@ -146,11 +147,11 @@ export function diffData (vm, data) {
     Object.keys(vmComputedWatchers).forEach((computedItemKey) => {
       data[rootKey + '.' + computedItemKey] = vm[computedItemKey]
     })
-      // 更新的时候要删除$root.0:{},否则会覆盖原正确数据
+    // 更新的时候要删除$root.0:{},否则会覆盖原正确数据
     delete data[rootKey]
   }
   if (vm._mpValueSet === undefined) {
-      // 第一次设置数据成功后，标记位置true,再更新到这个节点如果没有keyPath数组认为不需要更新
+    // 第一次设置数据成功后，标记位置true,再更新到这个节点如果没有keyPath数组认为不需要更新
     vm._mpValueSet = 'done'
   }
   if (Vue.config.devtools) {
