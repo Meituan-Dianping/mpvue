@@ -147,8 +147,6 @@ export function defineReactive (
     return
   }
 
-  // TODO: 先试验标记一下 keyPath
-
   // cater for pre-defined getter/setters
   const getter = property && property.get
   const setter = property && property.set
@@ -222,8 +220,10 @@ export function set (target: Array<any> | Object, key: any, val: any): any {
     return val
   }
   defineReactive(ob.value, key, val)
-  // Vue.set 添加对象属性，渲染时候把val传给小程序渲染
-  target.__keyPath = target.__keyPath ? target.__keyPath : {}
+  // Vue.set 添加对象属性，渲染时候把 val 传给小程序渲染
+  if (!target.__keyPath) {
+    target.__keyPath = {}
+  }
   target.__keyPath[key] = true
   ob.dep.notify()
   return val
@@ -252,8 +252,10 @@ export function del (target: Array<any> | Object, key: any) {
   if (!ob) {
     return
   }
-  target.__keyPath = target.__keyPath ? target.__keyPath : {}
-  // Vue.del 删除对象属性，渲染时候把这个属性设置为undefined
+  if (!target.__keyPath) {
+    target.__keyPath = {}
+  }
+  // Vue.del 删除对象属性，渲染时候把这个属性设置为 undefined
   target.__keyPath[key] = 'del'
   ob.dep.notify()
 }
