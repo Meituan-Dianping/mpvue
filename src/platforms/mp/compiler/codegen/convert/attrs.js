@@ -5,17 +5,24 @@ import babel from 'babel-core'
 import prettier from 'prettier'
 
 import { transformObjectToTernaryOperator, transformObjectToString } from '../babel-plugins'
+
+
+function prettierFormat(code) {
+    return prettier.format(result.code, { parser: 'babylon', semi: false, singleQuote: true }).slice(1).slice(0, -1).replace(/\n|\r/g, '')
+}
+
+
 function transformDynamicClass (staticClass = '', clsBinding) {
   const result = babel.transform(`!${clsBinding}`, { plugins: [transformObjectToTernaryOperator] })
   // 先实现功能，再优化代码
   // https://github.com/babel/babel/issues/7138
-  const cls = prettier.format(result.code, { semi: false, singleQuote: true }).slice(1).slice(0, -1).replace(/\n|\r/g, '')
+  const cls = prettierFormat(code)
   return `${staticClass} {{${cls}}}`
 }
 
 function transformDynamicStyle (staticStyle = '', styleBinding) {
   const result = babel.transform(`!${styleBinding}`, { plugins: [transformObjectToString] })
-  const cls = prettier.format(result.code, { semi: false, singleQuote: true }).slice(1).slice(0, -1).replace(/\n|\r/g, '')
+  const cls = prettierFormat(code)
   return `${staticStyle} {{${cls}}}`
 }
 

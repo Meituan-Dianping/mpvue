@@ -22,7 +22,7 @@ export default function generate (obj, options = {}) {
   if (tags.indexOf(tag) > -1 && !(children && children.length)) {
     return `<${tag}${attrs ? ' ' + attrs : ''} />${ifConditionsArr.join('')}`
   }
-  return `<${tag}${attrs ? ' ' + attrs : ''}>${child || ''}</${tag}>${ifConditionsArr.join('')}`
+  return `<${tag}${attrs ? ' ' + attrs : ''}>${child || ''}</${tag}>${ifConditionsArr.join('')}`.replace(/\n|\r/g, '')
 }
 
 function convertAttr (key, val) {
