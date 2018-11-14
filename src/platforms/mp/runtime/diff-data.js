@@ -154,7 +154,7 @@ export function diffData (vm, data) {
     // 第一次设置数据成功后，标记位置true,再更新到这个节点如果没有keyPath数组认为不需要更新
     vm._mpValueSet = 'done'
   }
-  if (Vue.config.devtools) {
+  if (Vue.config._mpTrace) {
     // console.log('更新VM节点', vm)
     // console.log('实际传到Page.setData数据', data)
     diffLog(data)
