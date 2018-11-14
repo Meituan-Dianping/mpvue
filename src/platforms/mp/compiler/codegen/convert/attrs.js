@@ -8,7 +8,7 @@ import { transformObjectToTernaryOperator, transformObjectToString } from '../ba
 
 
 function prettierFormat(code) {
-    return prettier.format(result.code, { parser: 'babylon', semi: false, singleQuote: true }).slice(1).slice(0, -1).replace(/\n|\r/g, '')
+    return prettier.format(code, { parser: 'babylon', semi: false, singleQuote: true }).slice(1).slice(0, -1).replace(/\n|\r/g, '')
 }
 
 
@@ -16,13 +16,13 @@ function transformDynamicClass (staticClass = '', clsBinding) {
   const result = babel.transform(`!${clsBinding}`, { plugins: [transformObjectToTernaryOperator] })
   // 先实现功能，再优化代码
   // https://github.com/babel/babel/issues/7138
-  const cls = prettierFormat(code)
+  const cls = prettierFormat(result.code)
   return `${staticClass} {{${cls}}}`
 }
 
 function transformDynamicStyle (staticStyle = '', styleBinding) {
   const result = babel.transform(`!${styleBinding}`, { plugins: [transformObjectToString] })
-  const cls = prettierFormat(code)
+  const cls = prettierFormat(result.code)
   return `${staticStyle} {{${cls}}}`
 }
 

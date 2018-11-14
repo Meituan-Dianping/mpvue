@@ -4352,13 +4352,18 @@ function transformObjectToString (babel$$1) {
   return { visitor: objectToStringVisitor }
 }
 
+function prettierFormat(code) {
+    return prettier.format(code, { parser: 'babylon', semi: false, singleQuote: true }).slice(1).slice(0, -1).replace(/\n|\r/g, '')
+}
+
+
 function transformDynamicClass (staticClass, clsBinding) {
   if ( staticClass === void 0 ) staticClass = '';
 
   var result = babel.transform(("!" + clsBinding), { plugins: [transformObjectToTernaryOperator] });
   // 先实现功能，再优化代码
   // https://github.com/babel/babel/issues/7138
-  var cls = prettier.format(result.code, { semi: false, singleQuote: true }).slice(1).slice(0, -1).replace(/\n|\r/g, '');
+  var cls = prettierFormat(result.code);
   return (staticClass + " {{" + cls + "}}")
 }
 
@@ -4366,7 +4371,7 @@ function transformDynamicStyle (staticStyle, styleBinding) {
   if ( staticStyle === void 0 ) staticStyle = '';
 
   var result = babel.transform(("!" + styleBinding), { plugins: [transformObjectToString] });
-  var cls = prettier.format(result.code, { semi: false, singleQuote: true }).slice(1).slice(0, -1).replace(/\n|\r/g, '');
+  var cls = prettierFormat(result.code);
   return (staticStyle + " {{" + cls + "}}")
 }
 
@@ -4602,7 +4607,7 @@ var component = {
     var mpcomid = ast.mpcomid;
     var slots = ast.slots;
     if (slotName) {
-      attrsMap['data'] = "{{...$root[$k], $root}}";
+      attrsMap['data'] = "{{...$root[$p], ...$root[$k], $root}}";
       // bindedName is available when rendering slot in v-for
       var bindedName = attrsMap['v-bind:name'];
       if(bindedName) {
@@ -4851,7 +4856,7 @@ function generate$2 (obj, options) {
   if (tags.indexOf(tag) > -1 && !(children && children.length)) {
     return ("<" + tag + (attrs ? ' ' + attrs : '') + " />" + (ifConditionsArr.join('')))
   }
-  return ("<" + tag + (attrs ? ' ' + attrs : '') + ">" + (child || '') + "</" + tag + ">" + (ifConditionsArr.join('')))
+  return ("<" + tag + (attrs ? ' ' + attrs : '') + ">" + (child || '') + "</" + tag + ">" + (ifConditionsArr.join(''))).replace(/\n|\r/g, '')
 }
 
 function convertAttr (key, val) {
