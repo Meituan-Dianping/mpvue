@@ -68,6 +68,9 @@ function convertAst (node, options = {}, util) {
   }
 
   wxmlAst.attrsMap = attrs.format(wxmlAst.attrsMap)
+  if (wxmlAst.tag === 'cover-view') {
+    options.isCoverView = true
+  }
   wxmlAst = tag(wxmlAst, options)
   wxmlAst = convertFor(wxmlAst, options)
   wxmlAst = attrs.convertAttr(wxmlAst, log)

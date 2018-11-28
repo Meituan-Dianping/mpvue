@@ -1,9 +1,15 @@
 import component from './component'
 import tagMap from '../config/wxmlTagMap'
 
+const coverViewTagMap = {
+  'view': 'cover-view',
+  'label': 'cover-view',
+  'image': 'cover-image'
+}
+
 export default function (ast, options) {
   const { tag, elseif, else: elseText, for: forText, staticClass = '', attrsMap = {}} = ast
-  const { components } = options
+  const { components, isCoverView } = options
   const { 'v-if': ifText, href, 'v-bind:href': bindHref, name } = attrsMap
 
   if (!tag) {
@@ -44,6 +50,10 @@ export default function (ast, options) {
       })
       delete ast.attrsMap.value
     }
+  }
+
+  if (isCoverView) {
+    ast.tag = coverViewTagMap[ast.tag] || ast.tag
   }
   return ast
 }

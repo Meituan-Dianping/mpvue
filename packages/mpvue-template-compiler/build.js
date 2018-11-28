@@ -4602,7 +4602,7 @@ var component = {
     var mpcomid = ast.mpcomid;
     var slots = ast.slots;
     if (slotName) {
-      attrsMap['data'] = "{{...$root[$k], $root}}";
+      attrsMap['data'] = "{{...$root[$p], ...$root[$k], $root}}";
       // bindedName is available when rendering slot in v-for
       var bindedName = attrsMap['v-bind:name'];
       if(bindedName) {
@@ -4620,6 +4620,12 @@ var component = {
   }
 };
 
+var coverViewTagMap = {
+  'view': 'cover-view',
+  'label': 'cover-view',
+  'image': 'cover-image'
+};
+
 var tag = function (ast, options) {
   var tag = ast.tag;
   var elseif = ast.elseif;
@@ -4628,6 +4634,7 @@ var tag = function (ast, options) {
   var staticClass = ast.staticClass; if ( staticClass === void 0 ) staticClass = '';
   var attrsMap = ast.attrsMap; if ( attrsMap === void 0 ) attrsMap = {};
   var components = options.components;
+  var isCoverView = options.isCoverView;
   var ifText = attrsMap['v-if'];
   var href = attrsMap.href;
   var bindHref = attrsMap['v-bind:href'];
@@ -4671,6 +4678,10 @@ var tag = function (ast, options) {
       });
       delete ast.attrsMap.value;
     }
+  }
+
+  if (isCoverView) {
+    ast.tag = coverViewTagMap[ast.tag] || ast.tag;
   }
   return ast
 };
@@ -4781,6 +4792,9 @@ function convertAst (node, options, util) {
   }
 
   wxmlAst.attrsMap = attrs.format(wxmlAst.attrsMap);
+  if (wxmlAst.tag === 'cover-view') {
+    options.isCoverView = true;
+  }
   wxmlAst = tag(wxmlAst, options);
   wxmlAst = convertFor(wxmlAst, options);
   wxmlAst = attrs.convertAttr(wxmlAst, log);

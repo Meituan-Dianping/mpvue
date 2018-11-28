@@ -640,6 +640,16 @@ describe('web-view', () => {
   })
 })
 
+describe('cover-view', () => {
+  it('cover-view', () => {
+    assertCodegen(
+      `<cover-view><span></span><div><img src="testPath"></div><cover-img></cover-img><cover-view></cover-view></cover-view>`,
+      `<template name="a"><cover-view class="_cover-view"><cover-view class="_span"></cover-view><cover-view class="_div"><cover-image src="testPath" class="_img"></cover-image></cover-view><cover-img class="_cover-img"></cover-img><cover-view class="_cover-view"></cover-view></cover-view></template>`,
+      { name: 'a' }
+    )
+  })
+})
+
 describe('组件', () => {
   it('组件驼峰命名', () => {
     assertCodegen(
