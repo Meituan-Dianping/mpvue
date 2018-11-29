@@ -4093,7 +4093,7 @@ function getWxEleId (index, arr) {
   }
 
   var str = arr.join("+'-'+");
-  return ("'" + index + "-'+" + str)
+  return ("'" + index + "_'+" + str)
 }
 
 // 检查不允许在 v-for 的时候出现2个及其以上相同 iterator1
@@ -4881,7 +4881,7 @@ var utils = {
   }
 };
 
-function compileToWxml (compiled, options) {
+function compileToWxml$1 (compiled, options) {
   if ( options === void 0 ) options = {};
 
   // TODO, compiled is undefined
@@ -4908,7 +4908,875 @@ function compileToWxml (compiled, options) {
   return { code: code, compiled: compiled, slots: slots, importCode: importCode }
 }
 
+// type：
+// 0, 默认值, 拼接 ${name}={{ ${content} }}
+// 1, 拼接 ${name}
+// 2, 拼接 ${map[key]}={{ '${content}' }}
+// 3, 拼接 {{ ${content} }}
+// 4, 拼接为空字符串
+// 5, 不需要在wxml上表现出来，可直接清除
+
+var noSupport$1 = {
+  type: 4,
+  check: function (k, v, errors) {
+    errors(("不支持此指令: " + k + "=\"" + v + "\""));
+    return false
+  }
+};
+var wxmlDirectiveMap$1 = {
+  'v-if': {
+    name: 's-if',
+    type: 2
+  },
+  'v-else-if': {
+    name: 's-elif',
+    type: 2
+  },
+  'v-else': {
+    name: 'w-else',
+    type: 1
+  },
+  'v-text': {
+    name: '',
+    type: 1
+  },
+  'v-html': {
+    name: '',
+    type: 1
+  },
+  'v-on': {
+    name: '',
+    map: {
+      click: 'tap',
+      touchstart: 'touchstart',
+      touchmove: 'touchmove',
+      touchcancel: 'touchcancel',
+      touchend: 'touchend',
+      tap: 'tap',
+      longtap: 'longtap',
+      input: 'input',
+      change: 'change',
+      submit: 'submit',
+      blur: 'blur',
+      focus: 'focus',
+      reset: 'reset',
+      confirm: 'confirm',
+      columnchange: 'columnchange',
+      linechange: 'linechange',
+      error: 'error',
+      scrolltoupper: 'scrolltoupper',
+      scrolltolower: 'scrolltolower',
+      scroll: 'scroll',
+      load: 'load'
+    },
+    type: 2
+  },
+  'v-bind': {
+    name: '',
+    map: {
+      'href': 'url'
+    },
+    type: 3
+  },
+  'href': {
+    name: 'url',
+    type: 2
+  },
+  'v-pre': noSupport$1,
+  'v-cloak': noSupport$1,
+  'v-once': {
+    name: '',
+    type: 5
+  }
+};
+
+var tagConfig$1 = {
+  virtualTag: ['slot', 'template', 'block']
+};
+
+// babel-plugin-transform-object-to-ternary-operator.js
+
+function getStrByNode$1 (node, onlyStr) {
+  if ( onlyStr === void 0 ) onlyStr = false;
+
+  if (onlyStr) {
+    return node.value || node.name || ''
+  }
+  return node.type === 'StringLiteral' ? node : t.stringLiteral(node.name || '')
+}
+
+// 把 { key: value } 转换成 [ value ? 'key' : '' ]
+var objectVisitor$1 = {
+  ObjectExpression: function (path) {
+    var elements = path.node.properties.map(function (propertyItem) {
+      return t.conditionalExpression(propertyItem.value, getStrByNode$1(propertyItem.key), t.stringLiteral(''))
+    });
+    path.replaceWith(t.arrayExpression(elements));
+  }
+};
+
+function transformObjectToTernaryOperator$1 (babel$$1) {
+  return { visitor: objectVisitor$1 }
+}
+
+// 把 { key: value } 转换成 'key:' + value + ';'
+var objectToStringVisitor$1 = {
+  ObjectExpression: function (path) {
+    var expression = path.node.properties.map(function (propertyItem) {
+      var keyStr = getStrByNode$1(propertyItem.key, true);
+      var key = keyStr ? hyphenate(keyStr) : keyStr;
+      var ref = generate(t.ExpressionStatement(propertyItem.value));
+      var val = ref.code;
+      return ("'" + key + ":' + (" + (val.slice(0, -1)) + ") + ';'")
+    }).join('+');
+
+    var p = template(expression)({});
+    path.replaceWith(p.expression);
+  }
+};
+function transformObjectToString$1 (babel$$1) {
+  return { visitor: objectToStringVisitor$1 }
+}
+
+function transformDynamicClass$1 (staticClass, clsBinding) {
+  if ( staticClass === void 0 ) staticClass = '';
+
+  var result = babel.transform(("!" + clsBinding), { plugins: [transformObjectToTernaryOperator$1] });
+  // 先实现功能，再优化代码
+  // https://github.com/babel/babel/issues/7138
+  var cls = prettier.format(result.code, { semi: false, singleQuote: true }).slice(1).slice(0, -1).replace(/\n|\r/g, '');
+  return (staticClass + " {{" + cls + "}}")
+}
+
+function transformDynamicStyle$1 (staticStyle, styleBinding) {
+  if ( staticStyle === void 0 ) staticStyle = '';
+
+  var result = babel.transform(("!" + styleBinding), { plugins: [transformObjectToString$1] });
+  var cls = prettier.format(result.code, { semi: false, singleQuote: true }).slice(1).slice(0, -1).replace(/\n|\r/g, '');
+  return (staticStyle + " {{" + cls + "}}")
+}
+
+var attrs$1 = {
+  format: function format (attrs) {
+    if ( attrs === void 0 ) attrs = {};
+
+    var obj = {};
+
+    Object.keys(attrs).map(function (key) {
+      var val = attrs[key];
+      obj[key.replace('@', 'v-on:').replace(/^:/, 'v-bind:')] = val;
+    });
+
+    return obj
+  },
+
+  convertAttr: function convertAttr (ast, log) {
+    var this$1 = this;
+
+    var attrsMap = ast.attrsMap; if ( attrsMap === void 0 ) attrsMap = {};
+    var tag = ast.tag;
+    var staticClass = ast.staticClass;
+    var attrs = {};
+    var wxClass = this.classObj(attrsMap['v-bind:class'], staticClass);
+    wxClass.length ? attrsMap['class'] = wxClass : '';
+    var wxStyle = this.styleObj(attrsMap['v-bind:style'], attrsMap['style']);
+    wxStyle.length ? attrsMap['style'] = wxStyle : '';
+
+    Object.keys(attrsMap).map(function (key) {
+      var val = attrsMap[key];
+      if (key === 'v-bind:class' || key === 'v-bind:style') {
+        return
+      }
+      if (key === 'v-text') {
+        ast.children.unshift({
+          text: ("{{" + val + "}}"),
+          type: 3
+        });
+      } else if (key === 'v-html') {
+        ast.tag = 'rich-text';
+        attrs['nodes'] = "{{" + val + "}}";
+      } else if (key === 'v-show') {
+        attrs['hidden'] = "{{!(" + val + ")}}";
+      } else if (/^v\-on\:/i.test(key)) {
+        attrs = this$1.event(key, val, attrs, tag);
+      } else if (/^v\-bind\:/i.test(key)) {
+        attrs = this$1.bind(key, val, attrs, tag, attrsMap['wx:key']);
+      } else if (/^v\-model/.test(key)) {
+        attrs = this$1.model(key, val, attrs, tag, log);
+      } else if (wxmlDirectiveMap$1[key]) {
+        var ref = wxmlDirectiveMap$1[key] || {};
+        var name = ref.name; if ( name === void 0 ) name = '';
+        var type = ref.type;
+        var map = ref.map; if ( map === void 0 ) map = {};
+        var check = ref.check;
+        if (!(check && !check(key, val, log)) && !(!name || typeof type !== 'number')) {
+          // 见 ./wxmlDirectiveMap.js 注释
+          if (type === 0) {
+            attrs[name] = "{{" + val + "}}";
+          }
+
+          if (type === 1) {
+            attrs[name] = undefined;
+          }
+
+          if (type === 2) {
+            attrs[name] = val;
+          }
+
+          if (type === 3) {
+            attrs[map[name] || name] = "{{" + val + "}}";
+            return
+          }
+        }
+      } else if (/^v\-/.test(key)) {
+        log(("不支持此属性-> " + key + "=\"" + val + "\""), 'waring');
+      } else {
+        if ((tagConfig$1.virtualTag.indexOf(tag) > -1) && (key === 'class' || key === 'style' || key === 'data-mpcomid')) {
+          if (key !== 'data-mpcomid') {
+            log(("template 不支持此属性-> " + key + "=\"" + val + "\""), 'waring');
+          }
+        } else {
+          attrs[key] = val;
+        }
+      }
+    });
+    ast.attrsMap = attrs;
+    return ast
+  },
+
+  event: function event (key, val, attrs, tag) {
+    // 小程序能力所致，bind 和 catch 事件同时绑定时候，只会触发 bind ,catch 不会被触发。
+    // .stop 的使用会阻止冒泡，但是同时绑定了一个非冒泡事件，会导致该元素上的 catchEventName 失效！
+    // .prevent 可以直接干掉，因为小程序里没有什么默认事件，比如submit并不会跳转页面
+    // .capture 不能做，因为小程序没有捕获类型的事件
+    // .self 没有可以判断的标识
+    // .once 也不能做，因为小程序没有 removeEventListener, 虽然可以直接在 handleProxy 中处理，但非常的不优雅，违背了原意，暂不考虑
+    var name = key.replace(/^v\-on\:/i, '').replace(/\.prevent/i, '');
+    var ref = name.split('.');
+    var eventName = ref[0];
+    var eventNameMap = ref.slice(1);
+    var eventMap = wxmlDirectiveMap$1['v-on'];
+    var check = wxmlDirectiveMap$1.check;
+
+    if (check) {
+      check(key, val);
+    }
+    var wxmlEventName = '';
+    if (eventName === 'change' && (tag === 'input' || tag === 'textarea')) {
+      wxmlEventName = 'blur';
+    } else {
+      wxmlEventName = eventMap.map[eventName];
+    }
+
+    var eventType = 'bind';
+    var isStop = eventNameMap.includes('stop');
+    if (eventNameMap.includes('capture')) {
+      eventType = isStop ? 'capture-catch:' : 'capture-bind:';
+    } else if (isStop) {
+      eventType = 'catch';
+    }
+
+    wxmlEventName = eventType + (wxmlEventName || eventName);
+    attrs[wxmlEventName] = 'handleProxy';
+
+    return attrs
+  },
+
+  bind: function bind (key, val, attrs, tag, isIf) {
+    var name = key.replace(/^v\-bind\:/i, '');
+
+    if (isIf && name === 'key') {
+      attrs['wx:key'] = val;
+    }
+
+    if (tag === 'template') {
+      return attrs
+    }
+
+    if (name === 'href') {
+      attrs['url'] = "{{" + val + "}}";
+    } else {
+      attrs[name] = "{{" + val + "}}";
+    }
+
+    if (tag === 'scroll-view') {
+      if (name === 'scroll-top' || name === 'scroll-left' || name === 'scroll-into-view') {
+        attrs[name] = "{=" + val + "=}";
+      }
+    }
+
+    if (tag === 'input' || tag === 'textarea' || tag === 'slider') {
+      if (name === 'value') {
+        attrs[name] = "{=" + val + "=}";
+      }
+    }
+
+    if (tag === 'movable-view' && (name === 'x' || name === 'y')) {
+      attrs[name] = "{=" + val + "=}";
+    }
+
+    return attrs
+  },
+
+  classObj: function classObj (clsBinding, staticCls) {
+    if ( clsBinding === void 0 ) clsBinding = '';
+
+    if (!clsBinding && !staticCls) {
+      return ''
+    }
+    if (!clsBinding && staticCls) {
+      return staticCls
+    }
+
+    return transformDynamicClass$1(staticCls, clsBinding)
+  },
+
+  styleObj: function styleObj (styleBinding, staticStyle) {
+    if ( styleBinding === void 0 ) styleBinding = '';
+
+    if (!styleBinding && !staticStyle) {
+      return ''
+    }
+    if (!styleBinding && staticStyle) {
+      return staticStyle
+    }
+
+    return transformDynamicStyle$1(staticStyle, styleBinding)
+  },
+
+  model: function model (key, val, attrs, tag) {
+    var isFormInput = tag === 'input' || tag === 'textarea';
+    attrs['value'] = "{{" + val + "}}";
+    if (key === 'v-model.lazy') {
+      if (isFormInput) {
+        attrs['bindblur'] = 'handleProxy';
+      } else {
+        attrs['bindchange'] = 'handleProxy';
+      }
+    } else {
+      if (isFormInput) {
+        attrs['bindinput'] = 'handleProxy';
+      } else {
+        attrs['bindchange'] = 'handleProxy';
+      }
+    }
+
+    return attrs
+  }
+};
+
+function getSlotsName$1 (obj) {
+  if (!obj) {
+    return ''
+  }
+  // wxml模板中 data="{{ a:{a1:'string2'}, b:'string'}}" 键a不能放在最后，会出错
+  return tmplateSlotsObj$1(obj)
+    .concat(
+      Object.keys(obj).map(function (k) { return ("$slot" + k + ":'" + (obj[k]) + "'"); })
+    )
+    .join(',')
+}
+
+function tmplateSlotsObj$1(obj) {
+  if (!obj) {
+    return []
+  }
+  // wxml模板中 data="{{ a:{a1:'string2'}, b:'string'}}" 键a1不能写成 'a1' 带引号的形式，会出错
+  var $for = Object.keys(obj)
+    .map(function (k) { return (k + ":'" + (obj[k]) + "'"); })
+    .join(',');
+  return $for ? [("$for:{" + $for + "}")] : []
+}
+
+var component$1 = {
+  isComponent: function isComponent (tagName, components) {
+    if ( components === void 0 ) components = {};
+
+    return !!components[tagName]
+  },
+  convertComponent: function convertComponent (ast, components, slotName) {
+    var attrsMap = ast.attrsMap;
+    var tag = ast.tag;
+    var mpcomid = ast.mpcomid;
+    var slots = ast.slots;
+    if (slotName) {
+      attrsMap['data'] = "{{{...$root[$k], $root}}}";
+      // bindedName is available when rendering slot in v-for
+      var bindedName = attrsMap['v-bind:name'];
+      if(bindedName) {
+        attrsMap['is'] = "{{$for[" + bindedName + "]}}";
+      } else {
+        attrsMap['is'] = "{{" + slotName + "}}";
+      }
+    } else {
+      var slotsName = getSlotsName$1(slots);
+      var restSlotsName = slotsName ? (", " + slotsName) : '';
+      attrsMap['data'] = "{{{...$root[$kk+" + mpcomid + "], $root" + restSlotsName + "}}}";
+      attrsMap['is'] = components[tag].name;
+    }
+    return ast
+  }
+};
+
+var tagMap$1 = {
+  'br': 'view',
+  'hr': 'view',
+
+  'p': 'view',
+  'h1': 'view',
+  'h2': 'view',
+  'h3': 'view',
+  'h4': 'view',
+  'h5': 'view',
+  'h6': 'view',
+  'abbr': 'view',
+  'address': 'view',
+  'b': 'view',
+  'bdi': 'view',
+  'bdo': 'view',
+  'blockquote': 'view',
+  'cite': 'view',
+  'code': 'view',
+  'del': 'view',
+  'ins': 'view',
+  'dfn': 'view',
+  'em': 'view',
+  'strong': 'view',
+  'samp': 'view',
+  'kbd': 'view',
+  'var': 'view',
+  'i': 'view',
+  'mark': 'view',
+  'pre': 'view',
+  'q': 'view',
+  'ruby': 'view',
+  'rp': 'view',
+  'rt': 'view',
+  's': 'view',
+  'small': 'view',
+  'sub': 'view',
+  'sup': 'view',
+  'time': 'view',
+  'u': 'view',
+  'wbr': 'view',
+
+  // 表单元素
+  'form': 'form',
+  'input': 'input',
+  'textarea': 'textarea',
+  'button': 'button',
+  'select': 'picker',
+  'option': 'view',
+  'optgroup': 'view',
+  'label': 'label',
+  'fieldset': 'view',
+  'datalist': 'picker',
+  'legend': 'view',
+  'output': 'view',
+
+  // 框架
+  'iframe': 'view',
+  // 图像
+  'img': 'image',
+  'canvas': 'canvas',
+  'figure': 'view',
+  'figcaption': 'view',
+
+  // 音视频
+  'audio': 'audio',
+  'source': 'audio',
+  'video': 'video',
+  'track': 'video',
+  // 链接
+  'a': 'navigator',
+  'nav': 'view',
+  'link': 'navigator',
+  // 列表
+  'ul': 'view',
+  'ol': 'view',
+  'li': 'view',
+  'dl': 'view',
+  'dt': 'view',
+  'dd': 'view',
+  'menu': 'view',
+  'command': 'view',
+
+  // 表格table
+  'table': 'view',
+  'caption': 'view',
+  'th': 'view',
+  'td': 'view',
+  'tr': 'view',
+  'thead': 'view',
+  'tbody': 'view',
+  'tfoot': 'view',
+  'col': 'view',
+  'colgroup': 'view',
+
+  // 样式 节
+  'div': 'view',
+  'main': 'view',
+  'span': 'label',
+  'header': 'view',
+  'footer': 'view',
+  'section': 'view',
+  'article': 'view',
+  'aside': 'view',
+  'details': 'view',
+  'dialog': 'view',
+  'summary': 'view',
+
+  'progress': 'progress',
+  'meter': 'progress', // todo
+  'head': 'view', // todo
+  'meta': 'view', // todo
+  'base': 'text', // todo
+  // 'map': 'image', // TODO不是很恰当
+  'area': 'navigator', // j结合map使用
+
+  'script': 'view',
+  'noscript': 'view',
+  'embed': 'view',
+  'object': 'view',
+  'param': 'view',
+
+  // https://mp.weixin.qq.com/debug/wxadoc/dev/component/
+  // [...document.querySelectorAll('.markdown-section tbody td:first-child')].map(v => v.textContent).join(',\n')
+  'view': 'view',
+  'scroll-view': 'scroll-view',
+  'swiper': 'swiper',
+  'icon': 'icon',
+  'text': 'text',
+  // 'progress': 'progress',
+  // 'button': 'button',
+  // 'form': 'form',
+  // 'input': 'input',
+  'checkbox': 'checkbox',
+  'radio': 'radio',
+  'picker': 'picker',
+  'picker-view': 'picker-view',
+  'slider': 'slider',
+  'switch': 'switch',
+  // 'label': 'label',
+  'navigator': 'navigator',
+  // 'audio': 'audio',
+  'image': 'image',
+  // 'video': 'video',
+  'map': 'map',
+  // 'canvas': 'canvas',
+  'contact-button': 'contact-button',
+  'block': 'block'
+};
+
+var tag$1 = function (ast, options) {
+  var tag = ast.tag;
+  var elseif = ast.elseif;
+  var elseText = ast.else;
+  var forText = ast.for;
+  var staticClass = ast.staticClass; if ( staticClass === void 0 ) staticClass = '';
+  var attrsMap = ast.attrsMap; if ( attrsMap === void 0 ) attrsMap = {};
+  var components = options.components;
+  var ifText = attrsMap['v-if'];
+  var href = attrsMap.href;
+  var bindHref = attrsMap['v-bind:href'];
+  var name = attrsMap.name;
+
+  if (!tag) {
+    return ast
+  }
+  var isComponent = component$1.isComponent(tag, components);
+  if (tag !== 'template' && tag !== 'block' && tag !== 'slot' && !isComponent) {
+    ast.staticClass = staticClass ? ("_" + tag + " " + staticClass) : ("_" + tag);
+  }
+  ast.tag = tagMap$1[tag] || tag;
+
+  var isSlot = tag === 'slot';
+
+  if ((ifText || elseif || elseText || forText) && tag === 'template') {
+    ast.tag = 'block';
+  } else if (isComponent || isSlot) {
+    var originSlotName = name || 'default';
+    var slotName = isSlot ? ("$slot" + originSlotName + " || '" + originSlotName + "'") : undefined;
+
+    // 用完必须删除，不然会被编译成 <template name="xxx"> 在小程序中就会表示这是一个模版申明而不是使用，小程序中不能同时申明和使用模版
+    delete ast.attrsMap.name;
+    ast = component$1.convertComponent(ast, components, slotName);
+    ast.tag = 'template';
+  } else if (tag === 'a' && !(href || bindHref)) {
+    ast.tag = 'view';
+  } else if (ast.events && ast.events.scroll) {
+    ast.tag = 'scroll-view';
+  } else if (tag === 'input') {
+    var type = attrsMap.type;
+    if (type && ['button', 'checkbox', 'radio'].indexOf(type) > -1) {
+      delete ast.attrsMap.type;
+      ast.tag = type;
+    }
+    if (type === 'button') {
+      ast.children.push({
+        text: attrsMap.value || '',
+        type: 3
+      });
+      delete ast.attrsMap.value;
+    }
+  }
+  return ast
+};
+
+var astMap$1 = {
+  // 'if': 's-if',
+  'v-for': 's-for',
+  'alias': 's-for-item',
+  'iterator1': 's-for-index',
+  'key': 's-key'
+};
+
+var convertFor$1 = function (ast) {
+  var iterator1 = ast.iterator1;
+  var forText = ast.for;
+  var key = ast.key;
+  var alias = ast.alias;
+  var attrsMap = ast.attrsMap;
+
+  // 缩写：<view s-for="p,index in persons">
+  // 全写：<view s-for="persons" s-for-index="index" s-for-item="p">
+
+  if (forText) {
+    attrsMap[astMap$1['v-for']] = alias + "," + iterator1 + " in " + forText;
+    // attrsMap[astMap['v-for']] = forText
+    // if (iterator1) {
+    //   attrsMap[astMap['iterator1']] = iterator1
+    // }
+    // if (alias) {
+    //   attrsMap[astMap['alias']] = alias
+    // }
+    // if (key) {
+    //   attrsMap[astMap['key']] = key
+    // }
+    delete attrsMap['v-for'];
+  }
+
+
+  return ast
+};
+
+function convertAst$1 (node, options, util) {
+  if ( options === void 0 ) options = {};
+
+  var children = node.children;
+  var ifConditions = node.ifConditions;
+  var staticClass = node.staticClass; if ( staticClass === void 0 ) staticClass = '';
+  var mpcomid = node.mpcomid;
+  var tagName = node.tag;
+  var log = util.log;
+  var deps = util.deps;
+  var slots = util.slots;
+  var slotTemplates = util.slotTemplates;
+  var wxmlAst = Object.assign({}, node);
+  var moduleId = options.moduleId;
+  var components = options.components;
+  wxmlAst.tag = tagName = tagName ? hyphenate(tagName) : tagName;
+  // 引入 import, isSlot 是使用 slot 的编译地方，意即 <slot></slot> 的地方
+  var isSlot = tagName === 'slot';
+  if (isSlot) {
+    deps.slots = 'slots';
+    // 把当前 slot 节点包裹 template
+    var defSlot = Object.assign({}, wxmlAst);
+    defSlot.tag = 'template';
+    var templateName = "" + (defSlot.attrsMap.name || 'default');
+    defSlot.attrsMap.name = templateName;
+    wxmlAst.children = [];
+    defSlot.parent = node.parent.parent;
+    slotTemplates[templateName] = defSlot;
+  }
+
+  var currentIsComponent = component$1.isComponent(tagName, components);
+  if (currentIsComponent) {
+    deps[tagName] = tagName;
+  }
+
+  if (moduleId && !currentIsComponent && tagConfig$1.virtualTag.indexOf(tagName) < 0) {
+    wxmlAst.staticClass = staticClass ? (moduleId + " " + staticClass).replace(/\"/g, '') : moduleId;
+  } else {
+    wxmlAst.staticClass = staticClass.replace(/\"/g, '');
+  }
+
+  // 组件内部的node节点全部是 slot
+  wxmlAst.slots = {};
+  if (currentIsComponent && children && children.length) {
+    // 只检查组件下的子节点（不检查孙子节点）是不是具名 slot，不然就是 default slot
+    children
+      .reduce(function (res, n) {
+        var ref = n.attrsMap || {};
+        var slot = ref.slot;
+        // 不是具名的，全部放在第一个数组元素中
+        var arr = slot ? res : res[0];
+        arr.push(n);
+        return res
+      }, [[]])
+      .forEach(function (n) {
+        var isDefault = Array.isArray(n);
+        var slotName = isDefault ? 'default' : n.attrsMap.slot;
+        var slotId = moduleId + "-" + slotName + "-" + (mpcomid.replace(/\'/g, ''));
+        var node = isDefault ? { tag: 'slot', attrsMap: {}, children: n } : n;
+
+        node.tag = 'template';
+        node.attrsMap.name = slotId;
+        delete node.attrsMap.slot;
+        // 缓存，会集中生成一个 slots 文件
+        slots[slotId] = { node: convertAst$1(node, options, util), name: slotName, slotId: slotId };
+        wxmlAst.slots[slotName] = slotId;
+      });
+    // 清理当前组件下的节点信息，因为 slot 都被转移了
+    children.length = 0;
+    wxmlAst.children.length = 0;
+  }
+  wxmlAst.attrsMap = attrs$1.format(wxmlAst.attrsMap);
+  wxmlAst = tag$1(wxmlAst, options);
+  wxmlAst = convertFor$1(wxmlAst, options);
+  wxmlAst = attrs$1.convertAttr(wxmlAst, log);
+  if (children && !isSlot) {
+    wxmlAst.children = children.map(function (k) { return convertAst$1(k, options, util); });
+  }
+
+  if (ifConditions) {
+    var length = ifConditions.length;
+    for (var i = 1; i < length; i++) {
+      wxmlAst.ifConditions[i].block = convertAst$1(ifConditions[i].block, options, util);
+    }
+  }
+
+  return wxmlAst
+}
+
+function wxmlAst$1 (compiled, options, log) {
+  if ( options === void 0 ) options = {};
+
+  var ast = compiled.ast;
+  var deps = {
+    // slots: 'slots'
+  };
+  var slots = {
+    // slotId: nodeAst
+  };
+  var slotTemplates = {
+  };
+
+  var wxast = convertAst$1(ast, options, { log: log, deps: deps, slots: slots, slotTemplates: slotTemplates });
+  var children = Object.keys(slotTemplates).map(function (k) { return convertAst$1(slotTemplates[k], options, { log: log, deps: deps, slots: slots, slotTemplates: slotTemplates }); });
+  wxast.children = children.concat(wxast.children);
+  return {
+    wxast: wxast,
+    deps: deps,
+    slots: slots
+  }
+}
+
+function generate$3 (obj, options) {
+  if ( options === void 0 ) options = {};
+
+  var tag = obj.tag;
+  var attrsMap = obj.attrsMap; if ( attrsMap === void 0 ) attrsMap = {};
+  var children = obj.children;
+  var text = obj.text;
+  var ifConditions = obj.ifConditions;
+  if (!tag) { return text }
+  var child = '';
+  if (children && children.length) {
+    // 递归子节点
+    child = children.map(function (v) { return generate$3(v, options); }).join('');
+  }
+
+  // v-if 指令
+  var ifConditionsArr = [];
+  if (ifConditions) {
+    var length = ifConditions.length;
+    for (var i = 1; i < length; i++) {
+      ifConditionsArr.push(generate$3(ifConditions[i].block, options));
+    }
+  }
+
+  var attrs = Object.keys(attrsMap).map(function (k) { return convertAttr$1(k, attrsMap[k]); }).join(' ');
+
+  var tags = ['progress', 'checkbox', 'switch', 'input', 'radio', 'slider', 'textarea'];
+  if (tags.indexOf(tag) > -1 && !(children && children.length)) {
+    return ("<" + tag + (attrs ? ' ' + attrs : '') + " />" + (ifConditionsArr.join('')))
+  }
+  return ("<" + tag + (attrs ? ' ' + attrs : '') + ">" + (child || '') + "</" + tag + ">" + (ifConditionsArr.join('')))
+}
+
+function convertAttr$1 (key, val) {
+  return (val === '' || typeof val === 'undefined') ? key : (key + "=\"" + val + "\"")
+}
+
+var utils$1 = {
+  toLowerCase: function toLowerCase (str) {
+    return str.replace(/([A-Z])/g, '-$1').toLowerCase().trim()
+  },
+
+  getChar: function getChar (index) {
+    return String.fromCharCode(0x61 + index)
+  },
+
+  log: function log (compiled) {
+    compiled.mpErrors = [];
+    compiled.mpTips = [];
+
+    return function (str, type) {
+      if (type === 'waring') {
+        compiled.mpTips.push(str);
+      } else {
+        compiled.mpErrors.push(str);
+      }
+    }
+  }
+};
+
+function compileToWxml$2 (compiled, options) {
+  if ( options === void 0 ) options = {};
+
+  // TODO, compiled is undefined
+  var components = options.components; if ( components === void 0 ) components = {};
+  var log = utils$1.log(compiled);
+
+  var ref = wxmlAst$1(compiled, options, log);
+  var wxast = ref.wxast;
+  var deps = ref.deps; if ( deps === void 0 ) deps = {};
+  var slots = ref.slots; if ( slots === void 0 ) slots = {};
+  var code = generate$3(wxast, options);
+
+  console.log(code);
+
+  // 引用子模版
+  var importCode = Object.keys(deps).map(function (k) { return components[k] ? ("<import src=\"" + (components[k].src) + "\" />") : ''; }).join('');
+  code = importCode + "<template name=\"" + (options.name) + "\">" + code + "</template>";
+
+  // 生成 slots code
+  Object.keys(slots).forEach(function (k) {
+    var slot = slots[k];
+    slot.code = generate$3(slot.node, options);
+  });
+
+  // TODO: 后期优化掉这种暴力全部 import，虽然对性能没啥大影响
+  return { code: code, compiled: compiled, slots: slots, importCode: importCode }
+}
+
 /*  */
+
+function compileToWxml (compiled, options, fileExt) {
+    var code;
+    switch(fileExt.platform) {
+        case 'swan':
+            code = compileToWxml$2(compiled, options);
+            break
+        case 'wx':
+            code = compileToWxml$1(compiled, options);
+            break
+        default:
+            code = compileToWxml$1(compiled, options);
+    }
+    return code
+}
 
 var ref = createCompiler(baseOptions);
 var compile = ref.compile;

@@ -5313,6 +5313,8 @@ function initMP (mpType, next) {
 //   }
 // }
 
+var KEY_SEP = '_';
+
 function getVmData (vm) {
   // 确保当前 vm 所有数据被同步
   var dataKeys = [].concat(
@@ -5341,12 +5343,12 @@ function getParentComKey (vm, res) {
 }
 
 function formatVmData (vm) {
-  var $p = getParentComKey(vm).join(',');
-  var $k = $p + ($p ? ',' : '') + getComKey(vm);
+  var $p = getParentComKey(vm).join(KEY_SEP);
+  var $k = $p + ($p ? KEY_SEP : '') + getComKey(vm);
 
   // getVmData 这儿获取当前组件内的所有数据，包含 props、computed 的数据
   // 改动 vue.runtime 所获的的核心能力
-  var data = Object.assign(getVmData(vm), { $k: $k, $kk: ($k + ","), $p: $p });
+  var data = Object.assign(getVmData(vm), { $k: $k, $kk: ("" + $k + KEY_SEP), $p: $p });
   var key = '$root.' + $k;
   var res = {};
   res[key] = data;
