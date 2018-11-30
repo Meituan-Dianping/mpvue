@@ -149,6 +149,22 @@ export default {
       attrs[name] = `{{${val}}}`
     }
 
+    if (tag === 'scroll-view') {
+      if (name === 'scroll-top' || name === 'scroll-left' || name === 'scroll-into-view') {
+        attrs[name] = `{=${val}=}`
+      }
+    }
+
+    if (tag === 'input' || tag === 'textarea' || tag === 'slider') {
+      if (name === 'value') {
+        attrs[name] = `{=${val}=}`
+      }
+    }
+
+    if (tag === 'movable-view' && (name === 'x' || name === 'y')) {
+      attrs[name] = `{=${val}=}`
+    }
+
     return attrs
   },
 
