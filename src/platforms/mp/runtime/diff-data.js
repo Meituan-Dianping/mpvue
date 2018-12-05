@@ -19,13 +19,13 @@ function getDeepData (keyList, viewData) {
   }
 }
 
-function compareAndSetDeepData (key, newData, vm, data) {
+function compareAndSetDeepData (key, newData, vm, data,forceUpdate) {
   // 比较引用类型数据
   try {
     const keyList = key.split('.')
     // page.__viewData__老版小程序不存在，使用mpvue里绑的data比对
     const oldData = getDeepData(keyList, vm.$root.$mp.page.data)
-    if (oldData === null || JSON.stringify(oldData) !== JSON.stringify(newData)) {
+    if (oldData === null || JSON.stringify(oldData) !== JSON.stringify(newData) || forceUpdate) {
       data[key] = newData
     }
   } catch (e) {
@@ -45,7 +45,7 @@ function minifyDeepData (rootKey, originKey, vmData, data, _mpValueSet, vm) {
   try {
     if (vmData instanceof Array) {
        // 数组
-      compareAndSetDeepData(rootKey + '.' + originKey, vmData, vm, data)
+      compareAndSetDeepData(rootKey + '.' + originKey, vmData, vm, data,true)
     } else {
       // Object
       let __keyPathOnThis = {} // 存储这层对象的keyPath
