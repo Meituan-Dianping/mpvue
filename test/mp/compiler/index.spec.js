@@ -86,6 +86,11 @@ describe('指令', () => {
         moduleId: 'hashValue'
       }
     )
+    assertCodegen(
+      `<div><p v-for="(item) in list"></p></div>`,
+      `<template name="a"><view class="_div"><view wx:for="{{list}}" wx:for-index="index" wx:for-item="item" class="_p"></view></view></template>`,
+      { name: 'a' }
+    )
   })
 
   it('v-if && v-for', () => {
