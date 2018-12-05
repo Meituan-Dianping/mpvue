@@ -19,10 +19,13 @@ export default function generate (obj, options = {}) {
   const attrs = Object.keys(attrsMap).map(k => convertAttr(k, attrsMap[k])).join(' ')
 
   const tags = ['progress', 'checkbox', 'switch', 'input', 'radio', 'slider', 'textarea']
+  let generatedCode
   if (tags.indexOf(tag) > -1 && !(children && children.length)) {
-    return `<${tag}${attrs ? ' ' + attrs : ''} />${ifConditionsArr.join('')}`
+    generatedCode =  `<${tag}${attrs ? ' ' + attrs : ''} />${ifConditionsArr.join('')}`
+  } else {
+    generatedCode = `<${tag}${attrs ? ' ' + attrs : ''}>${child || ''}</${tag}>${ifConditionsArr.join('')}`
   }
-  return `<${tag}${attrs ? ' ' + attrs : ''}>${child || ''}</${tag}>${ifConditionsArr.join('')}`
+  return generatedCode.replace(/\n|\r/g, '')
 }
 
 function convertAttr (key, val) {
