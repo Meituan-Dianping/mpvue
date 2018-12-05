@@ -19,7 +19,7 @@ function getDeepData (keyList, viewData) {
   }
 }
 
-function compareAndSetDeepData (key, newData, vm, data,forceUpdate) {
+function compareAndSetDeepData (key, newData, vm, data, forceUpdate) {
   // 比较引用类型数据
   try {
     const keyList = key.split('.')
@@ -45,7 +45,7 @@ function minifyDeepData (rootKey, originKey, vmData, data, _mpValueSet, vm) {
   try {
     if (vmData instanceof Array) {
        // 数组
-      compareAndSetDeepData(rootKey + '.' + originKey, vmData, vm, data,true)
+      compareAndSetDeepData(rootKey + '.' + originKey, vmData, vm, data, true)
     } else {
       // Object
       let __keyPathOnThis = {} // 存储这层对象的keyPath
