@@ -1,111 +1,91 @@
 import convertTagMap from './codegen/config/wxmlTagMap'
 
-function maybeTag (tagName) {
-  return convertTagMap[tagName]
-}
-
-function getWxEleId (index, arr) {
-  if (!arr || !arr.length) {
+function getWxEleId (index, iterators) {
+  if (!iterators.length) {
     return `'${index}'`
   }
-
-  const str = arr.join(`+'-'+`)
-  return `'${index}-'+${str}`
+  return `'${index}-'+${iterators.join(`+'-'+`)}`
 }
 
 // 检查不允许在 v-for 的时候出现2个及其以上相同 iterator1
-function checkRepeatIterator (arr, options) {
-  const len = arr.length
-  if (len > 1 && len !== new Set(arr).size) {
-    options.warn(`同一组件内嵌套的 v-for 不能连续使用相同的索引，目前为: ${arr}`, false)
-  }
-}
-
-function fixDefaultIterator (path) {
-  const { for: forText, iterator1 } = path
-  if (forText && !iterator1) {
-    path.iterator1 = 'index'
+function checkRepeatIterator (iterators, options) {
+  const len = iterators.length
+  if (len > 1 && len !== new Set(iterators).size) {
+    options.warn(`同一组件内嵌套的 v-for 不能连续使用相同的索引，目前为: ${iterators.join(',')}`, false)
   }
 }
 
 function addAttr (path, key, value, inVdom) {
   path[key] = value
   path.plain = false
-  // path.attrsMap[key] = value
   if (!inVdom) {
     path.attrsMap[`data-${key}`] = `{{${value}}}`
   }
-
-  // if (!path.attrsList) {
-  //   path.attrsList = []
-  // }
-  // path.attrsList.push({ name: `':${key}'`, value })
-
   if (!path.attrs) {
     path.attrs = []
   }
   path.attrs.push({ name: key, value })
 }
 
-function mark (path, options, deps, iteratorArr = []) {
-  fixDefaultIterator(path)
-
-  const { tag, children, iterator1, events, directives, ifConditions } = path
-
-  const currentArr = Object.assign([], iteratorArr)
-
-  if (iterator1) {
-    currentArr.push(iterator1)
+function mark (node, options, state, iterators = []) {
+  if (node.type !== 1) {
+    return
   }
 
-  checkRepeatIterator(currentArr, options)
+  const currentIterators = iterators.slice()
+
+  if (node.for && !node.iterator1) {
+    node.iterator1 = `$index_${iterators.length}`
+  }
+
+  if (node.iterator1) {
+    currentIterators.push(node.iterator1)
+  }
+
+  checkRepeatIterator(currentIterators, options)
 
   // 递归子节点
-  if (children && children.length) {
-    children.forEach((v, i) => {
-      // const counterIterator = children.slice(0, i).filter(v => v.for).map(v => v.for + '.length').join(`+'-'+`)
-      mark(v, options, deps, currentArr)
+  if (node.children && node.children.length) {
+    node.children.forEach(child => {
+      mark(child, options, state, currentIterators)
     })
   }
 
   // fix: v-else events
-  if (ifConditions && ifConditions.length > 1) {
-    ifConditions.slice(1).forEach((v, i) => {
-      mark(v.block, options, deps, currentArr)
+  if (node.ifConditions && node.ifConditions.length > 1) {
+    node.ifConditions.slice(1).forEach(condition => {
+      mark(condition.block, options, state, currentIterators)
     })
   }
 
   // for mpvue-template-compiler
   // events || v-model
-  const hasModel = directives && directives.find(v => v.name === 'model')
-  const needEventsID = events || hasModel
+  const hasModel = node.directives && node.directives.find(v => v.name === 'model')
+  const needEventsID = node.events || hasModel
 
   if (needEventsID) {
-    const eventId = getWxEleId(deps.eventIndex, currentArr)
-    // const eventId = getWxEleId(eIndex, currentArr)
-    addAttr(path, 'eventid', eventId)
-    path.attrsMap['data-comkey'] = '{{$k}}'
-    deps.eventIndex += 1
-    // eIndex += 1
+    const eventId = getWxEleId(state.eventIndex, currentIterators)
+    addAttr(node, 'eventid', eventId)
+    node.attrsMap['data-comkey'] = '{{$k}}'
+    state.eventIndex += 1
   }
 
   // 子组件
-  if (!tag || maybeTag(tag)) {
+  if (!node.tag || convertTagMap[node.tag]) {
     return
   }
 
   // eg. '1-'+i+'-'+j
-  const value = getWxEleId(deps.comIndex, currentArr)
-  addAttr(path, 'mpcomid', value, true)
-  path['mpcomid'] = value
-  deps.comIndex += 1
+  const value = getWxEleId(state.comIndex, currentIterators)
+  addAttr(node, 'mpcomid', value, true)
+  node.mpcomid = value
+  state.comIndex += 1
 }
 
 // 全局的事件触发器 ID
-// let eIndex = 0
-export function markComponent (ast, options) {
-  const deps = { comIndex: 0, eventIndex: 0 }
-  mark(ast, options, deps)
-
-  return ast
+export function markComponent (node, options) {
+  if (node) {
+    mark(node, options, { comIndex: 0, eventIndex: 0 })
+  }
+  return node
 }
