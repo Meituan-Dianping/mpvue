@@ -4,7 +4,7 @@ import { makeMap } from 'shared/util'
 
 export const isPreTag = (tag) => tag === 'pre'
 
-export const isReservedTag = makeMap(
+export const isHTMLTag = makeMap(
   'template,script,style,element,content,slot,link,meta,svg,view,' +
   'a,div,img,image,text,span,richtext,input,switch,textarea,spinner,select,' +
   'slider,slider-neighbor,indicator,trisition,trisition-group,canvas,' +
@@ -12,6 +12,10 @@ export const isReservedTag = makeMap(
   'video,web,embed,tabbar,tabheader,datepicker,timepicker,marquee,countdown',
   true
 )
+
+export const isReservedTag = (tag) => {
+  return isHTMLTag(tag)
+}
 
 // these are reserved for web because they are directly compiled away
 // during template compilation
