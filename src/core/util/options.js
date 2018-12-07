@@ -303,9 +303,9 @@ export function mergeOptions (
   child: Object,
   vm?: Component
 ): Object {
-  if (process.env.NODE_ENV !== 'production') {
-    checkComponents(child)
-  }
+  // if (process.env.NODE_ENV !== 'production') {
+  checkComponents(child)
+  // }
 
   if (typeof child === 'function') {
     child = child.options
