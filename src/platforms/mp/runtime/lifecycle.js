@@ -122,28 +122,30 @@ function normalizeProps (props, res, vm) {
 
   // fix vueProps to properties
   for (const key in res) {
-    if (res.hasOwnProperty(key)) {
-      const item = res[key]
-      if (item.default) {
-        item.value = item.default
-      }
-      const oldObserver = item.observer
-      item.observer = function (newVal, oldVal) {
-        vm[name] = newVal
-        // 先修改值再触发原始的 observer，跟 watch 行为保持一致
-        if (typeof oldObserver === 'function') {
-          oldObserver.call(vm, newVal, oldVal)
+    (function (key) {
+      if (res.hasOwnProperty(key)) {
+        const item = res[key]
+        if (item.default) {
+          item.value = item.default
+        }
+        const oldObserver = item.observer
+        item.observer = function (newVal, oldVal) {
+          vm[key] = newVal
+          // 先修改值再触发原始的 observer，跟 watch 行为保持一致
+          if (typeof oldObserver === 'function') {
+            oldObserver.call(vm, newVal, oldVal)
+          }
         }
       }
-    }
+    })(key)
   }
 
   return res
 }
 
 function normalizeProperties (vm) {
-  const properties = vm.$options.properties
-  const vueProps = vm.$options.props
+  const properties = vm.$options.properties || {}
+  const vueProps = vm.$options.props || {}
   const res = {}
 
   normalizeProps(properties, res, vm)
@@ -168,6 +170,8 @@ function initMpProps (vm) {
 }
 
 export function initMP (mpType, next) {
+  global.initNativeConstructor(mpType)
+
   const rootVueVM = this.$root
   if (!rootVueVM.$mp) {
     rootVueVM.$mp = {}
@@ -256,6 +260,7 @@ export function initMP (mpType, next) {
       },
       // 组件生命周期函数，在组件实例进入页面节点树时执行
       attached () {
+        mp.page = this
         mp.status = 'attached'
         callHook(rootVueVM, 'attached')
       },
@@ -279,6 +284,7 @@ export function initMP (mpType, next) {
       detached () {
         mp.status = 'detached'
         callHook(rootVueVM, 'detached')
+        mp.page = null
       }
     })
   } else {
@@ -327,7 +333,8 @@ export function initMP (mpType, next) {
       onHide () {
         mp.status = 'hide'
         callHook(rootVueVM, 'onHide')
-        mp.page = null
+        // 无法触发更新的这个操作
+        // mp.page = null
       },
 
       // 生命周期函数--监听页面卸载

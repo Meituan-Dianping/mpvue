@@ -3,10 +3,17 @@ try {
   if (!global) global = {};
   global.process = global.process || {};
   global.process.env = global.process.env || {};
-  global.App = global.App || App;
-  global.Page = global.Page || Page;
-  global.Component = global.Component || Component;
-  global.getApp = global.getApp || getApp;
+
+  global.initNativeConstructor = function (mpType) {
+    if (mpType === 'app') {
+      global.App = global.App || App
+    } else if (mpType === 'component') {
+      global.Component = global.Component || Component;
+    } else {
+      global.Page = global.Page || Page;
+      global.getApp = global.getApp || getApp;
+    }
+  }
 } catch (e) {}
 
 (function (global, factory) {
@@ -5067,28 +5074,30 @@ function normalizeProps$1 (props, res, vm) {
 
   // fix vueProps to properties
   for (var key$1 in res) {
-    if (res.hasOwnProperty(key$1)) {
-      var item = res[key$1];
-      if (item.default) {
-        item.value = item.default;
-      }
-      var oldObserver = item.observer;
-      item.observer = function (newVal, oldVal) {
-        vm[name] = newVal;
-        // 先修改值再触发原始的 observer，跟 watch 行为保持一致
-        if (typeof oldObserver === 'function') {
-          oldObserver.call(vm, newVal, oldVal);
+    (function (key) {
+      if (res.hasOwnProperty(key)) {
+        var item = res[key];
+        if (item.default) {
+          item.value = item.default;
         }
-      };
-    }
+        var oldObserver = item.observer;
+        item.observer = function (newVal, oldVal) {
+          vm[key] = newVal;
+          // 先修改值再触发原始的 observer，跟 watch 行为保持一致
+          if (typeof oldObserver === 'function') {
+            oldObserver.call(vm, newVal, oldVal);
+          }
+        };
+      }
+    })(key$1);
   }
 
   return res
 }
 
 function normalizeProperties (vm) {
-  var properties = vm.$options.properties;
-  var vueProps = vm.$options.props;
+  var properties = vm.$options.properties || {};
+  var vueProps = vm.$options.props || {};
   var res = {};
 
   normalizeProps$1(properties, res, vm);
@@ -5113,6 +5122,8 @@ function initMpProps (vm) {
 }
 
 function initMP (mpType, next) {
+  global.initNativeConstructor(mpType);
+
   var rootVueVM = this.$root;
   if (!rootVueVM.$mp) {
     rootVueVM.$mp = {};
@@ -5201,6 +5212,7 @@ function initMP (mpType, next) {
       },
       // 组件生命周期函数，在组件实例进入页面节点树时执行
       attached: function attached () {
+        mp.page = this;
         mp.status = 'attached';
         callHook$1(rootVueVM, 'attached');
       },
@@ -5224,6 +5236,7 @@ function initMP (mpType, next) {
       detached: function detached () {
         mp.status = 'detached';
         callHook$1(rootVueVM, 'detached');
+        mp.page = null;
       }
     });
   } else {
@@ -5272,7 +5285,8 @@ function initMP (mpType, next) {
       onHide: function onHide () {
         mp.status = 'hide';
         callHook$1(rootVueVM, 'onHide');
-        mp.page = null;
+        // 无法触发更新的这个操作
+        // mp.page = null
       },
 
       // 生命周期函数--监听页面卸载
