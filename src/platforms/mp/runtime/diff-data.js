@@ -38,6 +38,7 @@ function cleanKeyPath (vm) {
     Object.keys(vm.__mpKeyPath).forEach((_key) => {
       delete vm.__mpKeyPath[_key]['__keyPath']
     })
+    delete vm.__mpKeyPath;
   }
 }
 
