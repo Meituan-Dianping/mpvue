@@ -5066,22 +5066,22 @@ function normalizeProps$1 (props, res, vm) {
   }
 
   // fix vueProps to properties
-  for (var key$1 in res) {
-    if (res.hasOwnProperty(key$1)) {
-      var item = res[key$1];
+  Object.keys(res).forEach(function (key) {
+    if (res.hasOwnProperty(key)) {
+      var item = res[key];
       if (item.default) {
         item.value = item.default;
       }
       var oldObserver = item.observer;
       item.observer = function (newVal, oldVal) {
-        vm[name] = newVal;
+        vm[key] = newVal;
         // 先修改值再触发原始的 observer，跟 watch 行为保持一致
         if (typeof oldObserver === 'function') {
           oldObserver.call(vm, newVal, oldVal);
         }
       };
     }
-  }
+  });
 
   return res
 }
