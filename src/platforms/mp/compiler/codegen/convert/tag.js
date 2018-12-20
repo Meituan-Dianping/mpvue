@@ -2,7 +2,7 @@ import component from './component'
 import tagMap from '../config/wxmlTagMap'
 
 export default function (ast, options) {
-  const { tag, elseif, else: elseText, for: forText, staticClass = '', attrsMap = {}} = ast
+  const { fromSlotScope, tag, elseif, else: elseText, for: forText, staticClass = '', attrsMap = {}} = ast
   const { components } = options
   const { 'v-if': ifText, href, 'v-bind:href': bindHref, name } = attrsMap
 
@@ -15,11 +15,12 @@ export default function (ast, options) {
   }
   ast.tag = tagMap[tag] || tag
 
-  const isSlot = tag === 'slot'
+  const isSlot = tag === 'slot' || ast.slotScope
 
   if ((ifText || elseif || elseText || forText) && tag === 'template') {
     ast.tag = 'block'
-  } else if (isComponent || isSlot) {
+  } else if (isComponent || (isSlot && !fromSlotScope)) {
+    // scopedSlot 会迭代 普通slot的方法，不需要再用template替换，视为普通view
     const originSlotName = name || 'default'
     const slotName = isSlot ? `$slot${originSlotName} || '${originSlotName}'` : undefined
 

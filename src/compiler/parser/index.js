@@ -428,12 +428,14 @@ function processSlot (el) {
       )
     }
   } else {
-    const slotTarget = getBindingAttr(el, 'slot')
+    // 添加slotScope属性，vue 2.5+
+    el.slotScope = getAndRemoveAttr(el, 'slot-scope')
+    var slotTarget = getBindingAttr(el, 'slot')
     if (slotTarget) {
       el.slotTarget = slotTarget === '""' ? '"default"' : slotTarget
-    }
-    if (el.tag === 'template') {
-      el.slotScope = getAndRemoveAttr(el, 'scope')
+      if (el.tag !== 'template' && !el.slotScope) {
+        addAttr(el, 'slot', slotTarget)
+      }
     }
   }
 }

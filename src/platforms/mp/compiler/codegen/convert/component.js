@@ -1,3 +1,5 @@
+import { replaceVarSimple } from '../utils.scopeslot'
+
 function getSlotsName (obj) {
   if (!obj) {
     return ''
@@ -30,9 +32,35 @@ export default {
     return !!components[tagName]
   },
   convertComponent (ast, components, slotName) {
-    const { attrsMap, tag, mpcomid, slots } = ast
+    const { attrsMap, tag, mpcomid, slots, attrsList } = ast
     if (slotName) {
-      attrsMap['data'] = "{{...$root[$p], ...$root[$k], $root}}"
+      const { alias, for: forName, iterator1 } = ast.parent
+      const hasFor = forName && alias
+      // 有 v-for 的slot-scoped 在原有的 <template data=‘... 上增加作用域数据
+      if (hasFor) {
+        // scope-slot 情况
+        const varRootStr = '$root[$k]'
+        const aliasFull = `['${forName}'][${iterator1}]`
+        let $scopeStr = '{ '
+        const genKeyStr = replaceVarSimple(alias, aliasFull)
+        attrsList.forEach(function ({ name, value }) {
+          if (name.startsWith('v-bind')) {
+            const bindTarget = name.slice('v-bind'.length + 1)
+            const pathStr = genKeyStr(value)
+            const varSep = pathStr[0] === '[' ? '' : '.'
+            const bindValStr = varRootStr + varSep + pathStr + ' ,'
+            if (!bindTarget) {
+              $scopeStr += '...' + bindValStr
+            } else {
+              $scopeStr += bindTarget + ': ' + bindValStr
+            }
+          }
+        })
+        $scopeStr = $scopeStr.replace(/,?$/, ' }')
+        attrsMap['data'] = `{{ ...$root[$p], ...$root[$k], $root, $scopedata: ${$scopeStr} }}`
+      } else {
+        attrsMap['data'] = '{{...$root[$p], ...$root[$k], $root}}'
+      }
       // bindedName is available when rendering slot in v-for
       const bindedName = attrsMap['v-bind:name']
       if(bindedName) {

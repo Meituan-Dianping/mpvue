@@ -7,7 +7,7 @@ export function compileToWxml (compiled, options = {}) {
   const { components = {}} = options
   const log = utils.log(compiled)
 
-  const { wxast, deps = {}, slots = {}} = wxmlAst(compiled, options, log)
+  const { wxast, deps = {}, slots = {}, scopedSlots = {}} = wxmlAst(compiled, options, log)
   let code = generate(wxast, options)
 
   // 引用子模版
@@ -20,6 +20,11 @@ export function compileToWxml (compiled, options = {}) {
     slot.code = generate(slot.node, options)
   })
 
+  // 生成 scoped slot code
+  Object.keys(scopedSlots).forEach(function (k) {
+    const slot = scopedSlots[k]
+    slot.code = generate(slot.node, options)
+  })
   // TODO: 后期优化掉这种暴力全部 import，虽然对性能没啥大影响
-  return { code, compiled, slots, importCode }
+  return { code, compiled, slots, scopedSlots, importCode }
 }
