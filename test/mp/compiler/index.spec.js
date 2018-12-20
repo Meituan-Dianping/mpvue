@@ -14,6 +14,7 @@ function assertCodegen (template, assertTemplate, options, parmas = {}) {
   // expect(output.code.replace(/\n/g, '')).toMatch(strToRegExp(assertTemplate))
 }
 
+
 describe('a', () => {
   it('tag a', () => {
     assertCodegen(
@@ -559,6 +560,52 @@ describe('slot', () => {
       `<template name="a"><view class="_div"><template name="default">test</template><template data="{{...$root[$k], $root}}" is="{{$for[tab.key]}}"></template></view></template>`,
       {
         name: 'a'
+      }
+    )
+  })
+
+  it('作用域插槽组件(运行时不会多渲染一层template)', () => {
+    assertCodegen(
+      `<template><div class="list"><div v-for="(item, i) in items" :key="i"><slot v-bind="item.withBind" v-bind:normal="item.withKey" v-bind:out="compData[i]"></slot></div></div></template>`,
+      `<import src="/components/slots" /><template name="44d7fa62"><template><template name="default"></template><view class="_div data-v-6ff79fe1 list"><view wx:key="i" key="{{i}}" wx:for="{{items}}" wx:for-index="i" wx:for-item="item" class="_div data-v-6ff79fe1"><template data="{{ ...$root[$p], ...$root[$k], $root, $scopedata: { ...$root[$k]['items'][i].withBind ,normal: $root[$k]['items'][i].withKey ,out: $root[$k].compData[i]  } }}" is="{{$slotdefault || 'default'}}"></template></view></view></template></template>`,
+      {
+        components: {
+          isCompleted: true,
+          slots: { src: '/components/slots', name: 'slots' }
+        },
+        pageType: 'component',
+        name: '44d7fa62',
+        moduleId: 'data-v-6ff79fe1'
+      }
+    )
+  })
+  // 未能生成slot.wxml
+  it('使用作用域插槽组件(运行时不会多渲染一层template)', () => {
+    assertCodegen(
+      `<template>
+      <div class="app">
+        <div class="scope">
+          <comp>
+            <div class="scop" slot-scope="subName">
+                <div class="co" :d='subName.normal'>
+                  . {{ subName.out }} . {{subName.viaBind}}. {{ subName.out.comp }}
+                </div>
+            </div>
+          </comp>
+        </div>
+      </div>
+    </template>`,
+      `<import src="/list/index.vue.wxml" /><template name="3f5387cc"><template><view class="_div data-v-2dea727a app"><view class="_div data-v-2dea727a scope"><template data="{{...$root[$kk+'0'], $root, $for:{default:'data-v-2dea727a-default-0'},$slotdefault:'data-v-2dea727a-default-0'}}" is="44d7fa62"></template></view></view></template></template>`,
+      {
+        components: {
+          comp: { src: '/list/index.vue.wxml', name: '44d7fa62' },
+          isCompleted: true,
+          slots: { src: '/components/slots', name: 'slots' }
+        },
+        pageType: 'component',
+        name: '3f5387cc',
+        moduleId: 'data-v-2dea727a',
+        fromScopedSlot: 'subName'
       }
     )
   })
