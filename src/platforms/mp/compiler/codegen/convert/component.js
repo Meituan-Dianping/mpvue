@@ -44,19 +44,27 @@ export default {
         let $scopeStr = '{ '
         const genKeyStr = replaceVarSimple(alias, aliasFull)
         attrsList.forEach(function ({ name, value }) {
-          if (name.startsWith('v-bind')) {
-            const bindTarget = name.slice('v-bind'.length + 1)
-            const pathStr = genKeyStr(value)
-            const varSep = pathStr[0] === '[' ? '' : '.'
-            const bindValStr = varRootStr + varSep + pathStr + ' ,'
-            if (!bindTarget) {
-              $scopeStr += '...' + bindValStr
-            } else {
-              $scopeStr += bindTarget + ': ' + bindValStr
-            }
+          let bindTarget = false
+          if (name.startsWith(':')) {
+            bindTarget = name.slice(1)
+          } else if (name.startsWith('v-bind')) {
+            bindTarget = name.slice('v-bind'.length + 1)
+          }
+          if (!bindTarget === false) return
+          const pathStr = genKeyStr(value)
+          // 区分取变量方式：$root[$k].data 或 $root[$k][idx]
+          const varSep = pathStr[0] === '[' ? '' : '.'
+          const bindValStr = varRootStr + varSep + pathStr + ' ,'
+          if (bindTarget === '') {
+            // v-bind="data" 情况
+            $scopeStr += '...' + bindValStr
+          } else {
+            // v-bind:something="varible" 情况
+            $scopeStr += bindTarget + ': ' + bindValStr
           }
         })
         $scopeStr = $scopeStr.replace(/,?$/, ' }')
+        // 约定使用 '$scopedata' 为替换变量名
         attrsMap['data'] = `{{ ...$root[$p], ...$root[$k], $root, $scopedata: ${$scopeStr} }}`
       } else {
         attrsMap['data'] = '{{...$root[$p], ...$root[$k], $root}}'
