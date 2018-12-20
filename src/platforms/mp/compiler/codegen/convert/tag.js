@@ -2,8 +2,8 @@ import component from './component'
 import tagMap from '../config/wxmlTagMap'
 
 export default function (ast, options) {
-  const { fromSlotScope, tag, elseif, else: elseText, for: forText, staticClass = '', attrsMap = {}} = ast
-  const { components } = options
+  const { tag, elseif, else: elseText, for: forText, staticClass = '', attrsMap = {}} = ast
+  const { components, fromSlotScope } = options
   const { 'v-if': ifText, href, 'v-bind:href': bindHref, name } = attrsMap
 
   if (!tag) {

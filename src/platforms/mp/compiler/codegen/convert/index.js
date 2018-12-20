@@ -14,12 +14,12 @@ function convertAst (node, options = {}, util) {
   const { moduleId, components } = options
   wxmlAst.tag = tagName = tagName ? hyphenate(tagName) : tagName
   // 跟随迭代过程，保留slotScope变量名，用于 slot.wxml 中替换变量名，以实现于vue slot-scope 变量使用一致
-  let replaceTarget = node.fromSlotScope
+  let replaceTarget = options.fromSlotScope
   if (typeof replaceTarget !== 'string') {
     replaceTarget = false
   }
   // 自身没有作用域属性，从上级取
-  replaceTarget = replaceTarget || node.replaceTarget
+  replaceTarget = replaceTarget || options.replaceTarget
 
   // 引入 import, isSlot 是使用 slot 的编译地方，意即 <slot></slot> 的地方
   const isSlot = tagName === 'slot'
@@ -58,12 +58,11 @@ function convertAst (node, options = {}, util) {
     const isDefault = slotName === 'default'
     const slotId = `${moduleId}-${slotName}-${mpcomid.replace(/\'/g, '')}`
     // 子组件标识 fromSlotScope
-    const children = (multiItem ? item : [item]).map(item =>
-      Object.assign({}, item, { fromSlotScope: item.slotScope || true }))
+    const children = (multiItem ? item : [item])
     const node = isDefault ? { tag: 'template', attrsMap: {}, children } : item
     node.attrsMap.name = slotId
     delete node.attrsMap.slot
-    scopedSlots[slotId] = { node: convertAst(node, options, util), name: slotName, slotId }
+    scopedSlots[slotId] = { node: convertAst(node, Object.assign({}, options, { fromSlotScope: item.slotScope || true }), util), name: slotName, slotId }
     wxmlAst.slots[slotName] = slotId
   })
 
@@ -101,11 +100,12 @@ function convertAst (node, options = {}, util) {
   wxmlAst = attrs.convertAttr(wxmlAst, log)
   if (children && !isSlot) {
     // 中转 scopedSlot，可能得到空children，进行过滤
-    wxmlAst.children = children.filter(_ => _).map((k) =>
+    wxmlAst.children = children.filter(_ => _).map((k) => {
       /** 向下迭代 replaceTarget， 用于标识作用域模板中可替换的变量
        *  replaceVarStr 替换astNode中属性text等绑定变量的作用域变量*/
-      convertAst(replaceVarStr(Object.assign({}, k, { replaceTarget })), options, util)
-    )
+      const nextOptions = Object.assign({}, options, { replaceTarget })
+      return convertAst(replaceVarStr(k, nextOptions), nextOptions, util)
+    })
   }
 
   if (ifConditions) {

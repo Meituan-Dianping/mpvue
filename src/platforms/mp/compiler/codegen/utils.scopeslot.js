@@ -65,9 +65,9 @@ const expressionReplacerFactory = (
  * 替换当前节点属性、静态模板中使用的作用域变量，如果有
  * @param { astNode } nodeAst 节点词法树
  */
-export const replaceVarStr = nodeAst => {
-  if (!nodeAst.replaceTarget) return nodeAst
-  const { replaceTarget } = nodeAst
+export const replaceVarStr = (nodeAst, options = {}) => {
+  const { replaceTarget } = options
+  if (!replaceTarget) return nodeAst
   const replacer = replaceSlotScopeVar(replaceTarget, '$scopedata')
   const expressionReplacer = expressionReplacerFactory(
     replaceTarget,
