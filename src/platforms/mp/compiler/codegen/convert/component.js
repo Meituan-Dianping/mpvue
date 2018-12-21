@@ -1,4 +1,4 @@
-import { replaceVarSimple, getBindings, getClosestFor } from '../utils.scopeslot'
+import { replaceVarSimple, getClosestFor } from '../utils.scopeslot'
 
 function getSlotsName (obj) {
   if (!obj) {
@@ -14,7 +14,7 @@ function getSlotsName (obj) {
     .join(',')
 }
 
-function tmplateSlotsObj(obj) {
+function tmplateSlotsObj (obj) {
   if (!obj) {
     return []
   }
@@ -27,55 +27,56 @@ function tmplateSlotsObj(obj) {
   return $for ? [`$for:{${$for}}`] : []
 }
 
+function tagBindingAttrs (attrsList, closestForNode) {
+  let genKeyStr = v => v
+  if (closestForNode) {
+    // 有 v-for 场景，替换模板中约定的slot-scope。因slot只有一份，采用slot-scope统一成一个的处理方式
+    const { alias, for: forName, iterator1 } = closestForNode
+    const aliasFull = `${forName}[${iterator1}]`
+    genKeyStr = replaceVarSimple(alias, aliasFull)
+  }
+  const varRootStr = '$root[$k]'
+  const scopeAttrs = []
+  attrsList.forEach(({ name, value }) => {
+    let bindTarget = false
+    if (name.startsWith(':')) {
+      bindTarget = name.slice(1)
+    } else if (name.startsWith('v-bind')) {
+      bindTarget = name.slice('v-bind'.length + 1)
+    } else {
+      // 非动态绑定attr
+      scopeAttrs.push(`name: '${value}'`)
+    }
+    if (bindTarget === false) return
+    const pathStr = genKeyStr(value)
+    // 区分取变量方式：$root[$k].data 或 $root[$k][idx]
+    const varSep = pathStr[0] === '[' ? '' : '.'
+    const bindValStr = pathStr.startsWith('$scopedata') ? pathStr : `${varRootStr}${varSep}${pathStr}`
+    if (bindTarget === '') {
+      // v-bind="data" 情况
+      scopeAttrs.push(`...${bindValStr}`)
+    } else {
+      // v-bind:something="varible" 情况
+      scopeAttrs.push(`${bindTarget}: ${bindValStr}`)
+    }
+  })
+  return scopeAttrs
+}
+
 export default {
   isComponent (tagName, components = {}) {
     return !!components[tagName]
   },
   convertComponent (ast, components, slotName) {
     const { attrsMap, tag, mpcomid, slots, attrsList } = ast
+    // 查询最新的 v-for 模板slotScope变量
+    const closestForNode = getClosestFor(ast)
+    // 对于scope，手动添加一份标签上绑定的变量
+    const scopeAttrs = tagBindingAttrs(attrsList, closestForNode)
+    const scopeAttrStr = scopeAttrs.length ? `,$scopedata:{${scopeAttrs.join()} }` : ''
     if (slotName) {
-      // 检查插槽是否含有绑定数据
-      const hasDataBinding = getBindings(ast.attrsList).length
-      const closestForNode = getClosestFor(ast)
-      if (hasDataBinding) {
-        let genKeyStr = v => v
-        if (closestForNode) {
-          // 有 v-for 场景，替换模板中约定的slot-scope。因slot只有一份，采用slot-scope统一成一个的处理方式
-          const { alias, for: forName, iterator1 } = closestForNode
-          const aliasFull = `${forName}[${iterator1}]`
-          genKeyStr = replaceVarSimple(alias, aliasFull)
-        }
-        const varRootStr = '$root[$k]'
-        let $scopeStr = '{ '
-        attrsList.forEach(({ name, value }) => {
-          let bindTarget = false
-          if (name.startsWith(':')) {
-            bindTarget = name.slice(1)
-          } else if (name.startsWith('v-bind')) {
-            bindTarget = name.slice('v-bind'.length + 1)
-          } else {
-            // 非动态绑定attr
-            $scopeStr += `name: '${value}' ,`
-          }
-          if (bindTarget === false) return
-          const pathStr = genKeyStr(value)
-          // 区分取变量方式：$root[$k].data 或 $root[$k][idx]
-          const varSep = pathStr[0] === '[' ? '' : '.'
-          const bindValStr = `${varRootStr}${varSep}${pathStr} ,`
-          if (bindTarget === '') {
-            // v-bind="data" 情况
-            $scopeStr += `...${bindValStr}`
-          } else {
-            // v-bind:something="varible" 情况
-            $scopeStr += `${bindTarget}: ${bindValStr}`
-          }
-        })
-        $scopeStr = $scopeStr.replace(/,?$/, ' }')
-        // 有 slot-scoped 在原有的 <template data=‘... 上增加作用域数据，约定使用 '$scopedata' 为替换变量名
-        attrsMap['data'] = `{{ ...$root[$p], ...$root[$k], $root, $scopedata: ${$scopeStr} }}`
-      } else {
-        attrsMap['data'] = '{{...$root[$p], ...$root[$k], $root}}'
-      }
+      // 有 slot-scoped 在原有的 <template data=‘... 上增加作用域数据，约定使用 '$scopedata' 为替换变量名
+      attrsMap['data'] = `{{...$root[$p], ...$root[$k], $root${scopeAttrStr} }}`
       // slotAst 的 'v-bind:name' 不会在attrsList中出现，以此判断当前slot绑定了动态 name
       const bindedName = attrsMap['v-bind:name']
       if (bindedName) {
@@ -92,7 +93,7 @@ export default {
     } else {
       const slotsName = getSlotsName(slots)
       const restSlotsName = slotsName ? `, ${slotsName}` : ''
-      attrsMap['data'] = `{{...$root[$kk+${mpcomid}], $root${restSlotsName}}}`
+      attrsMap['data'] = `{{...$root[$kk+${mpcomid}], $root${restSlotsName}${scopeAttrStr} }}`
       attrsMap['is'] = components[tag].name
     }
     return ast
