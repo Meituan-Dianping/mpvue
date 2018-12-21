@@ -682,7 +682,7 @@ var isReservedTag = makeMap(
   'template,script,style,element,content,slot,link,meta,svg,view,' +
   'a,div,img,image,text,span,richtext,input,switch,textarea,spinner,select,' +
   'slider,slider-neighbor,indicator,trisition,trisition-group,canvas,' +
-  'list,cell,header,loading,loading-indicator,refresh,scrollable,scroller,' +
+  'cell,header,loading,loading-indicator,refresh,scrollable,scroller,' +
   'video,web,embed,tabbar,tabheader,datepicker,timepicker,marquee,countdown',
   true
 );
@@ -4153,6 +4153,7 @@ function mark (path, options, deps, iteratorArr) {
 
   var tag = path.tag;
   var children = path.children;
+  var scopedSlots = path.scopedSlots;
   var iterator1 = path.iterator1;
   var events = path.events;
   var directives = path.directives;
@@ -4170,6 +4171,12 @@ function mark (path, options, deps, iteratorArr) {
   if (children && children.length) {
     children.forEach(function (v, i) {
       // const counterIterator = children.slice(0, i).filter(v => v.for).map(v => v.for + '.length').join(`+'-'+`)
+      mark(v, options, deps, currentArr);
+    });
+  }
+  // 递归 scopedSlot
+  if (scopedSlots) {
+    Object.values(scopedSlots).forEach(function (v) {
       mark(v, options, deps, currentArr);
     });
   }
@@ -4690,6 +4697,28 @@ var replaceVarStr = function (nodeAst, options) {
   }
   return newNode
 };
+/**
+ * 获取检查节点含有变量的绑定属性
+ * @param {*} attrsList 节点属性列表
+ */
+
+
+/**
+ * 递归查找for数据
+ * @param {*} ast 节点
+ */
+function getClosestFor (ast) {
+  var target;
+  var currentAst = { parent: ast };
+  while (currentAst.parent) {
+    currentAst = currentAst.parent;
+    if (currentAst.for) {
+      target = currentAst;
+      break
+    }
+  }
+  return target
+}
 
 function getSlotsName (obj) {
   if (!obj) {
@@ -4705,17 +4734,58 @@ function getSlotsName (obj) {
     .join(',')
 }
 
-function tmplateSlotsObj(obj) {
+function tmplateSlotsObj (obj) {
   if (!obj) {
     return []
   }
   // wxml模板中 data="{{ a:{a1:'string2'}, b:'string'}}" 键a1不能写成 'a1' 带引号的形式，会出错
   var $for = Object.keys(obj)
-    .map(function(k) {
+    .map(function (k) {
       return (k + ":'" + (obj[k]) + "'")
     })
     .join(',');
   return $for ? [("$for:{" + $for + "}")] : []
+}
+
+function tagBindingAttrs (attrsList, closestForNode) {
+  var genKeyStr = function (v) { return v; };
+  if (closestForNode) {
+    // 有 v-for 场景，替换模板中约定的slot-scope。因slot只有一份，采用slot-scope统一成一个的处理方式
+    var alias = closestForNode.alias;
+    var forName = closestForNode.for;
+    var iterator1 = closestForNode.iterator1;
+    var aliasFull = forName + "[" + iterator1 + "]";
+    genKeyStr = replaceVarSimple(alias, aliasFull);
+  }
+  var varRootStr = '$root[$k]';
+  var scopeAttrs = [];
+  attrsList.forEach(function (ref) {
+    var name = ref.name;
+    var value = ref.value;
+
+    var bindTarget = false;
+    if (name.startsWith(':')) {
+      bindTarget = name.slice(1);
+    } else if (name.startsWith('v-bind')) {
+      bindTarget = name.slice('v-bind'.length + 1);
+    } else {
+      // 非动态绑定attr
+      scopeAttrs.push(("name: '" + value + "'"));
+    }
+    if (bindTarget === false) { return }
+    var pathStr = genKeyStr(value);
+    // 区分取变量方式：$root[$k].data 或 $root[$k][idx]
+    var varSep = pathStr[0] === '[' ? '' : '.';
+    var bindValStr = pathStr.startsWith('$scopedata') ? pathStr : ("" + varRootStr + varSep + pathStr);
+    if (bindTarget === '') {
+      // v-bind="data" 情况
+      scopeAttrs.push(("..." + bindValStr));
+    } else {
+      // v-bind:something="varible" 情况
+      scopeAttrs.push((bindTarget + ": " + bindValStr));
+    }
+  });
+  return scopeAttrs
 }
 
 var component = {
@@ -4730,59 +4800,31 @@ var component = {
     var mpcomid = ast.mpcomid;
     var slots = ast.slots;
     var attrsList = ast.attrsList;
+    // 查询最新的 v-for 模板slotScope变量
+    var closestForNode = getClosestFor(ast);
+    // 对于scope，手动添加一份标签上绑定的变量
+    var scopeAttrs = tagBindingAttrs(attrsList, closestForNode);
+    var scopeAttrStr = scopeAttrs.length ? (",$scopedata:{" + (scopeAttrs.join()) + " }") : '';
     if (slotName) {
-      var ref = ast.parent;
-      var alias = ref.alias;
-      var forName = ref.for;
-      var iterator1 = ref.iterator1;
-      var hasFor = forName && alias;
-      // 有 v-for 的slot-scoped 在原有的 <template data=‘... 上增加作用域数据
-      if (hasFor) {
-        // scope-slot 情况
-        var varRootStr = '$root[$k]';
-        var aliasFull = "['" + forName + "'][" + iterator1 + "]";
-        var $scopeStr = '{ ';
-        var genKeyStr = replaceVarSimple(alias, aliasFull);
-        attrsList.forEach(function (ref) {
-          var name = ref.name;
-          var value = ref.value;
-
-          var bindTarget = false;
-          if (name.startsWith(':')) {
-            bindTarget = name.slice(1);
-          } else if (name.startsWith('v-bind')) {
-            bindTarget = name.slice('v-bind'.length + 1);
-          }
-          if (!bindTarget === false) { return }
-          var pathStr = genKeyStr(value);
-          // 区分取变量方式：$root[$k].data 或 $root[$k][idx]
-          var varSep = pathStr[0] === '[' ? '' : '.';
-          var bindValStr = varRootStr + varSep + pathStr + ' ,';
-          if (bindTarget === '') {
-            // v-bind="data" 情况
-            $scopeStr += '...' + bindValStr;
-          } else {
-            // v-bind:something="varible" 情况
-            $scopeStr += bindTarget + ': ' + bindValStr;
-          }
-        });
-        $scopeStr = $scopeStr.replace(/,?$/, ' }');
-        // 约定使用 '$scopedata' 为替换变量名
-        attrsMap['data'] = "{{ ...$root[$p], ...$root[$k], $root, $scopedata: " + $scopeStr + " }}";
-      } else {
-        attrsMap['data'] = '{{...$root[$p], ...$root[$k], $root}}';
-      }
-      // bindedName is available when rendering slot in v-for
+      // 有 slot-scoped 在原有的 <template data=‘... 上增加作用域数据，约定使用 '$scopedata' 为替换变量名
+      attrsMap['data'] = "{{...$root[$p], ...$root[$k], $root" + scopeAttrStr + " }}";
+      // slotAst 的 'v-bind:name' 不会在attrsList中出现，以此判断当前slot绑定了动态 name
       var bindedName = attrsMap['v-bind:name'];
-      if(bindedName) {
-        attrsMap['is'] = "{{$for[" + bindedName + "]}}";
+      if (bindedName) {
+        var alias = closestForNode && closestForNode.alias;
+        // 如果 slot[:name] 在v-for作用域里
+        if (alias && bindedName.startsWith(alias) && ['.', '', undefined].includes(bindedName[alias.length])) {
+          attrsMap['is'] = "{{$for[" + bindedName + "] || 'default'}}";
+        } else {
+          attrsMap['is'] = "{{ $for[$root[$k]." + bindedName + "] || 'default' }}";
+        }
       } else {
         attrsMap['is'] = "{{" + slotName + "}}";
       }
     } else {
       var slotsName = getSlotsName(slots);
       var restSlotsName = slotsName ? (", " + slotsName) : '';
-      attrsMap['data'] = "{{...$root[$kk+" + mpcomid + "], $root" + restSlotsName + "}}";
+      attrsMap['data'] = "{{...$root[$kk+" + mpcomid + "], $root" + restSlotsName + scopeAttrStr + " }}";
       attrsMap['is'] = components[tag].name;
     }
     return ast
@@ -4931,24 +4973,6 @@ function convertAst (node, options, util) {
 
   // 组件内部的node节点全部是 slot
   wxmlAst.slots = {};
-
-  // 处理 scopedSlot，跟slot逻辑一致，使用普通slot的缓存变量
-  var srcScoped = Object.assign({}, node.scopedSlots);
-  Object.keys(srcScoped).forEach(function (key) {
-    var item = Object.assign({}, srcScoped[key]);
-    var multiItem = Array.isArray(item);
-    var slotName = (item.attrsMap && item.attrsMap.slot) || 'default';
-    var isDefault = slotName === 'default';
-    var slotId = moduleId + "-" + slotName + "-" + (mpcomid.replace(/\'/g, ''));
-    // 子组件标识 fromSlotScope
-    var children = (multiItem ? item : [item]);
-    var node = isDefault ? { tag: 'template', attrsMap: {}, children: children } : item;
-    node.attrsMap.name = slotId;
-    delete node.attrsMap.slot;
-    scopedSlots[slotId] = { node: convertAst(node, Object.assign({}, options, { fromSlotScope: item.slotScope || true }), util), name: slotName, slotId: slotId };
-    wxmlAst.slots[slotName] = slotId;
-  });
-
   if (currentIsComponent && children && children.length) {
     // 只检查组件下的子节点（不检查孙子节点）是不是具名 slot，不然就是 default slot
     children
@@ -4977,6 +5001,37 @@ function convertAst (node, options, util) {
     children.length = 0;
     wxmlAst.children.length = 0;
   }
+
+  // 处理 scopedSlot，跟slot逻辑一致，使用普通slot的缓存变量
+  var srcScoped = Object.assign({}, node.scopedSlots);
+  Object.keys(srcScoped).forEach(function (key) {
+    var item = Object.assign({}, srcScoped[key]);
+    var slotName = (item.attrsMap && item.attrsMap.slot) || 'default';
+    var slotId = moduleId + "-" + slotName + "-" + (mpcomid.replace(/\'/g, ''));
+    var node = item;
+    if (item.tag !== 'template') {
+      var multiItem = Array.isArray(item);
+      var children = (multiItem ? item : [item]);
+      node = { tag: 'template', attrsMap: {}, children: children };
+    }
+    node.attrsMap.name = slotId;
+    // 子组件标识 fromSlotScope
+    scopedSlots[slotId] = { node: convertAst(node, Object.assign({}, options, { fromSlotScope: item.slotScope || true }), util), name: slotName, slotId: slotId };
+    // 合并scopedSlot
+    if (!slots[slotId]) {
+      wxmlAst.slots[slotName] = slotId;
+      slots[slotId] = scopedSlots[slotId];
+    } else {
+      if (wxmlAst.slots[slotName] !== slotId) {
+        console.error('slotId 不一致', slotId, wxmlAst.slots[slotName]);
+        wxmlAst.slots[slotName] = slotId;
+      }
+      if (!Array.isArray(slots[slotId])) {
+        slots[slotId] = [slots[slotId]];
+      }
+      slots[slotId].push(scopedSlots[slotId]);
+    }
+  });
 
   wxmlAst.attrsMap = attrs.format(wxmlAst.attrsMap);
   wxmlAst = tag(wxmlAst, options);
@@ -5032,6 +5087,7 @@ function wxmlAst (compiled, options, log) {
 }
 
 function generate$2 (obj, options) {
+  if ( obj === void 0 ) obj = {};
   if ( options === void 0 ) options = {};
 
   var tag = obj.tag;
@@ -5120,6 +5176,7 @@ function compileToWxml (compiled, options) {
     var slot = scopedSlots[k];
     slot.code = generate$2(slot.node, options);
   });
+
   // TODO: 后期优化掉这种暴力全部 import，虽然对性能没啥大影响
   return { code: code, compiled: compiled, slots: slots, scopedSlots: scopedSlots, importCode: importCode }
 }
