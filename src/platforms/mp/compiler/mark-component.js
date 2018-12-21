@@ -50,7 +50,7 @@ function addAttr (path, key, value, inVdom) {
 function mark (path, options, deps, iteratorArr = []) {
   fixDefaultIterator(path)
 
-  const { tag, children, iterator1, events, directives, ifConditions } = path
+  const { tag, children, scopedSlots, iterator1, events, directives, ifConditions } = path
 
   const currentArr = Object.assign([], iteratorArr)
 
@@ -64,6 +64,12 @@ function mark (path, options, deps, iteratorArr = []) {
   if (children && children.length) {
     children.forEach((v, i) => {
       // const counterIterator = children.slice(0, i).filter(v => v.for).map(v => v.for + '.length').join(`+'-'+`)
+      mark(v, options, deps, currentArr)
+    })
+  }
+  // 递归 scopedSlot
+  if (scopedSlots) {
+    Object.values(scopedSlots).forEach(v => {
       mark(v, options, deps, currentArr)
     })
   }
