@@ -103,3 +103,35 @@ export const replaceVarStr = (nodeAst, options = {}) => {
   }
   return newNode
 }
+/**
+ * 获取检查节点含有变量的绑定属性
+ * @param {*} attrsList 节点属性列表
+ */
+export function getBindings (attrsList) {
+  const bindingAttrs = []
+  const bingAttr = /^(:|v-bind(:?))/
+  attrsList.forEach(({ name, value }) => {
+    if (bingAttr.test(name)) {
+      const varName = name.replace(bingAttr, '')
+      bindingAttrs.push({ name: varName, value })
+    }
+  })
+  return bindingAttrs
+}
+
+/**
+ * 递归查找for数据
+ * @param {*} ast 节点
+ */
+export function getClosestFor (ast) {
+  let target
+  let currentAst = { parent: ast }
+  while (currentAst.parent) {
+    currentAst = currentAst.parent
+    if (currentAst.for) {
+      target = currentAst
+      break
+    }
+  }
+  return target
+}
