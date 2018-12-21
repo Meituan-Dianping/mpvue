@@ -50,7 +50,7 @@ export default {
           } else if (name.startsWith('v-bind')) {
             bindTarget = name.slice('v-bind'.length + 1)
           }
-          if (!bindTarget === false) return
+          if (bindTarget === false) return
           const pathStr = genKeyStr(value)
           // 区分取变量方式：$root[$k].data 或 $root[$k][idx]
           const varSep = pathStr[0] === '[' ? '' : '.'

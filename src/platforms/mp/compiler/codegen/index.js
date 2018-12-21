@@ -25,6 +25,10 @@ export function compileToWxml (compiled, options = {}) {
     const slot = scopedSlots[k]
     slot.code = generate(slot.node, options)
   })
+
+  // mpvue-loader 只使用了 slots， 这儿将slots, scopedSlots 合并
+  Object.assign(slots, scopedSlots)
+
   // TODO: 后期优化掉这种暴力全部 import，虽然对性能没啥大影响
   return { code, compiled, slots, scopedSlots, importCode }
 }
