@@ -1,4 +1,4 @@
-export default function generate (obj, options = {}) {
+export default function generate (obj = {}, options = {}) {
   const { tag, attrsMap = {}, children, text, ifConditions } = obj
   if (!tag) return text
   let child = ''

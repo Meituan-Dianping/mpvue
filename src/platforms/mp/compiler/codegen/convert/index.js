@@ -48,24 +48,6 @@ function convertAst (node, options = {}, util) {
 
   // 组件内部的node节点全部是 slot
   wxmlAst.slots = {}
-
-  // 处理 scopedSlot，跟slot逻辑一致，使用普通slot的缓存变量
-  const srcScoped = Object.assign({}, node.scopedSlots)
-  Object.keys(srcScoped).forEach(key => {
-    const item = Object.assign({}, srcScoped[key])
-    const multiItem = Array.isArray(item)
-    const slotName = (item.attrsMap && item.attrsMap.slot) || 'default'
-    const isDefault = slotName === 'default'
-    const slotId = `${moduleId}-${slotName}-${mpcomid.replace(/\'/g, '')}`
-    // 子组件标识 fromSlotScope
-    const children = (multiItem ? item : [item])
-    const node = isDefault ? { tag: 'template', attrsMap: {}, children } : item
-    node.attrsMap.name = slotId
-    delete node.attrsMap.slot
-    scopedSlots[slotId] = { node: convertAst(node, Object.assign({}, options, { fromSlotScope: item.slotScope || true }), util), name: slotName, slotId }
-    wxmlAst.slots[slotName] = slotId
-  })
-
   if (currentIsComponent && children && children.length) {
     // 只检查组件下的子节点（不检查孙子节点）是不是具名 slot，不然就是 default slot
     children
@@ -93,6 +75,37 @@ function convertAst (node, options = {}, util) {
     children.length = 0
     wxmlAst.children.length = 0
   }
+
+  // 处理 scopedSlot，跟slot逻辑一致，使用普通slot的缓存变量
+  const srcScoped = Object.assign({}, node.scopedSlots)
+  Object.keys(srcScoped).forEach(key => {
+    const item = Object.assign({}, srcScoped[key])
+    const slotName = (item.attrsMap && item.attrsMap.slot) || 'default'
+    const slotId = `${moduleId}-${slotName}-${mpcomid.replace(/\'/g, '')}`
+    let node = item
+    if (item.tag !== 'template') {
+      const multiItem = Array.isArray(item)
+      const children = (multiItem ? item : [item])
+      node = { tag: 'template', attrsMap: {}, children }
+    }
+    node.attrsMap.name = slotId
+    // 子组件标识 fromSlotScope
+    scopedSlots[slotId] = { node: convertAst(node, Object.assign({}, options, { fromSlotScope: item.slotScope || true }), util), name: slotName, slotId }
+    // 合并scopedSlot
+    if (!slots[slotId]) {
+      wxmlAst.slots[slotName] = slotId
+      slots[slotId] = scopedSlots[slotId]
+    } else {
+      if (wxmlAst.slots[slotName] !== slotId) {
+        console.error('slotId 不一致', slotId, wxmlAst.slots[slotName])
+        wxmlAst.slots[slotName] = slotId
+      }
+      if (!Array.isArray(slots[slotId])) {
+        slots[slotId] = [slots[slotId]]
+      }
+      slots[slotId].push(scopedSlots[slotId])
+    }
+  })
 
   wxmlAst.attrsMap = attrs.format(wxmlAst.attrsMap)
   wxmlAst = tag(wxmlAst, options)
