@@ -73,10 +73,16 @@ export default {
     const closestForNode = getClosestFor(ast)
     // 对于scope，手动添加一份标签上绑定的变量
     const scopeAttrs = tagBindingAttrs(attrsList, closestForNode)
-    const scopeAttrStr = scopeAttrs.length ? `,$scopedata:{${scopeAttrs.join()} }` : ''
+    let scopeAttrStr = ''
+    let scopeIdStr = ''
+    if (scopeAttrs.length) {
+      scopeAttrStr = `,$scopedata:{${scopeAttrs.join()} }`
+      // 对于scope，添加一份索引
+      scopeIdStr = closestForNode && closestForNode.iterator1 ? `,$slotidx:'v'+${closestForNode.iterator1}` : ''
+    }
     if (slotName) {
       // 有 slot-scoped 在原有的 <template data=‘... 上增加作用域数据，约定使用 '$scopedata' 为替换变量名
-      attrsMap['data'] = `{{...$root[$p], ...$root[$k], $root${scopeAttrStr} }}`
+      attrsMap['data'] = `{{...$root[$p], ...$root[$k], $root${scopeAttrStr}${scopeIdStr} }}`
       // slotAst 的 'v-bind:name' 不会在attrsList中出现，以此判断当前slot绑定了动态 name
       const bindedName = attrsMap['v-bind:name']
       if (bindedName) {
@@ -93,7 +99,7 @@ export default {
     } else {
       const slotsName = getSlotsName(slots)
       const restSlotsName = slotsName ? `, ${slotsName}` : ''
-      attrsMap['data'] = `{{...$root[$kk+${mpcomid}], $root${restSlotsName}${scopeAttrStr} }}`
+      attrsMap['data'] = `{{...$root[$kk+${mpcomid}+($slotidx || '')], $root${restSlotsName}${scopeAttrStr} }}`
       attrsMap['is'] = components[tag].name
     }
     return ast

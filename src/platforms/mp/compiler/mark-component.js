@@ -103,6 +103,9 @@ function mark (path, options, deps, iteratorArr = []) {
   // eg. '1-'+i+'-'+j
   const value = getWxEleId(deps.comIndex, currentArr)
   addAttr(path, 'mpcomid', value, true)
+  if (currentArr[0]) {
+    addAttr(path, 'mpcomidx', currentArr[0], true)
+  }
   path['mpcomid'] = value
   deps.comIndex += 1
 }

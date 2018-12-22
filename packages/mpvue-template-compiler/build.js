@@ -3284,7 +3284,8 @@ var CodegenState = function CodegenState (options) {
 
 function generate$1 (
   ast,
-  options
+  options,
+  withLast
 ) {
   var state = new CodegenState(options);
   var code = ast ? genElement(ast, state) : '_c("div")';
@@ -3294,7 +3295,7 @@ function generate$1 (
   }
 }
 
-function genElement (el, state) {
+function genElement (el, state, withLast) {
   if (el.staticRoot && !el.staticProcessed) {
     return genStatic(el, state)
   } else if (el.once && !el.onceProcessed) {
@@ -3311,11 +3312,10 @@ function genElement (el, state) {
     // component or element
     var code;
     if (el.component) {
-      code = genComponent(el.component, el, state);
+      code = genComponent(el.component, el, state, withLast);
     } else {
-      var data = el.plain ? undefined : genData$2(el, state);
-
-      var children = el.inlineTemplate ? null : genChildren(el, state, true);
+      var data = el.plain ? undefined : genData$2(el, state, withLast);
+      var children = el.inlineTemplate ? null : genChildren(el, state, true, undefined, undefined, withLast);
       code = "_c('" + (el.tag) + "'" + (data ? ("," + data) : '') + (children ? ("," + children) : '') + ")";
     }
     // module transforms
@@ -3429,7 +3429,7 @@ function genFor (
     '})'
 }
 
-function genData$2 (el, state) {
+function genData$2 (el, state, withLast) {
   var data = '{';
 
   // directives first.
@@ -3462,7 +3462,7 @@ function genData$2 (el, state) {
   }
   // attributes
   if (el.attrs) {
-    data += "attrs:{" + (genProps(el.attrs)) + "},";
+    data += "attrs:{" + (genProps(el.attrs, withLast)) + "},";
   }
   // DOM props
   if (el.props) {
@@ -3489,7 +3489,7 @@ function genData$2 (el, state) {
   }
   // inline-template
   if (el.inlineTemplate) {
-    var inlineTemplate = genInlineTemplate(el, state);
+    var inlineTemplate = genInlineTemplate(el, state, withLast);
     if (inlineTemplate) {
       data += inlineTemplate + ",";
     }
@@ -3531,7 +3531,7 @@ function genDirectives (el, state) {
   }
 }
 
-function genInlineTemplate (el, state) {
+function genInlineTemplate (el, state, withLast) {
   var ast = el.children[0];
   if (process.env.NODE_ENV !== 'production' && (
     el.children.length > 1 || ast.type !== 1
@@ -3539,7 +3539,7 @@ function genInlineTemplate (el, state) {
     state.warn('Inline-template components must have exactly one child element.');
   }
   if (ast.type === 1) {
-    var inlineRenderFns = generate$1(ast, state.options);
+    var inlineRenderFns = generate$1(ast, state.options, withLast);
     return ("inlineTemplate:{render:function(){" + (inlineRenderFns.render) + "},staticRenderFns:[" + (inlineRenderFns.staticRenderFns.map(function (code) { return ("function(){" + code + "}"); }).join(',')) + "]}")
   }
 }
@@ -3562,9 +3562,10 @@ function genScopedSlot (
     return genForScopedSlot(key, el, state)
   }
   return "{key:" + key + ",fn:function(" + (String(el.slotScope)) + "){" +
+    "const _last = " + (el.slotScope) + ".mpcomidx === undefined ? '' : 'v' + " + (el.slotScope) + ".mpcomidx;\n" +
     "return " + (el.tag === 'template'
       ? genChildren(el, state) || 'void 0'
-      : genElement(el, state)) + "}}"
+      : genElement(el, state, true)) + "}}"
 }
 
 function genForScopedSlot (
@@ -3588,7 +3589,8 @@ function genChildren (
   state,
   checkSkip,
   altGenElement,
-  altGenNode
+  altGenNode,
+  withLast
 ) {
   var children = el.children;
   if (children.length) {
@@ -3605,7 +3607,7 @@ function genChildren (
       ? getNormalizationType(children, state.maybeComponent)
       : 0;
     var gen = altGenNode || genNode;
-    return ("[" + (children.map(function (c) { return gen(c, state); }).join(',')) + "]" + (normalizationType ? ("," + normalizationType) : ''))
+    return ("[" + (children.map(function (c) { return gen(c, state, withLast); }).join(',')) + "]" + (normalizationType ? ("," + normalizationType) : ''))
   }
 }
 
@@ -3640,9 +3642,9 @@ function needsNormalization (el) {
   return el.for !== undefined || el.tag === 'template' || el.tag === 'slot'
 }
 
-function genNode (node, state) {
+function genNode (node, state, withLast) {
   if (node.type === 1) {
-    return genElement(node, state)
+    return genElement(node, state, withLast)
   } if (node.type === 3 && node.isComment) {
     return genComment(node)
   } else {
@@ -3682,17 +3684,22 @@ function genSlot (el, state) {
 function genComponent (
   componentName,
   el,
-  state
+  state,
+  withLast
 ) {
   var children = el.inlineTemplate ? null : genChildren(el, state, true);
-  return ("_c(" + componentName + "," + (genData$2(el, state)) + (children ? ("," + children) : '') + ")")
+  return ("_c(" + componentName + "," + (genData$2(el, state, withLast)) + (children ? ("," + children) : '') + ")")
 }
 
-function genProps (props) {
+function genProps (props, withLast) {
   var res = '';
   for (var i = 0; i < props.length; i++) {
     var prop = props[i];
-    res += "\"" + (prop.name) + "\":" + (transformSpecialNewlines(prop.value)) + ",";
+    res += "\"" + (prop.name) + "\":" + (transformSpecialNewlines(prop.value));
+    if (withLast && prop.name === 'mpcomid') {
+      res += '+_last ';
+    }
+    res += ',';
   }
   return res.slice(0, -1)
 }
@@ -4150,7 +4157,6 @@ function mark (path, options, deps, iteratorArr) {
   if ( iteratorArr === void 0 ) iteratorArr = [];
 
   fixDefaultIterator(path);
-
   var tag = path.tag;
   var children = path.children;
   var scopedSlots = path.scopedSlots;
@@ -4210,6 +4216,9 @@ function mark (path, options, deps, iteratorArr) {
   // eg. '1-'+i+'-'+j
   var value = getWxEleId(deps.comIndex, currentArr);
   addAttr$1(path, 'mpcomid', value, true);
+  if (currentArr[0]) {
+    addAttr$1(path, 'mpcomidx', currentArr[0], true);
+  }
   path['mpcomid'] = value;
   deps.comIndex += 1;
 }
@@ -4804,10 +4813,16 @@ var component = {
     var closestForNode = getClosestFor(ast);
     // 对于scope，手动添加一份标签上绑定的变量
     var scopeAttrs = tagBindingAttrs(attrsList, closestForNode);
-    var scopeAttrStr = scopeAttrs.length ? (",$scopedata:{" + (scopeAttrs.join()) + " }") : '';
+    var scopeAttrStr = '';
+    var scopeIdStr = '';
+    if (scopeAttrs.length) {
+      scopeAttrStr = ",$scopedata:{" + (scopeAttrs.join()) + " }";
+      // 对于scope，添加一份索引
+      scopeIdStr = closestForNode && closestForNode.iterator1 ? (",$scopeidx:'v'+" + (closestForNode.iterator1)) : '';
+    }
     if (slotName) {
       // 有 slot-scoped 在原有的 <template data=‘... 上增加作用域数据，约定使用 '$scopedata' 为替换变量名
-      attrsMap['data'] = "{{...$root[$p], ...$root[$k], $root" + scopeAttrStr + " }}";
+      attrsMap['data'] = "{{...$root[$p], ...$root[$k], $root" + scopeAttrStr + scopeIdStr + " }}";
       // slotAst 的 'v-bind:name' 不会在attrsList中出现，以此判断当前slot绑定了动态 name
       var bindedName = attrsMap['v-bind:name'];
       if (bindedName) {
@@ -4824,7 +4839,7 @@ var component = {
     } else {
       var slotsName = getSlotsName(slots);
       var restSlotsName = slotsName ? (", " + slotsName) : '';
-      attrsMap['data'] = "{{...$root[$kk+" + mpcomid + "], $root" + restSlotsName + scopeAttrStr + " }}";
+      attrsMap['data'] = "{{...$root[$kk+" + mpcomid + "+($scopeidx || '')], $root" + restSlotsName + scopeAttrStr + " }}";
       attrsMap['is'] = components[tag].name;
     }
     return ast
