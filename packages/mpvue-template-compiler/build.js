@@ -3282,10 +3282,11 @@ var CodegenState = function CodegenState (options) {
 
 
 
+
+
 function generate$1 (
   ast,
-  options,
-  withLast
+  options
 ) {
   var state = new CodegenState(options);
   var code = ast ? genElement(ast, state) : '_c("div")';
@@ -3565,7 +3566,7 @@ function genScopedSlot (
     "const _last = " + (el.slotScope) + ".mpcomidx === undefined ? '' : 'v' + " + (el.slotScope) + ".mpcomidx;\n" +
     "return " + (el.tag === 'template'
       ? genChildren(el, state) || 'void 0'
-      : genElement(el, state, true)) + "}}"
+      : genElement(el, state, { needSuffix: true })) + "}}"
 }
 
 function genForScopedSlot (
@@ -3607,7 +3608,7 @@ function genChildren (
       ? getNormalizationType(children, state.maybeComponent)
       : 0;
     var gen = altGenNode || genNode;
-    return ("[" + (children.map(function (c) { return gen(c, state, withLast); }).join(',')) + "]" + (normalizationType ? ("," + normalizationType) : ''))
+    return ("[" + (children.map(function (c) { return gen(c, state, Object.assign({}, withLast)); }).join(',')) + "]" + (normalizationType ? ("," + normalizationType) : ''))
   }
 }
 
@@ -3693,13 +3694,18 @@ function genComponent (
 
 function genProps (props, withLast) {
   var res = '';
+  var consumed = false;
   for (var i = 0; i < props.length; i++) {
     var prop = props[i];
     res += "\"" + (prop.name) + "\":" + (transformSpecialNewlines(prop.value));
-    if (withLast && prop.name === 'mpcomid') {
+    if (withLast && withLast.needSuffix && prop.name === 'mpcomid') {
+      consumed = true;
       res += '+_last ';
     }
     res += ',';
+  }
+  if (consumed) {
+    withLast.needSuffix = false;
   }
   return res.slice(0, -1)
 }
@@ -4157,6 +4163,7 @@ function mark (path, options, deps, iteratorArr) {
   if ( iteratorArr === void 0 ) iteratorArr = [];
 
   fixDefaultIterator(path);
+
   var tag = path.tag;
   var children = path.children;
   var scopedSlots = path.scopedSlots;
@@ -4818,7 +4825,7 @@ var component = {
     if (scopeAttrs.length) {
       scopeAttrStr = ",$scopedata:{" + (scopeAttrs.join()) + " }";
       // 对于scope，添加一份索引
-      scopeIdStr = closestForNode && closestForNode.iterator1 ? (",$scopeidx:'v'+" + (closestForNode.iterator1)) : '';
+      scopeIdStr = closestForNode && closestForNode.iterator1 ? (",$slotidx:'v'+" + (closestForNode.iterator1)) : '';
     }
     if (slotName) {
       // 有 slot-scoped 在原有的 <template data=‘... 上增加作用域数据，约定使用 '$scopedata' 为替换变量名
@@ -4839,7 +4846,7 @@ var component = {
     } else {
       var slotsName = getSlotsName(slots);
       var restSlotsName = slotsName ? (", " + slotsName) : '';
-      attrsMap['data'] = "{{...$root[$kk+" + mpcomid + "+($scopeidx || '')], $root" + restSlotsName + scopeAttrStr + " }}";
+      attrsMap['data'] = "{{...$root[$kk+" + mpcomid + "+($slotidx || '')], $root" + restSlotsName + scopeAttrStr + " }}";
       attrsMap['is'] = components[tag].name;
     }
     return ast
