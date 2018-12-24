@@ -115,6 +115,9 @@ function throttle (func, wait, options) {
 
 // 优化频繁的 setData: https://mp.weixin.qq.com/debug/wxadoc/dev/framework/performance/tips.html
 const throttleSetData = throttle((handle, data) => {
+  Object.keys(data).forEach(key => {
+    if (data[key] === undefined) delete data[key]
+  })
   handle(data)
 }, 50)
 

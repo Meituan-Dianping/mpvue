@@ -33,7 +33,7 @@ export class CodegenState {
 }
 
 export type WithLast = {
-  added: Boolean
+  needSuffix: Boolean
 }
 
 export type CodegenResult = {
@@ -349,7 +349,7 @@ function genScopedSlot (
     `const _last = ${el.slotScope}.mpcomidx === undefined ? '' : 'v' + ${el.slotScope}.mpcomidx;\n` +
     `return ${el.tag === 'template'
       ? genChildren(el, state) || 'void 0'
-      : genElement(el, state, { added: true })
+      : genElement(el, state, { needSuffix: true })
   }}}`
 }
 
@@ -375,7 +375,7 @@ export function genChildren (
   checkSkip?: boolean,
   altGenElement?: Function,
   altGenNode?: Function,
-  withLast?: Boolean
+  withLast?: WithLast
 ): string | void {
   const children = el.children
   if (children.length) {
@@ -392,7 +392,7 @@ export function genChildren (
       ? getNormalizationType(children, state.maybeComponent)
       : 0
     const gen = altGenNode || genNode
-    return `[${children.map(c => gen(c, state, withLast)).join(',')}]${
+    return `[${children.map(c => gen(c, state, Object.assign({}, withLast))).join(',')}]${
       normalizationType ? `,${normalizationType}` : ''
     }`
   }
@@ -487,14 +487,14 @@ function genProps (props: Array<{ name: string, value: string }>, withLast: With
   for (let i = 0; i < props.length; i++) {
     const prop = props[i]
     res += `"${prop.name}":${transformSpecialNewlines(prop.value)}`
-    if (!withLast.added && prop.name === 'mpcomid') {
+    if (withLast && withLast.needSuffix && prop.name === 'mpcomid') {
       consumed = true
       res += '+_last '
     }
     res += ','
   }
   if (consumed) {
-    withLast.added = true
+    withLast.needSuffix = false
   }
   return res.slice(0, -1)
 }
