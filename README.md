@@ -133,7 +133,6 @@
     <img src="http://jiankang.juwu168.com/blog/wp-content/uploads/2018/10/gh_36a0a852bf6f_258-1.jpg" width="100" title="慕课网" />
     <img src="https://user-images.githubusercontent.com/14272879/49424002-38085e00-f7d4-11e8-8242-13ddda18cec3.jpg" width="100" title="一人宴" />
     <img src="https://upload-images.jianshu.io/upload_images/3356839-59bfd93deb76afca.jpg" width="100" title="惠动平台">
-
     <!-- 非标准小程序码 -->
     <img src="https://user-images.githubusercontent.com/1176855/41755510-62b9fc90-760a-11e8-89be-b6ddbee08e63.jpg" width="100" title="暖茶阿妈的占卜小屋"/>
     <img src="https://user-images.githubusercontent.com/22720942/40184432-da33291c-5a22-11e8-966c-c836d1dc8078.png" width="100" />
