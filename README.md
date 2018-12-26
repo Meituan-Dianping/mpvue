@@ -120,7 +120,7 @@
     <img src="https://user-images.githubusercontent.com/16631463/46907861-eb2ea680-cf4b-11e8-92a2-0a8917417325.jpg" width="100" title="前端最火框架排行榜" />
     <img src="https://user-images.githubusercontent.com/16631463/46907868-187b5480-cf4c-11e8-8302-dcc722430b6d.jpg" width="100" title="猜谜语" />
     <img src="https://user-images.githubusercontent.com/38179236/47001679-9ebab500-d15d-11e8-99df-27b61e53c652.jpg" width="100" title="旅游大巴" />
-     <img src="https://user-images.githubusercontent.com/20639676/47198055-a9af5880-d39c-11e8-8b1c-fcd4ba0ea57b.png" width="100" title="云鲜社区生鲜购" />
+    <img src="https://user-images.githubusercontent.com/20639676/47198055-a9af5880-d39c-11e8-8b1c-fcd4ba0ea57b.png" width="100" title="云鲜社区生鲜购" />
     <img src="https://user-images.githubusercontent.com/8544120/47279097-4114e580-d601-11e8-8a95-2d7dcc165d6b.jpg" width="100" title="闲停扯乎" />
     <img src="https://user-images.githubusercontent.com/22420/47401062-5bba9c00-d772-11e8-9717-d7c468d9b939.jpg" width="100" title="狗脸识别" />
     <img src="https://user-images.githubusercontent.com/31442077/47412617-c97cbd00-d79e-11e8-9002-7a0614d6ad1b.jpg" width="100" title="思政云" />
@@ -129,12 +129,10 @@
     <img src="https://user-images.githubusercontent.com/22372095/48299143-b6d6e780-e503-11e8-963a-4789e54f57d7.jpg" width="100" title="百世集团供应链TNET" />
     <img src="https://user-images.githubusercontent.com/15187909/48299710-c5290180-e50b-11e8-8cb5-339be1531608.jpg" width="100" />
     <img src="https://user-images.githubusercontent.com/1715463/49988179-d0f76000-ffb0-11e8-8a69-cd57d6e54890.jpeg" width="100" title="漂流小情书"/>
-
     <img src="https://user-images.githubusercontent.com/1715568/48662132-6b4eab80-eab8-11e8-95de-c1e21786b2d9.jpg" width="100" title="绿芽找房"/>
     <img src="http://jiankang.juwu168.com/blog/wp-content/uploads/2018/10/gh_36a0a852bf6f_258-1.jpg" width="100" title="慕课网" />
     <img src="https://user-images.githubusercontent.com/14272879/49424002-38085e00-f7d4-11e8-8242-13ddda18cec3.jpg" width="100" title="一人宴" />
-
-    <img src="https://upload-images.jianshu.io/upload_images/3356839-59bfd93deb76afca.jpg" width="200" title="惠动平台">
+    <img src="https://upload-images.jianshu.io/upload_images/3356839-59bfd93deb76afca.jpg" width="100" title="惠动平台">
 
     <!-- 非标准小程序码 -->
     <img src="https://user-images.githubusercontent.com/1176855/41755510-62b9fc90-760a-11e8-89be-b6ddbee08e63.jpg" width="100" title="暖茶阿妈的占卜小屋"/>
