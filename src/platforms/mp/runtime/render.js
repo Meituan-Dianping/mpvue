@@ -1,5 +1,6 @@
 // 节流方法，性能优化
 import { getComKey } from '../util/index'
+import { diffData } from './diff-data'
 
 // 全局的命名约定，为了节省编译的包大小一律采取形象的缩写，说明如下。
 // $c === $child
@@ -130,6 +131,7 @@ function getPage (vm) {
   return page
 }
 
+// 优化js变量动态变化时候引起全量更新
 // 优化每次 setData 都传递大量新数据
 export function updateDataToMP () {
   const page = getPage(this)
@@ -138,6 +140,7 @@ export function updateDataToMP () {
   }
 
   const data = formatVmData(this)
+  diffData(this, data)
   throttleSetData(page.setData.bind(page), data)
 }
 
