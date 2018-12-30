@@ -7,22 +7,17 @@ function getSlotsName (obj) {
   // wxml模板中 data="{{ a:{a1:'string2'}, b:'string'}}" 键a不能放在最后，会出错
   return tmplateSlotsObj(obj)
     .concat(
-      Object.keys(obj).map(function(k) {
-        return '$slot' + k + ":'" + obj[k] + "'"
-      })
-    )
+      Object.keys(obj).map(k => '$slot' + k + ":'" + obj[k] + "'"))
     .join(',')
 }
 
-function tmplateSlotsObj(obj) {
+function tmplateSlotsObj (obj) {
   if (!obj) {
     return []
   }
   // wxml模板中 data="{{ a:{a1:'string2'}, b:'string'}}" 键a1不能写成 'a1' 带引号的形式，会出错
   const $for = Object.keys(obj)
-    .map(function(k) {
-      return `${k}:'${obj[k]}'`
-    })
+    .map(k => `${k}:'${obj[k]}'`)
     .join(',')
   return $for ? [`$for:{${$for}}`] : []
 }
@@ -55,7 +50,7 @@ function tagBindingAttrs (attrsList, closestForNode) {
     if (bindTarget === false) return
     let bindValStr
     if (typeof value !== 'string' || // 这几种条件直接取用，不替换。
-      /^[\d\.\-\+]+$/.test(value) || // 是数字，
+      /^[+\-\d.]+$/.test(value) || // 是数字，
       ['true', 'false'].includes(value) || // 是布尔值
       ['\'', '"', '{', '['].includes(value[0])) { // 是数组，字符串
       // TODO 数组中存在变量，对象的动态key等可能迭代此方法进行替换

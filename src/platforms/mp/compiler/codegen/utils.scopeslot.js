@@ -69,7 +69,9 @@ const expressionReplacerFactory = (
     .join('')
   let text = ''
   const _s = str => `{{ ${str} }}`
+  // 使用 ast提供的 expression 生成text
   try {
+    /* eslint no-eval: 0 */
     text = eval(textArr.join('').replace(/\n/g, '\\n'))
   } catch (e) {
     console.info(_s(text), e)
