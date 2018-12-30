@@ -1,5 +1,20 @@
 const { compile, compileToWxml } = require('../../../packages/mpvue-template-compiler')
 // const { strToRegExp } = require('../helpers/index')
+const stringify = obj => {
+  const cache = []
+  // 忽略循环引用的stringify
+  return JSON.stringify(obj, function (key, value) {
+    if (typeof value === 'object' && value !== null) {
+      if (cache.indexOf(value) !== -1) {
+        // Circular reference found, discard key
+        return
+      }
+      // Store value in our collection
+      cache.push(value)
+    }
+    return value
+  })
+}
 
 function assertCodegen (template, assertTemplate, options, parmas = {}) {
   const { errors = [], mpErrors = [], slots = {}, mpTips = [] } = parmas
@@ -9,7 +24,7 @@ function assertCodegen (template, assertTemplate, options, parmas = {}) {
   expect(output.compiled.mpTips).toEqual(mpTips)
   expect(output.compiled.errors).toEqual(errors)
   // console.log(JSON.stringify(output.slots))
-  expect(JSON.stringify(output.slots)).toEqual(JSON.stringify(slots))
+  expect(stringify(output.slots)).toEqual(JSON.stringify(slots))
   expect(output.code).toEqual(assertTemplate)
   // expect(output.code.replace(/\n/g, '')).toMatch(strToRegExp(assertTemplate))
 }
@@ -74,7 +89,7 @@ describe('指令', () => {
     // bug mpcomid="'0-'+index"
     assertCodegen(
       `<div><my-component v-for="item in items" :key="item.id"></my-component></div>`,
-      `<import src="/components/card" /><template name="a"><view class="_div hashValue"><template wx:key="item.id" data="{{...$root[$kk+'0-'+index], $root}}" is="my-component" wx:for="{{items}}" wx:for-index="index" wx:for-item="item"></template></view></template>`,
+      `<import src="/components/card" /><template name="a"><view class="_div hashValue"><template wx:key="item.id" data="{{...$root[$kk+'0-'+index+($slotidx || '')], $root }}" is="my-component" wx:for="{{items}}" wx:for-index="index" wx:for-item="item"></template></view></template>`,
       {
         name: 'a',
         components: {
@@ -157,7 +172,7 @@ describe('指令', () => {
     )
     assertCodegen(
       `<my-component class="baz boo"></my-component>`,
-      `<import src="/components/card" /><template name="a"><template data="{{...$root[$kk+'0'], $root}}" is="my-component"></template></template>`,
+      `<import src="/components/card" /><template name="a"><template data="{{...$root[$kk+'0'+($slotidx || '')], $root }}" is="my-component"></template></template>`,
       {
         name: 'a',
         components: {
@@ -253,7 +268,7 @@ describe('指令', () => {
     // )
     assertCodegen(
       `<my-component style="color: red;"></my-component>`,
-      `<import src="/components/card" /><template name="a"><template data="{{...$root[$kk+'0'], $root}}" is="my-component"></template></template>`,
+      `<import src="/components/card" /><template name="a"><template data="{{...$root[$kk+'0'+($slotidx || '')], $root }}" is="my-component"></template></template>`,
       {
         name: 'a',
         components: {
@@ -463,10 +478,10 @@ describe('表单', () => {
 })
 
 describe('template', () => {
-  it('template', () => {
+  it('template with v-for', () => {
     assertCodegen(
       `<div><card v-for="i in 10"></card></div>`,
-      `<import src="/components/card" /><template name="a"><view class="_div data-v-djskdksdksdjkksdks"><template data="{{...$root[$kk+'0-'+index], $root}}" is="card" wx:for="{{10}}" wx:for-index="index" wx:for-item="i"></template></view></template>`,
+      `<import src="/components/card" /><template name="a"><view class="_div data-v-djskdksdksdjkksdks"><template data="{{...$root[$kk+'0-'+index+($slotidx || '')], $root }}" is="card" wx:for="{{10}}" wx:for-index="index" wx:for-item="i"></template></view></template>`,
       {
         name: 'a',
         components: {
@@ -480,10 +495,10 @@ describe('template', () => {
     )
   })
 
-  it('template', () => {
+  it('template with data-bind', () => {
     assertCodegen(
-      `<div><card :message="1"></card></div>`,
-      `<import src="/components/card" /><template name="a"><view class="_div data-v-djskdksdksdjkksdks"><template data="{{...$root[$kk+'0'], $root}}" is="card"></template></view></template>`,
+      `<div><card :numVar="1" :boolVar="true"></card></div>`,
+      `<import src="/components/card" /><template name="a"><view class="_div data-v-djskdksdksdjkksdks"><template data="{{...$root[$kk+'0'+($slotidx || '')], $root,$scopedata:{numVar: 1,boolVar: true } }}" is="card"></template></view></template>`,
       {
         name: 'a',
         components: {
@@ -496,10 +511,116 @@ describe('template', () => {
       }
     )
   })
-  it('template', () => {
+  it('template with slotscope - data-binding', () => {
+    assertCodegen(
+      `\
+<div><comp><div slot-scope="subName">
+  {{ subName.out }} {{ parent.pout }}
+</div></comp></div>`,
+      `<import src="/list/index.vue.wxml" /><template name="3f5387cc"><view class="_div data-v-2dea727a"><template data="{{...$root[$kk+'0'+($slotidx || '')], $root, $for:{default:'data-v-2dea727a-default-0'},$slotdefault:'data-v-2dea727a-default-0' }}" is="44d7fa62"></template></view></template>`,
+      {
+        components: {
+          comp: { src: '/list/index.vue.wxml', name: '44d7fa62' },
+          isCompleted: true,
+          slots: { src: '/components/slots', name: 'slots' }
+        },
+        pageType: 'component',
+        name: '3f5387cc',
+        moduleId: 'data-v-2dea727a',
+        fromScopedSlot: 'subName'
+      },
+      {
+        slots: {
+          'data-v-2dea727a-default-0': {
+            'node': {
+              'tag': 'template', 'attrsMap': { 'name': 'data-v-2dea727a-default-0' }, 'children': [{
+                'type': 1,
+                'tag': 'view',
+                'attrsList': [],
+                'attrsMap': { 'class': '_div data-v-2dea727a' },
+                'parent': {
+                  'type': 1,
+                  'tag': 'comp',
+                  'attrsList': [],
+                  'attrsMap': {},
+                  'parent': {
+                    'type': 1,
+                    'tag': 'div',
+                    'attrsList': [],
+                    'attrsMap': {},
+                    'children': [null],
+                    'plain': true,
+                    'static': false,
+                    'staticRoot': false
+                  },
+                  'children': [],
+                  'plain': false,
+                  'scopedSlots': {
+                    '"default"': {
+                      'type': 1,
+                      'tag': 'div',
+                      'attrsList': [],
+                      'attrsMap': { 'slot-scope': 'subName' },
+                      'children': [{
+                        'type': 2,
+                        'expression': '"\\n  "+_s(subName.out)+" "+_s(parent.pout)+"\\n"',
+                        'text': '\n  {{ subName.out }} {{ parent.pout }}\n'
+                      }],
+                      'plain': false,
+                      'slotScope': 'subName'
+                    }
+                  },
+                  'mpcomid': '\'0\'',
+                  'attrs': [{ 'name': 'mpcomid', 'value': '\'0\'' }],
+                  'static': false,
+                  'staticRoot': false
+                },
+                'children': [{
+                  'type': 2,
+                  'expression': '($scopedata.out)(parent.pout)',
+                  'text': '\n  {{ $scopedata.out }} {{ parent.pout }}\n',
+                  'attrs': [],
+                  'attrsList': [],
+                  'attrsMap': { 'class': 'data-v-2dea727a' },
+                  'staticClass': 'data-v-2dea727a',
+                  'slots': {}
+                }],
+                'plain': false,
+                'slotScope': 'subName',
+                'attrs': [],
+                'staticClass': '_div data-v-2dea727a',
+                'slots': {}
+              }], 'staticClass': '', 'slots': {}
+            },
+            'name': 'default',
+            'slotId': 'data-v-2dea727a-default-0',
+            'code': '<template name="data-v-2dea727a-default-0"><view class="_div data-v-2dea727a">\n  {{ $scopedata.out }} {{ parent.pout }}\n</view></template>'
+          }
+        }
+      }
+    )
+  })
+
+  it('template with static-attr with quotes', () => {
+    assertCodegen(
+      `<div><card message="it's ok"></card></div>`,
+      `<import src="/components/card" /><template name="dyn"><view class="_div data-v-larry-test"><template message="it's ok" data="{{...$root[$kk+'0'+($slotidx || '')], $root,$scopedata:{message: 'it\\'s ok' } }}" is="card"></template></view></template>`,
+      {
+        name: 'dyn',
+        components: {
+          card: {
+            name: 'card',
+            src: '/components/card'
+          }
+        },
+        moduleId: 'data-v-larry-test'
+      }
+    )
+  })
+  it('template with slot content', () => {
     assertCodegen(
       `<div><card :message="1"></card> <block><span>test</span></block></div>`,
-      `<import src="/components/card" /><template name="a"><view class="_div data-v-djskdksdksdjkksdks"><template data="{{...$root[$kk+'0'], $root}}" is="card"></template> <block><label class="_span data-v-djskdksdksdjkksdks">test</label></block></view></template>`,
+      `<import src="/components/card" /><template name="a"><view class="_div data-v-djskdksdksdjkksdks"><template data="{{...$root[$kk+'0'+($slotidx || '')], $root,$scopedata:{message: 1 } }}" is="card"></template> <block><label class="_span data-v-djskdksdksdjkksdks">test</label></block></view></template>`,
       {
         name: 'a',
         components: {
@@ -535,7 +656,7 @@ describe('slot', () => {
   it('插槽', () => {
     assertCodegen(
       `<div><slot>test</slot></div>`,
-      `<template name="a"><view class="_div testModuleId"><template name="default">test</template><template data="{{...$root[$k], $root}}" is="{{$slotdefault || 'default'}}"></template></view></template>`,
+      `<template name="a"><view class="_div testModuleId"><template name="default">test</template><template data="{{...$root[$p], ...$root[$k], $root }}" is="{{$slotdefault || 'default'}}"></template></view></template>`,
       {
         name: 'a',
         moduleId: 'testModuleId'
@@ -546,7 +667,7 @@ describe('slot', () => {
   it('使用', () => {
     assertCodegen(
       `<div><slot name="w">test</slot></div>`,
-      `<template name="a"><view class="_div"><template name="w">test</template><template data="{{...$root[$k], $root}}" is="{{$slotw || 'w'}}"></template></view></template>`,
+      `<template name="a"><view class="_div"><template name="w">test</template><template data="{{...$root[$p], ...$root[$k], $root }}" is="{{$slotw || 'w'}}"></template></view></template>`,
       {
         name: 'a'
       }
@@ -556,7 +677,7 @@ describe('slot', () => {
   it('含`:name`的插槽组件', () => {
     assertCodegen(
       `<div><slot :name="tab.key">test</slot></div>`,
-      `<template name="a"><view class="_div"><template name="default">test</template><template data="{{...$root[$k], $root}}" is="{{$for[tab.key]}}"></template></view></template>`,
+      `<template name="a"><view class="_div"><template name="default">test</template><template data="{{...$root[$p], ...$root[$k], $root }}" is="{{ $for[$root[$k].tab.key] || 'default' }}"></template></view></template>`,
       {
         name: 'a'
       }
@@ -566,7 +687,7 @@ describe('slot', () => {
   it('slot name', () => {
     assertCodegen(
       `<card class="baz boo"><a slot="header">test</a></card>`,
-      `<import src="/components/card" /><template name="a"><template data="{{...$root[$kk+'0'], $root, $for:{default:'hashValue-default-0',header:'hashValue-header-0'},$slotdefault:'hashValue-default-0',$slotheader:'hashValue-header-0'}}" is="card"></template></template>`,
+      `<import src="/components/card" /><template name="a"><template data="{{...$root[$kk+'0'+($slotidx || '')], $root, $for:{default:'hashValue-default-0',header:'hashValue-header-0'},$slotdefault:'hashValue-default-0',$slotheader:'hashValue-header-0' }}" is="card"></template></template>`,
       {
         name: 'a',
         components: {
@@ -581,7 +702,57 @@ describe('slot', () => {
         mpTips: ['template 不支持此属性-> class="baz boo"'],
         mpErrors: [],
         /* eslint-disable */
-        slots: {"hashValue-default-0":{"node":{"tag":"template","attrsMap":{"name":"hashValue-default-0"},"children":[],"staticClass":"","slots":{}},"name":"default","slotId":"hashValue-default-0","code":"<template name=\"hashValue-default-0\"></template>"},"hashValue-header-0":{"node":{"type":1,"tag":"template","attrsList":[],"attrsMap":{"name":"hashValue-header-0"},"parent":{"type":1,"tag":"card","attrsList":[],"attrsMap":{"class":"baz boo"},"children":[],"plain":false,"staticClass":"\"baz boo\"","mpcomid":"'0'","attrs":[{"name":"mpcomid","value":"'0'"}],"static":false,"staticRoot":false},"children":[{"type":3,"text":"test","staticClass":"hashValue","slots":{},"attrsMap":{"class":"hashValue"}}],"plain":false,"slotTarget":"\"header\"","staticRoot":false,"staticClass":"","slots":{}},"name":"header","slotId":"hashValue-header-0","code":"<template name=\"hashValue-header-0\">test</template>"}}
+        slots: {
+          'hashValue-default-0': {
+            'node': {
+              'tag': 'template',
+              'attrsMap': { 'name': 'hashValue-default-0' },
+              'children': [],
+              'staticClass': '',
+              'slots': {}
+            },
+            'name': 'default',
+            'slotId': 'hashValue-default-0',
+            'code': '<template name="hashValue-default-0"></template>'
+          },
+          'hashValue-header-0': {
+            'node': {
+              'type': 1,
+              'tag': 'template',
+              'attrsList': [],
+              'attrsMap': { 'name': 'hashValue-header-0' },
+              'parent': {
+                'type': 1,
+                'tag': 'card',
+                'attrsList': [],
+                'attrsMap': { 'class': 'baz boo' },
+                'children': [],
+                'plain': false,
+                'staticClass': '"baz boo"',
+                'mpcomid': '\'0\'',
+                'attrs': [{ 'name': 'mpcomid', 'value': '\'0\'' }],
+                'static': false,
+                'staticRoot': false
+              },
+              'children': [{
+                'type': 3,
+                'text': 'test',
+                'staticClass': 'hashValue',
+                'slots': {},
+                'attrsMap': { 'class': 'hashValue' }
+              }],
+              'plain': false,
+              'slotTarget': '"header"',
+              'attrs': [{ 'name': 'slot', 'value': '"header"' }],
+              'staticRoot': false,
+              'staticClass': '',
+              'slots': {}
+            },
+            'name': 'header',
+            'slotId': 'hashValue-header-0',
+            'code': '<template name="hashValue-header-0">test</template>'
+          }
+        }
       }
     )
   })
@@ -589,7 +760,7 @@ describe('slot', () => {
   it('slot template', () => {
     assertCodegen(
       `<card class="baz boo"><template slot="header">test</template></card>`,
-      `<import src="/components/card" /><template name="a"><template data="{{...$root[$kk+'1'], $root, $for:{default:'hashValue-default-1',header:'hashValue-header-1'},$slotdefault:'hashValue-default-1',$slotheader:'hashValue-header-1'}}" is="card"></template></template>`,
+      `<import src="/components/card" /><template name="a"><template data="{{...$root[$kk+'1'+($slotidx || '')], $root, $for:{default:'hashValue-default-1',header:'hashValue-header-1'},$slotdefault:'hashValue-default-1',$slotheader:'hashValue-header-1' }}" is="card"></template></template>`,
       {
         name: 'a',
         components: {
@@ -628,6 +799,40 @@ describe('slot', () => {
       }
     )
   })
+  it('scope slot with v-for & multi-form variable define', () => {
+      assertCodegen(
+        `<div class="list"><div v-for="(item, i) in items" :key="i">
+            <slot v-bind="item.withBind" v-bind:normal="item.withKey" v-bind:out="compData[i]" numStr="123" boolStr="true" quoteStr="'false'"></slot>
+          </div></div>`,
+        `<import src="/components/slots" /><template name="44d7fa62"><view class="_div data-v-6ff79fe1 list"><template numStr="123" boolStr="true" quoteStr="'false'" name="default"></template><view wx:key="i" key="{{i}}" wx:for="{{items}}" wx:for-index="i" wx:for-item="item" class="_div data-v-6ff79fe1"><template numStr="123" boolStr="true" quoteStr="'false'" data="{{...$root[$p], ...$root[$k], $root,$scopedata:{...$root[$k].items[i].withBind,normal: $root[$k].items[i].withKey,out: $root[$k].compData[i],numStr: '123',boolStr: 'true',quoteStr: '\\'false\\'' },$slotidx:'v'+i }}" is="{{$slotdefault || 'default'}}"></template></view></view></template>`,
+        {
+          components: {
+            isCompleted: true,
+            slots: { src: '/components/slots', name: 'slots' }
+          },
+          pageType: 'component',
+          name: '44d7fa62',
+          moduleId: 'data-v-6ff79fe1'
+        }
+      )
+  })
+  it('scope slot without v-for', () => {
+    assertCodegen(
+      `<div class="list">
+           <slot v-bind="item.withBind"></slot>
+        </div>`,
+      `<import src="/components/slots" /><template name="44d7fa62"><view class="_div data-v-6ff79fe1 list"><template name="default"></template><template data="{{...$root[$p], ...$root[$k], $root,$scopedata:{...$root[$k].item.withBind } }}" is="{{$slotdefault || 'default'}}"></template></view></template>`,
+      {
+        components: {
+          isCompleted: true,
+          slots: { src: '/components/slots', name: 'slots' }
+        },
+        pageType: 'component',
+        name: '44d7fa62',
+        moduleId: 'data-v-6ff79fe1'
+      }
+    )
+  })
 })
 
 describe('web-view', () => {
@@ -644,7 +849,7 @@ describe('组件', () => {
   it('组件驼峰命名', () => {
     assertCodegen(
       `<div><aCard></aCard></div>`,
-      `<import src="card$3d556b2c" /><template name="index$c044a66a"><view class="_div data-v-5eca2e54"><template data="{{...$root[$kk+'0'], $root}}" is="card$3d556b2c"></template></view></template>`,
+      `<import src="card$3d556b2c" /><template name="index$c044a66a"><view class="_div data-v-5eca2e54"><template data="{{...$root[$kk+'0'+($slotidx || '')], $root }}" is="card$3d556b2c"></template></view></template>`,
       { components:
         { 'a-card': { src: 'card$3d556b2c', name: 'card$3d556b2c' },
           isCompleted: true,
@@ -657,7 +862,7 @@ describe('组件', () => {
   it('组件驼峰命名', () => {
     assertCodegen(
       `<div><Card></Card></div>`,
-      `<import src="card$3d556b2c" /><template name="index$c044a66a"><view class="_div data-v-5eca2e54"><template data="{{...$root[$kk+'0'], $root}}" is="card$3d556b2c"></template></view></template>`,
+      `<import src="card$3d556b2c" /><template name="index$c044a66a"><view class="_div data-v-5eca2e54"><template data="{{...$root[$kk+'0'+($slotidx || '')], $root }}" is="card$3d556b2c"></template></view></template>`,
       { components:
         { 'card': { src: 'card$3d556b2c', name: 'card$3d556b2c' },
           isCompleted: true,
