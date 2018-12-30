@@ -113,7 +113,7 @@ export default {
     } else {
       const slotsName = getSlotsName(slots)
       const restSlotsName = slotsName ? `, ${slotsName}` : ''
-      attrsMap['data'] = `{{...$root[$kk+${mpcomid}], $root${restSlotsName}}}`
+      attrsMap['data'] = `{{...$root[$kk+${mpcomid}+($slotidx || '')], $root${restSlotsName}${scopeAttrStr} }}`
       attrsMap['is'] = components[tag].name
     }
     return ast
