@@ -4,6 +4,7 @@ import component from './component'
 import convertFor from './for'
 import tagConfig from '../config/config'
 import { hyphenate } from 'shared/util'
+import { replaceVarStr } from '../utils.scopeslot'
 
 function convertAst (node, options = {}, util) {
   const { children, ifConditions, staticClass = '', mpcomid } = node
@@ -12,6 +13,14 @@ function convertAst (node, options = {}, util) {
   let wxmlAst = Object.assign({}, node)
   const { moduleId, components } = options
   wxmlAst.tag = tagName = tagName ? hyphenate(tagName) : tagName
+  // 跟随迭代过程，保留slotScope变量名，用于 slot.wxml 中替换变量名，以实现于vue slot-scope 变量使用一致
+  let replaceTarget = options.fromSlotScope
+  if (typeof replaceTarget !== 'string') {
+    replaceTarget = false
+  }
+  // 自身没有作用域属性，从上级取
+  replaceTarget = replaceTarget || options.replaceTarget
+
   // 引入 import, isSlot 是使用 slot 的编译地方，意即 <slot></slot> 的地方
   const isSlot = tagName === 'slot'
   if (isSlot) {
@@ -103,7 +112,13 @@ function convertAst (node, options = {}, util) {
   wxmlAst = convertFor(wxmlAst, options)
   wxmlAst = attrs.convertAttr(wxmlAst, log)
   if (children && !isSlot) {
-    wxmlAst.children = children.map((k) => convertAst(k, options, util))
+    // 中转 scopedSlot，可能得到空children，进行过滤
+    wxmlAst.children = children.filter(_ => _).map((k) => {
+      /** 向下迭代 replaceTarget， 用于标识作用域模板中可替换的变量
+       *  replaceVarStr 替换astNode中属性text等绑定变量的作用域变量*/
+      const nextOptions = Object.assign({}, options, { replaceTarget })
+      return convertAst(replaceVarStr(k, nextOptions), nextOptions, util)
+    })
   }
 
   if (ifConditions) {
