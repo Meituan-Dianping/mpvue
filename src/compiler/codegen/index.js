@@ -32,6 +32,10 @@ export class CodegenState {
   }
 }
 
+export type WithLast = {
+  needSuffix: Boolean
+}
+
 export type CodegenResult = {
   render: string,
   staticRenderFns: Array<string>
@@ -49,7 +53,7 @@ export function generate (
   }
 }
 
-export function genElement (el: ASTElement, state: CodegenState): string {
+export function genElement (el: ASTElement, state: CodegenState, withLast: WithLast): string {
   if (el.staticRoot && !el.staticProcessed) {
     return genStatic(el, state)
   } else if (el.once && !el.onceProcessed) {
@@ -66,11 +70,10 @@ export function genElement (el: ASTElement, state: CodegenState): string {
     // component or element
     let code
     if (el.component) {
-      code = genComponent(el.component, el, state)
+      code = genComponent(el.component, el, state, withLast)
     } else {
-      const data = el.plain ? undefined : genData(el, state)
-
-      const children = el.inlineTemplate ? null : genChildren(el, state, true)
+      const data = el.plain ? undefined : genData(el, state, withLast)
+      const children = el.inlineTemplate ? null : genChildren(el, state, true, undefined, undefined, withLast)
       code = `_c('${el.tag}'${
         data ? `,${data}` : '' // data
       }${
@@ -192,7 +195,7 @@ export function genFor (
     '})'
 }
 
-export function genData (el: ASTElement, state: CodegenState): string {
+export function genData (el: ASTElement, state: CodegenState, withLast: WithLast): string {
   let data = '{'
 
   // directives first.
@@ -225,7 +228,7 @@ export function genData (el: ASTElement, state: CodegenState): string {
   }
   // attributes
   if (el.attrs) {
-    data += `attrs:{${genProps(el.attrs)}},`
+    data += `attrs:{${genProps(el.attrs, withLast)}},`
   }
   // DOM props
   if (el.props) {
@@ -258,7 +261,7 @@ export function genData (el: ASTElement, state: CodegenState): string {
   }
   // inline-template
   if (el.inlineTemplate) {
-    const inlineTemplate = genInlineTemplate(el, state)
+    const inlineTemplate = genInlineTemplate(el, state, withLast)
     if (inlineTemplate) {
       data += `${inlineTemplate},`
     }
@@ -306,7 +309,7 @@ function genDirectives (el: ASTElement, state: CodegenState): string | void {
   }
 }
 
-function genInlineTemplate (el: ASTElement, state: CodegenState): ?string {
+function genInlineTemplate (el: ASTElement, state: CodegenState, withLast: WithLast): ?string {
   const ast = el.children[0]
   if (process.env.NODE_ENV !== 'production' && (
     el.children.length > 1 || ast.type !== 1
@@ -314,7 +317,7 @@ function genInlineTemplate (el: ASTElement, state: CodegenState): ?string {
     state.warn('Inline-template components must have exactly one child element.')
   }
   if (ast.type === 1) {
-    const inlineRenderFns = generate(ast, state.options)
+    const inlineRenderFns = generate(ast, state.options, withLast)
     return `inlineTemplate:{render:function(){${
       inlineRenderFns.render
     }},staticRenderFns:[${
@@ -342,10 +345,11 @@ function genScopedSlot (
   if (el.for && !el.forProcessed) {
     return genForScopedSlot(key, el, state)
   }
-  return `{key:${key},fn:function(${String(el.attrsMap.scope)}){` +
+  return `{key:${key},fn:function(${String(el.slotScope)}){` +
+    `const _last = ${el.slotScope}.mpcomidx === undefined ? '' : 'v' + ${el.slotScope}.mpcomidx;\n` +
     `return ${el.tag === 'template'
       ? genChildren(el, state) || 'void 0'
-      : genElement(el, state)
+      : genElement(el, state, { needSuffix: true })
   }}}`
 }
 
@@ -370,7 +374,8 @@ export function genChildren (
   state: CodegenState,
   checkSkip?: boolean,
   altGenElement?: Function,
-  altGenNode?: Function
+  altGenNode?: Function,
+  withLast?: WithLast
 ): string | void {
   const children = el.children
   if (children.length) {
@@ -387,7 +392,7 @@ export function genChildren (
       ? getNormalizationType(children, state.maybeComponent)
       : 0
     const gen = altGenNode || genNode
-    return `[${children.map(c => gen(c, state)).join(',')}]${
+    return `[${children.map(c => gen(c, state, Object.assign({}, withLast))).join(',')}]${
       normalizationType ? `,${normalizationType}` : ''
     }`
   }
@@ -424,9 +429,9 @@ function needsNormalization (el: ASTElement): boolean {
   return el.for !== undefined || el.tag === 'template' || el.tag === 'slot'
 }
 
-function genNode (node: ASTNode, state: CodegenState): string {
+function genNode (node: ASTNode, state: CodegenState, withLast: WithLast): string {
   if (node.type === 1) {
-    return genElement(node, state)
+    return genElement(node, state, withLast)
   } if (node.type === 3 && node.isComment) {
     return genComment(node)
   } else {
@@ -467,19 +472,29 @@ function genSlot (el: ASTElement, state: CodegenState): string {
 function genComponent (
   componentName: string,
   el: ASTElement,
-  state: CodegenState
+  state: CodegenState,
+  withLast: WithLast
 ): string {
   const children = el.inlineTemplate ? null : genChildren(el, state, true)
-  return `_c(${componentName},${genData(el, state)}${
+  return `_c(${componentName},${genData(el, state, withLast)}${
     children ? `,${children}` : ''
   })`
 }
 
-function genProps (props: Array<{ name: string, value: string }>): string {
+function genProps (props: Array<{ name: string, value: string }>, withLast: WithLast): string {
   let res = ''
+  let consumed = false
   for (let i = 0; i < props.length; i++) {
     const prop = props[i]
-    res += `"${prop.name}":${transformSpecialNewlines(prop.value)},`
+    res += `"${prop.name}":${transformSpecialNewlines(prop.value)}`
+    if (withLast && withLast.needSuffix && prop.name === 'mpcomid') {
+      consumed = true
+      res += '+_last '
+    }
+    res += ','
+  }
+  if (consumed) {
+    withLast.needSuffix = false
   }
   return res.slice(0, -1)
 }
