@@ -8,7 +8,7 @@ import { hyphenate } from 'shared/util'
 function convertAst (node, options = {}, util) {
   const { children, ifConditions, staticClass = '', mpcomid } = node
   let { tag: tagName } = node
-  const { log, deps, slots, slotTemplates } = util
+  const { log, deps, slots, slotTemplates, scopedSlots } = util
   let wxmlAst = Object.assign({}, node)
   const { moduleId, components } = options
   wxmlAst.tag = tagName = tagName ? hyphenate(tagName) : tagName
@@ -67,6 +67,37 @@ function convertAst (node, options = {}, util) {
     wxmlAst.children.length = 0
   }
 
+  // 处理 scopedSlot，跟slot逻辑一致，使用普通slot的缓存变量
+  const srcScoped = Object.assign({}, node.scopedSlots)
+  Object.keys(srcScoped).forEach(key => {
+    const item = Object.assign({}, srcScoped[key])
+    const slotName = (item.attrsMap && item.attrsMap.slot) || 'default'
+    const slotId = `${moduleId}-${slotName}-${mpcomid.replace(/\'/g, '')}`
+    let node = item
+    if (item.tag !== 'template') {
+      const multiItem = Array.isArray(item)
+      const children = (multiItem ? item : [item])
+      node = { tag: 'template', attrsMap: {}, children }
+    }
+    node.attrsMap.name = slotId
+    // 子组件标识 fromSlotScope
+    scopedSlots[slotId] = { node: convertAst(node, Object.assign({}, options, { fromSlotScope: item.slotScope || true }), util), name: slotName, slotId }
+    // 合并scopedSlot
+    if (!slots[slotId]) {
+      wxmlAst.slots[slotName] = slotId
+      slots[slotId] = scopedSlots[slotId]
+    } else {
+      if (wxmlAst.slots[slotName] !== slotId) {
+        console.error('slotId 不一致', slotId, wxmlAst.slots[slotName])
+        wxmlAst.slots[slotName] = slotId
+      }
+      if (!Array.isArray(slots[slotId])) {
+        slots[slotId] = [slots[slotId]]
+      }
+      slots[slotId].push(scopedSlots[slotId])
+    }
+  })
+
   wxmlAst.attrsMap = attrs.format(wxmlAst.attrsMap)
   wxmlAst = tag(wxmlAst, options)
   wxmlAst = convertFor(wxmlAst, options)
@@ -93,15 +124,21 @@ export default function wxmlAst (compiled, options = {}, log) {
   const slots = {
     // slotId: nodeAst
   }
+
+  const scopedSlots = {
+    // slotId: scopedSlots
+  }
+
   const slotTemplates = {
   }
 
-  const wxast = convertAst(ast, options, { log, deps, slots, slotTemplates })
-  const children = Object.keys(slotTemplates).map(k => convertAst(slotTemplates[k], options, { log, deps, slots, slotTemplates }))
+  const wxast = convertAst(ast, options, { log, deps, slots, scopedSlots, slotTemplates })
+  const children = Object.keys(slotTemplates).map(k => convertAst(slotTemplates[k], options, { log, deps, slots, scopedSlots, slotTemplates }))
   wxast.children = children.concat(wxast.children)
   return {
     wxast,
     deps,
-    slots
+    slots,
+    scopedSlots
   }
 }
