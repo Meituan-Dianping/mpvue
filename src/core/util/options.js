@@ -199,13 +199,19 @@ strats.watch = function (parentVal: ?Object, childVal: ?Object): ?Object {
  */
 strats.props =
 strats.methods =
-strats.inject =
 strats.computed = function (parentVal: ?Object, childVal: ?Object): ?Object {
   if (!childVal) return Object.create(parentVal || null)
   if (!parentVal) return childVal
   const ret = Object.create(null)
   extend(ret, parentVal)
   extend(ret, childVal)
+  return ret
+}
+strats.inject = function (parentVal: ?Object, childVal: ?Object): ?Object {
+  if (!parentVal) return childVal
+  const ret = Object.create(null)
+  extend(ret, parentVal)
+  if (childVal) extend(ret, childVal)
   return ret
 }
 strats.provide = mergeDataOrFn
