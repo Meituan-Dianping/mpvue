@@ -9,6 +9,14 @@ try {
   global.Page = global.Page || Page;
   global.Component = global.Component || Component;
   global.getApp = global.getApp || getApp;
+
+  if (typeof wx !== 'undefined') {
+    global.mpvue = wx;
+    global.mpvuePlatform = 'wx';
+  } else if (typeof swan !== 'undefined') {
+    global.mpvue = swan;
+    global.mpvuePlatform = 'swan';
+  }
 } catch (e) {}
 `
 
