@@ -39,6 +39,10 @@ function tagBindingAttrs (attrsList, closestForNode) {
   const scopeAttrs = []
   attrsList.forEach(({ name, value }) => {
     let bindTarget = false
+    if (name.startsWith('v-model')) {
+      // 使用v-model绑定时，简化为 :value 传入scope data
+      name = ':value'
+    }
     if (name.startsWith(':')) {
       bindTarget = name.slice(1)
     } else if (name.startsWith('v-bind')) {
