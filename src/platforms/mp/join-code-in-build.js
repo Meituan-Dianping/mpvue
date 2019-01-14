@@ -16,6 +16,9 @@ try {
   } else if (typeof swan !== 'undefined') {
     global.mpvue = swan;
     global.mpvuePlatform = 'swan';
+  }else if (typeof tt !== 'undefined') {
+    global.mpvue = tt;
+    global.mpvuePlatform = 'tt';
   }
 } catch (e) {}
 `

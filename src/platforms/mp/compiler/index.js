@@ -4,6 +4,7 @@ import { baseOptions } from './options'
 import { createCompiler } from './create-compiler'
 import codeGenWx from './codegen/index'
 import codeGenSwan from './codegen-swan/index'
+import codeGenTt from './codegen-tt/index'
 
 function compileToWxml (compiled, options, fileExt) {
     let code
@@ -13,6 +14,9 @@ function compileToWxml (compiled, options, fileExt) {
             break
         case 'wx':
             code = codeGenWx(compiled, options)
+            break
+        case 'tt':
+            code = codeGenTt(compiled, options)
             break
         default:
             code = codeGenWx(compiled, options)
