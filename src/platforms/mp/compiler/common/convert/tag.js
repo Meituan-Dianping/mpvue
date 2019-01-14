@@ -1,7 +1,7 @@
-import component from './component'
-import tagMap from '../config/wxmlTagMap'
+// import component from './component'
+import tagMap from '../../common/tagMap'
 
-export default function (ast, options) {
+export default function (ast, options, component) {
   const { tag, elseif, else: elseText, for: forText, staticClass = '', attrsMap = {}} = ast
   const { components } = options
   const { 'v-if': ifText, href, 'v-bind:href': bindHref, name } = attrsMap

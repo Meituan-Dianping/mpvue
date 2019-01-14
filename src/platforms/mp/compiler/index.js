@@ -2,11 +2,11 @@
 
 import { baseOptions } from './options'
 import { createCompiler } from './create-compiler'
-import codeGenWx from './codegen/index'
-import codeGenSwan from './codegen-swan/index'
-import codeGenTt from './codegen-tt/index'
+import codeGenWx from './wx/index'
+import codeGenSwan from './swan/index'
+import codeGenTt from './tt/index'
 
-function compileToWxml (compiled, options, fileExt) {
+function compileToMPML (compiled, options, fileExt) {
     let code
     switch(fileExt.platform) {
         case 'swan':
@@ -25,4 +25,4 @@ function compileToWxml (compiled, options, fileExt) {
 }
 
 const { compile, compileToFunctions } = createCompiler(baseOptions)
-export { compile, compileToFunctions, compileToWxml }
+export { compile, compileToFunctions, compileToMPML }

@@ -1,13 +1,13 @@
-import wxmlAst from './convert/index'
-import generate from './generate'
-import utils from './utils'
+import mpmlAst from './convert/index'
+import generate from '../common/generate'
+import utils from '../common/utils'
 
-export default function compileToWxml (compiled, options = {}) {
+export default function compileToMPML (compiled, options = {}) {
   // TODO, compiled is undefined
   const { components = {}} = options
   const log = utils.log(compiled)
 
-  const { wxast, deps = {}, slots = {}} = wxmlAst(compiled, options, log)
+  const { wxast, deps = {}, slots = {}} = mpmlAst(compiled, options, log)
   let code = generate(wxast, options)
 
   // 引用子模版

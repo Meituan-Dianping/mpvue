@@ -1,10 +1,10 @@
-import wxmlDirectiveMap from '../config/wxmlDirectiveMap'
-import tagConfig from '../config/config'
+import directiveMap from '../config/directiveMap'
+import tagConfig from '../../common/config'
 
 import babel from 'babel-core'
 import prettier from 'prettier'
 
-import { transformObjectToTernaryOperator, transformObjectToString } from '../babel-plugins'
+import { transformObjectToTernaryOperator, transformObjectToString } from '../../common/babel-plugins'
 function transformDynamicClass (staticClass = '', clsBinding) {
   const result = babel.transform(`!${clsBinding}`, { plugins: [transformObjectToTernaryOperator] })
   // 先实现功能，再优化代码
@@ -57,13 +57,13 @@ export default {
       } else if (/^v\-on\:/i.test(key)) {
         attrs = this.event(key, val, attrs, tag)
       } else if (/^v\-bind\:/i.test(key)) {
-        attrs = this.bind(key, val, attrs, tag, attrsMap['tt:key'])
+        attrs = this.bind(key, val, attrs, tag, attrsMap['wx:key'])
       } else if (/^v\-model/.test(key)) {
         attrs = this.model(key, val, attrs, tag, log)
-      } else if (wxmlDirectiveMap[key]) {
-        const { name = '', type, map = {}, check } = wxmlDirectiveMap[key] || {}
+      } else if (directiveMap[key]) {
+        const { name = '', type, map = {}, check } = directiveMap[key] || {}
         if (!(check && !check(key, val, log)) && !(!name || typeof type !== 'number')) {
-          // 见 ./wxmlDirectiveMap.js 注释
+          // 见 ./directiveMap.js 注释
           if (type === 0) {
             attrs[name] = `{{${val}}}`
           }
@@ -106,7 +106,7 @@ export default {
     // .once 也不能做，因为小程序没有 removeEventListener, 虽然可以直接在 handleProxy 中处理，但非常的不优雅，违背了原意，暂不考虑
     const name = key.replace(/^v\-on\:/i, '').replace(/\.prevent/i, '')
     const [eventName, ...eventNameMap] = name.split('.')
-    const { 'v-on': eventMap, check } = wxmlDirectiveMap
+    const { 'v-on': eventMap, check } = directiveMap
 
     if (check) {
       check(key, val)
@@ -136,7 +136,7 @@ export default {
     const name = key.replace(/^v\-bind\:/i, '')
 
     if (isIf && name === 'key') {
-      attrs['tt:key'] = val
+      attrs['wx:key'] = val
     }
 
     if (tag === 'template') {
@@ -147,6 +147,22 @@ export default {
       attrs['url'] = `{{${val}}}`
     } else {
       attrs[name] = `{{${val}}}`
+    }
+
+    if (tag === 'scroll-view') {
+      if (name === 'scroll-top' || name === 'scroll-left' || name === 'scroll-into-view') {
+        attrs[name] = `{=${val}=}`
+      }
+    }
+
+    if (tag === 'input' || tag === 'textarea' || tag === 'slider') {
+      if (name === 'value') {
+        attrs[name] = `{=${val}=}`
+      }
+    }
+
+    if (tag === 'movable-view' && (name === 'x' || name === 'y')) {
+      attrs[name] = `{=${val}=}`
     }
 
     return attrs

@@ -4250,7 +4250,7 @@ var noSupport = {
     return false
   }
 };
-var wxmlDirectiveMap = {
+var directiveMap = {
   'v-if': {
     name: 'wx:if',
     type: 0
@@ -4430,14 +4430,14 @@ var attrs = {
         attrs = this$1.bind(key, val, attrs, tag, attrsMap['wx:key']);
       } else if (/^v\-model/.test(key)) {
         attrs = this$1.model(key, val, attrs, tag, log);
-      } else if (wxmlDirectiveMap[key]) {
-        var ref = wxmlDirectiveMap[key] || {};
+      } else if (directiveMap[key]) {
+        var ref = directiveMap[key] || {};
         var name = ref.name; if ( name === void 0 ) name = '';
         var type = ref.type;
         var map = ref.map; if ( map === void 0 ) map = {};
         var check = ref.check;
         if (!(check && !check(key, val, log)) && !(!name || typeof type !== 'number')) {
-          // 见 ./wxmlDirectiveMap.js 注释
+          // 见 ./directiveMap.js 注释
           if (type === 0) {
             attrs[name] = "{{" + val + "}}";
           }
@@ -4482,8 +4482,8 @@ var attrs = {
     var ref = name.split('.');
     var eventName = ref[0];
     var eventNameMap = ref.slice(1);
-    var eventMap = wxmlDirectiveMap['v-on'];
-    var check = wxmlDirectiveMap.check;
+    var eventMap = directiveMap['v-on'];
+    var check = directiveMap.check;
 
     if (check) {
       check(key, val);
@@ -4633,7 +4633,41 @@ var component = {
   }
 };
 
-var tag = function (ast, options) {
+var astMap = {
+  'if': 'wx:if',
+  'iterator1': 'wx:for-index',
+  'key': 'wx:key',
+  'alias': 'wx:for-item',
+  'v-for': 'wx:for'
+};
+
+var convertFor = function (ast) {
+  var iterator1 = ast.iterator1;
+  var forText = ast.for;
+  var key = ast.key;
+  var alias = ast.alias;
+  var attrsMap = ast.attrsMap;
+
+  if (forText) {
+    attrsMap[astMap['v-for']] = "{{" + forText + "}}";
+    if (iterator1) {
+      attrsMap[astMap['iterator1']] = iterator1;
+    }
+    if (key) {
+      attrsMap[astMap['key']] = key;
+    }
+    if (alias) {
+      attrsMap[astMap['alias']] = alias;
+    }
+
+    delete attrsMap['v-for'];
+  }
+
+  return ast
+};
+
+// import component from './component'
+var tag = function (ast, options, component) {
   var tag = ast.tag;
   var elseif = ast.elseif;
   var elseText = ast.else;
@@ -4688,40 +4722,7 @@ var tag = function (ast, options) {
   return ast
 };
 
-var astMap = {
-  if: 'wx:if',
-  iterator1: 'wx:for-index',
-  key: 'wx:key',
-  alias: 'wx:for-item',
-  'v-for': 'wx:for'
-};
-
-var convertFor = function (ast) {
-  var iterator1 = ast.iterator1;
-  var forText = ast.for;
-  var key = ast.key;
-  var alias = ast.alias;
-  var attrsMap = ast.attrsMap;
-
-  if (forText) {
-    attrsMap[astMap['v-for']] = "{{" + forText + "}}";
-    if (iterator1) {
-      attrsMap[astMap['iterator1']] = iterator1;
-    }
-    if (key) {
-      attrsMap[astMap['key']] = key;
-    }
-    if (alias) {
-      attrsMap[astMap['alias']] = alias;
-    }
-
-    delete attrsMap['v-for'];
-  }
-
-  return ast
-};
-
-function convertAst (node, options, util) {
+function convertAst (node, options, util, conventRule) {
   if ( options === void 0 ) options = {};
 
   var children = node.children;
@@ -4733,37 +4734,37 @@ function convertAst (node, options, util) {
   var deps = util.deps;
   var slots = util.slots;
   var slotTemplates = util.slotTemplates;
-  var wxmlAst = Object.assign({}, node);
+  var mpmlAst = Object.assign({}, node);
   var moduleId = options.moduleId;
   var components = options.components;
-  wxmlAst.tag = tagName = tagName ? hyphenate(tagName) : tagName;
+  mpmlAst.tag = tagName = tagName ? hyphenate(tagName) : tagName;
   // 引入 import, isSlot 是使用 slot 的编译地方，意即 <slot></slot> 的地方
   var isSlot = tagName === 'slot';
   if (isSlot) {
     deps.slots = 'slots';
     // 把当前 slot 节点包裹 template
-    var defSlot = Object.assign({}, wxmlAst);
+    var defSlot = Object.assign({}, mpmlAst);
     defSlot.tag = 'template';
     var templateName = "" + (defSlot.attrsMap.name || 'default');
     defSlot.attrsMap.name = templateName;
-    wxmlAst.children = [];
+    mpmlAst.children = [];
     defSlot.parent = node.parent.parent;
     slotTemplates[templateName] = defSlot;
   }
 
-  var currentIsComponent = component.isComponent(tagName, components);
+  var currentIsComponent = conventRule.component.isComponent(tagName, components);
   if (currentIsComponent) {
     deps[tagName] = tagName;
   }
 
   if (moduleId && !currentIsComponent && tagConfig.virtualTag.indexOf(tagName) < 0) {
-    wxmlAst.staticClass = staticClass ? (moduleId + " " + staticClass).replace(/\"/g, '') : moduleId;
+    mpmlAst.staticClass = staticClass ? (moduleId + " " + staticClass).replace(/\"/g, '') : moduleId;
   } else {
-    wxmlAst.staticClass = staticClass.replace(/\"/g, '');
+    mpmlAst.staticClass = staticClass.replace(/\"/g, '');
   }
 
   // 组件内部的node节点全部是 slot
-  wxmlAst.slots = {};
+  mpmlAst.slots = {};
   if (currentIsComponent && children && children.length) {
     // 只检查组件下的子节点（不检查孙子节点）是不是具名 slot，不然就是 default slot
     children
@@ -4786,32 +4787,32 @@ function convertAst (node, options, util) {
         delete node.attrsMap.slot;
         // 缓存，会集中生成一个 slots 文件
         slots[slotId] = { node: convertAst(node, options, util), name: slotName, slotId: slotId };
-        wxmlAst.slots[slotName] = slotId;
+        mpmlAst.slots[slotName] = slotId;
       });
     // 清理当前组件下的节点信息，因为 slot 都被转移了
     children.length = 0;
-    wxmlAst.children.length = 0;
+    mpmlAst.children.length = 0;
   }
 
-  wxmlAst.attrsMap = attrs.format(wxmlAst.attrsMap);
-  wxmlAst = tag(wxmlAst, options);
-  wxmlAst = convertFor(wxmlAst, options);
-  wxmlAst = attrs.convertAttr(wxmlAst, log);
+  mpmlAst.attrsMap = conventRule.attrs.format(mpmlAst.attrsMap);
+  mpmlAst = tag(mpmlAst, options, conventRule.component);
+  mpmlAst = conventRule.convertFor(mpmlAst, options);
+  mpmlAst = conventRule.attrs.convertAttr(mpmlAst, log);
   if (children && !isSlot) {
-    wxmlAst.children = children.map(function (k) { return convertAst(k, options, util); });
+    mpmlAst.children = children.map(function (k) { return convertAst(k, options, util); });
   }
 
   if (ifConditions) {
     var length = ifConditions.length;
     for (var i = 1; i < length; i++) {
-      wxmlAst.ifConditions[i].block = convertAst(ifConditions[i].block, options, util);
+      mpmlAst.ifConditions[i].block = convertAst(ifConditions[i].block, options, util);
     }
   }
 
-  return wxmlAst
+  return mpmlAst
 }
 
-function wxmlAst (compiled, options, log) {
+function getAstCommon (compiled, options, log, conventRule) {
   if ( options === void 0 ) options = {};
 
   var ast = compiled.ast;
@@ -4824,7 +4825,7 @@ function wxmlAst (compiled, options, log) {
   var slotTemplates = {
   };
 
-  var wxast = convertAst(ast, options, { log: log, deps: deps, slots: slots, slotTemplates: slotTemplates });
+  var wxast = convertAst(ast, options, { log: log, deps: deps, slots: slots, slotTemplates: slotTemplates }, conventRule);
   var children = Object.keys(slotTemplates).map(function (k) { return convertAst(slotTemplates[k], options, { log: log, deps: deps, slots: slots, slotTemplates: slotTemplates }); });
   wxast.children = children.concat(wxast.children);
   return {
@@ -4832,6 +4833,13 @@ function wxmlAst (compiled, options, log) {
     deps: deps,
     slots: slots
   }
+}
+
+function mpmlAst (compiled, options, log) {
+  if ( options === void 0 ) options = {};
+
+  var conventRule = { attrs: attrs, component: component, convertFor: convertFor };
+  return getAstCommon(compiled, options, log, conventRule)
 }
 
 function generate$2 (obj, options) {
@@ -4894,14 +4902,14 @@ var utils = {
   }
 };
 
-function compileToWxml$1 (compiled, options) {
+function compileToMPML$1 (compiled, options) {
   if ( options === void 0 ) options = {};
 
   // TODO, compiled is undefined
   var components = options.components; if ( components === void 0 ) components = {};
   var log = utils.log(compiled);
 
-  var ref = wxmlAst(compiled, options, log);
+  var ref = mpmlAst(compiled, options, log);
   var wxast = ref.wxast;
   var deps = ref.deps; if ( deps === void 0 ) deps = {};
   var slots = ref.slots; if ( slots === void 0 ) slots = {};
@@ -4936,7 +4944,7 @@ var noSupport$1 = {
     return false
   }
 };
-var wxmlDirectiveMap$1 = {
+var directiveMap$1 = {
   'v-if': {
     name: 's-if',
     type: 2
@@ -5003,58 +5011,10 @@ var wxmlDirectiveMap$1 = {
   }
 };
 
-var tagConfig$1 = {
-  virtualTag: ['slot', 'template', 'block']
-};
-
-// babel-plugin-transform-object-to-ternary-operator.js
-
-function getStrByNode$1 (node, onlyStr) {
-  if ( onlyStr === void 0 ) onlyStr = false;
-
-  if (onlyStr) {
-    return node.value || node.name || ''
-  }
-  return node.type === 'StringLiteral' ? node : t.stringLiteral(node.name || '')
-}
-
-// 把 { key: value } 转换成 [ value ? 'key' : '' ]
-var objectVisitor$1 = {
-  ObjectExpression: function (path) {
-    var elements = path.node.properties.map(function (propertyItem) {
-      return t.conditionalExpression(propertyItem.value, getStrByNode$1(propertyItem.key), t.stringLiteral(''))
-    });
-    path.replaceWith(t.arrayExpression(elements));
-  }
-};
-
-function transformObjectToTernaryOperator$1 (babel$$1) {
-  return { visitor: objectVisitor$1 }
-}
-
-// 把 { key: value } 转换成 'key:' + value + ';'
-var objectToStringVisitor$1 = {
-  ObjectExpression: function (path) {
-    var expression = path.node.properties.map(function (propertyItem) {
-      var keyStr = getStrByNode$1(propertyItem.key, true);
-      var key = keyStr ? hyphenate(keyStr) : keyStr;
-      var ref = generate(t.ExpressionStatement(propertyItem.value));
-      var val = ref.code;
-      return ("'" + key + ":' + (" + (val.slice(0, -1)) + ") + ';'")
-    }).join('+');
-
-    var p = template(expression)({});
-    path.replaceWith(p.expression);
-  }
-};
-function transformObjectToString$1 (babel$$1) {
-  return { visitor: objectToStringVisitor$1 }
-}
-
 function transformDynamicClass$1 (staticClass, clsBinding) {
   if ( staticClass === void 0 ) staticClass = '';
 
-  var result = babel.transform(("!" + clsBinding), { plugins: [transformObjectToTernaryOperator$1] });
+  var result = babel.transform(("!" + clsBinding), { plugins: [transformObjectToTernaryOperator] });
   // 先实现功能，再优化代码
   // https://github.com/babel/babel/issues/7138
   var cls = prettier.format(result.code, { semi: false, singleQuote: true }).slice(1).slice(0, -1).replace(/\n|\r/g, '');
@@ -5064,7 +5024,7 @@ function transformDynamicClass$1 (staticClass, clsBinding) {
 function transformDynamicStyle$1 (staticStyle, styleBinding) {
   if ( staticStyle === void 0 ) staticStyle = '';
 
-  var result = babel.transform(("!" + styleBinding), { plugins: [transformObjectToString$1] });
+  var result = babel.transform(("!" + styleBinding), { plugins: [transformObjectToString] });
   var cls = prettier.format(result.code, { semi: false, singleQuote: true }).slice(1).slice(0, -1).replace(/\n|\r/g, '');
   return (staticStyle + " {{" + cls + "}}")
 }
@@ -5116,14 +5076,14 @@ var attrs$1 = {
         attrs = this$1.bind(key, val, attrs, tag, attrsMap['wx:key']);
       } else if (/^v\-model/.test(key)) {
         attrs = this$1.model(key, val, attrs, tag, log);
-      } else if (wxmlDirectiveMap$1[key]) {
-        var ref = wxmlDirectiveMap$1[key] || {};
+      } else if (directiveMap$1[key]) {
+        var ref = directiveMap$1[key] || {};
         var name = ref.name; if ( name === void 0 ) name = '';
         var type = ref.type;
         var map = ref.map; if ( map === void 0 ) map = {};
         var check = ref.check;
         if (!(check && !check(key, val, log)) && !(!name || typeof type !== 'number')) {
-          // 见 ./wxmlDirectiveMap.js 注释
+          // 见 ./directiveMap.js 注释
           if (type === 0) {
             attrs[name] = "{{" + val + "}}";
           }
@@ -5144,7 +5104,7 @@ var attrs$1 = {
       } else if (/^v\-/.test(key)) {
         log(("不支持此属性-> " + key + "=\"" + val + "\""), 'waring');
       } else {
-        if ((tagConfig$1.virtualTag.indexOf(tag) > -1) && (key === 'class' || key === 'style' || key === 'data-mpcomid')) {
+        if ((tagConfig.virtualTag.indexOf(tag) > -1) && (key === 'class' || key === 'style' || key === 'data-mpcomid')) {
           if (key !== 'data-mpcomid') {
             log(("template 不支持此属性-> " + key + "=\"" + val + "\""), 'waring');
           }
@@ -5168,8 +5128,8 @@ var attrs$1 = {
     var ref = name.split('.');
     var eventName = ref[0];
     var eventNameMap = ref.slice(1);
-    var eventMap = wxmlDirectiveMap$1['v-on'];
-    var check = wxmlDirectiveMap$1.check;
+    var eventMap = directiveMap$1['v-on'];
+    var check = directiveMap$1.check;
 
     if (check) {
       check(key, val);
@@ -5331,211 +5291,6 @@ var component$1 = {
   }
 };
 
-var tagMap$1 = {
-  'br': 'view',
-  'hr': 'view',
-
-  'p': 'view',
-  'h1': 'view',
-  'h2': 'view',
-  'h3': 'view',
-  'h4': 'view',
-  'h5': 'view',
-  'h6': 'view',
-  'abbr': 'view',
-  'address': 'view',
-  'b': 'view',
-  'bdi': 'view',
-  'bdo': 'view',
-  'blockquote': 'view',
-  'cite': 'view',
-  'code': 'view',
-  'del': 'view',
-  'ins': 'view',
-  'dfn': 'view',
-  'em': 'view',
-  'strong': 'view',
-  'samp': 'view',
-  'kbd': 'view',
-  'var': 'view',
-  'i': 'view',
-  'mark': 'view',
-  'pre': 'view',
-  'q': 'view',
-  'ruby': 'view',
-  'rp': 'view',
-  'rt': 'view',
-  's': 'view',
-  'small': 'view',
-  'sub': 'view',
-  'sup': 'view',
-  'time': 'view',
-  'u': 'view',
-  'wbr': 'view',
-
-  // 表单元素
-  'form': 'form',
-  'input': 'input',
-  'textarea': 'textarea',
-  'button': 'button',
-  'select': 'picker',
-  'option': 'view',
-  'optgroup': 'view',
-  'label': 'label',
-  'fieldset': 'view',
-  'datalist': 'picker',
-  'legend': 'view',
-  'output': 'view',
-
-  // 框架
-  'iframe': 'view',
-  // 图像
-  'img': 'image',
-  'canvas': 'canvas',
-  'figure': 'view',
-  'figcaption': 'view',
-
-  // 音视频
-  'audio': 'audio',
-  'source': 'audio',
-  'video': 'video',
-  'track': 'video',
-  // 链接
-  'a': 'navigator',
-  'nav': 'view',
-  'link': 'navigator',
-  // 列表
-  'ul': 'view',
-  'ol': 'view',
-  'li': 'view',
-  'dl': 'view',
-  'dt': 'view',
-  'dd': 'view',
-  'menu': 'view',
-  'command': 'view',
-
-  // 表格table
-  'table': 'view',
-  'caption': 'view',
-  'th': 'view',
-  'td': 'view',
-  'tr': 'view',
-  'thead': 'view',
-  'tbody': 'view',
-  'tfoot': 'view',
-  'col': 'view',
-  'colgroup': 'view',
-
-  // 样式 节
-  'div': 'view',
-  'main': 'view',
-  'span': 'label',
-  'header': 'view',
-  'footer': 'view',
-  'section': 'view',
-  'article': 'view',
-  'aside': 'view',
-  'details': 'view',
-  'dialog': 'view',
-  'summary': 'view',
-
-  'progress': 'progress',
-  'meter': 'progress', // todo
-  'head': 'view', // todo
-  'meta': 'view', // todo
-  'base': 'text', // todo
-  // 'map': 'image', // TODO不是很恰当
-  'area': 'navigator', // j结合map使用
-
-  'script': 'view',
-  'noscript': 'view',
-  'embed': 'view',
-  'object': 'view',
-  'param': 'view',
-
-  // https://mp.weixin.qq.com/debug/wxadoc/dev/component/
-  // [...document.querySelectorAll('.markdown-section tbody td:first-child')].map(v => v.textContent).join(',\n')
-  'view': 'view',
-  'scroll-view': 'scroll-view',
-  'swiper': 'swiper',
-  'icon': 'icon',
-  'text': 'text',
-  // 'progress': 'progress',
-  // 'button': 'button',
-  // 'form': 'form',
-  // 'input': 'input',
-  'checkbox': 'checkbox',
-  'radio': 'radio',
-  'picker': 'picker',
-  'picker-view': 'picker-view',
-  'slider': 'slider',
-  'switch': 'switch',
-  // 'label': 'label',
-  'navigator': 'navigator',
-  // 'audio': 'audio',
-  'image': 'image',
-  // 'video': 'video',
-  'map': 'map',
-  // 'canvas': 'canvas',
-  'contact-button': 'contact-button',
-  'block': 'block'
-};
-
-var tag$1 = function (ast, options) {
-  var tag = ast.tag;
-  var elseif = ast.elseif;
-  var elseText = ast.else;
-  var forText = ast.for;
-  var staticClass = ast.staticClass; if ( staticClass === void 0 ) staticClass = '';
-  var attrsMap = ast.attrsMap; if ( attrsMap === void 0 ) attrsMap = {};
-  var components = options.components;
-  var ifText = attrsMap['v-if'];
-  var href = attrsMap.href;
-  var bindHref = attrsMap['v-bind:href'];
-  var name = attrsMap.name;
-
-  if (!tag) {
-    return ast
-  }
-  var isComponent = component$1.isComponent(tag, components);
-  if (tag !== 'template' && tag !== 'block' && tag !== 'slot' && !isComponent) {
-    ast.staticClass = staticClass ? ("_" + tag + " " + staticClass) : ("_" + tag);
-  }
-  ast.tag = tagMap$1[tag] || tag;
-
-  var isSlot = tag === 'slot';
-
-  if ((ifText || elseif || elseText || forText) && tag === 'template') {
-    ast.tag = 'block';
-  } else if (isComponent || isSlot) {
-    var originSlotName = name || 'default';
-    var slotName = isSlot ? ("$slot" + originSlotName + " || '" + originSlotName + "'") : undefined;
-
-    // 用完必须删除，不然会被编译成 <template name="xxx"> 在小程序中就会表示这是一个模版申明而不是使用，小程序中不能同时申明和使用模版
-    delete ast.attrsMap.name;
-    ast = component$1.convertComponent(ast, components, slotName);
-    ast.tag = 'template';
-  } else if (tag === 'a' && !(href || bindHref)) {
-    ast.tag = 'view';
-  } else if (ast.events && ast.events.scroll) {
-    ast.tag = 'scroll-view';
-  } else if (tag === 'input') {
-    var type = attrsMap.type;
-    if (type && ['button', 'checkbox', 'radio'].indexOf(type) > -1) {
-      delete ast.attrsMap.type;
-      ast.tag = type;
-    }
-    if (type === 'button') {
-      ast.children.push({
-        text: attrsMap.value || '',
-        type: 3
-      });
-      delete ast.attrsMap.value;
-    }
-  }
-  return ast
-};
-
 var astMap$1 = {
   'if': 's-if',
   'v-for': 's-for',
@@ -5573,191 +5328,25 @@ var convertFor$1 = function (ast) {
   return ast
 };
 
-function convertAst$1 (node, options, util) {
+function mpmlAst$1 (compiled, options, log) {
   if ( options === void 0 ) options = {};
 
-  var children = node.children;
-  var ifConditions = node.ifConditions;
-  var staticClass = node.staticClass; if ( staticClass === void 0 ) staticClass = '';
-  var mpcomid = node.mpcomid;
-  var tagName = node.tag;
-  var log = util.log;
-  var deps = util.deps;
-  var slots = util.slots;
-  var slotTemplates = util.slotTemplates;
-  var wxmlAst = Object.assign({}, node);
-  var moduleId = options.moduleId;
-  var components = options.components;
-  wxmlAst.tag = tagName = tagName ? hyphenate(tagName) : tagName;
-  // 引入 import, isSlot 是使用 slot 的编译地方，意即 <slot></slot> 的地方
-  var isSlot = tagName === 'slot';
-  if (isSlot) {
-    deps.slots = 'slots';
-    // 把当前 slot 节点包裹 template
-    var defSlot = Object.assign({}, wxmlAst);
-    defSlot.tag = 'template';
-    var templateName = "" + (defSlot.attrsMap.name || 'default');
-    defSlot.attrsMap.name = templateName;
-    wxmlAst.children = [];
-    defSlot.parent = node.parent.parent;
-    slotTemplates[templateName] = defSlot;
-  }
-
-  var currentIsComponent = component$1.isComponent(tagName, components);
-  if (currentIsComponent) {
-    deps[tagName] = tagName;
-  }
-
-  if (moduleId && !currentIsComponent && tagConfig$1.virtualTag.indexOf(tagName) < 0) {
-    wxmlAst.staticClass = staticClass ? (moduleId + " " + staticClass).replace(/\"/g, '') : moduleId;
-  } else {
-    wxmlAst.staticClass = staticClass.replace(/\"/g, '');
-  }
-
-  // 组件内部的node节点全部是 slot
-  wxmlAst.slots = {};
-  if (currentIsComponent && children && children.length) {
-    // 只检查组件下的子节点（不检查孙子节点）是不是具名 slot，不然就是 default slot
-    children
-      .reduce(function (res, n) {
-        var ref = n.attrsMap || {};
-        var slot = ref.slot;
-        // 不是具名的，全部放在第一个数组元素中
-        var arr = slot ? res : res[0];
-        arr.push(n);
-        return res
-      }, [[]])
-      .forEach(function (n) {
-        var isDefault = Array.isArray(n);
-        var slotName = isDefault ? 'default' : n.attrsMap.slot;
-        var slotId = moduleId + "-" + slotName + "-" + (mpcomid.replace(/\'/g, ''));
-        var node = isDefault ? { tag: 'slot', attrsMap: {}, children: n } : n;
-
-        node.tag = 'template';
-        node.attrsMap.name = slotId;
-        delete node.attrsMap.slot;
-        // 缓存，会集中生成一个 slots 文件
-        slots[slotId] = { node: convertAst$1(node, options, util), name: slotName, slotId: slotId };
-        wxmlAst.slots[slotName] = slotId;
-      });
-    // 清理当前组件下的节点信息，因为 slot 都被转移了
-    children.length = 0;
-    wxmlAst.children.length = 0;
-  }
-
-  wxmlAst.attrsMap = attrs$1.format(wxmlAst.attrsMap);
-  wxmlAst = tag$1(wxmlAst, options);
-  wxmlAst = convertFor$1(wxmlAst, options);
-  wxmlAst = attrs$1.convertAttr(wxmlAst, log);
-  if (children && !isSlot) {
-    wxmlAst.children = children.map(function (k) { return convertAst$1(k, options, util); });
-  }
-
-  if (ifConditions) {
-    var length = ifConditions.length;
-    for (var i = 1; i < length; i++) {
-      wxmlAst.ifConditions[i].block = convertAst$1(ifConditions[i].block, options, util);
-    }
-  }
-
-  return wxmlAst
+  var conventRule = { attrs: attrs$1, component: component$1, convertFor: convertFor$1 };
+  return getAstCommon(compiled, options, log, conventRule)
 }
 
-function wxmlAst$1 (compiled, options, log) {
-  if ( options === void 0 ) options = {};
-
-  var ast = compiled.ast;
-  var deps = {
-    // slots: 'slots'
-  };
-  var slots = {
-    // slotId: nodeAst
-  };
-  var slotTemplates = {
-  };
-
-  var wxast = convertAst$1(ast, options, { log: log, deps: deps, slots: slots, slotTemplates: slotTemplates });
-  var children = Object.keys(slotTemplates).map(function (k) { return convertAst$1(slotTemplates[k], options, { log: log, deps: deps, slots: slots, slotTemplates: slotTemplates }); });
-  wxast.children = children.concat(wxast.children);
-  return {
-    wxast: wxast,
-    deps: deps,
-    slots: slots
-  }
-}
-
-function generate$3 (obj, options) {
-  if ( options === void 0 ) options = {};
-
-  var tag = obj.tag;
-  var attrsMap = obj.attrsMap; if ( attrsMap === void 0 ) attrsMap = {};
-  var children = obj.children;
-  var text = obj.text;
-  var ifConditions = obj.ifConditions;
-  if (!tag) { return text }
-  var child = '';
-  if (children && children.length) {
-    // 递归子节点
-    child = children.map(function (v) { return generate$3(v, options); }).join('');
-  }
-
-  // v-if 指令
-  var ifConditionsArr = [];
-  if (ifConditions) {
-    var length = ifConditions.length;
-    for (var i = 1; i < length; i++) {
-      ifConditionsArr.push(generate$3(ifConditions[i].block, options));
-    }
-  }
-
-  var attrs = Object.keys(attrsMap).map(function (k) { return convertAttr$1(k, attrsMap[k]); }).join(' ');
-
-  var tags = ['progress', 'checkbox', 'switch', 'input', 'radio', 'slider', 'textarea'];
-  if (tags.indexOf(tag) > -1 && !(children && children.length)) {
-    return ("<" + tag + (attrs ? ' ' + attrs : '') + " />" + (ifConditionsArr.join('')))
-  }
-  return ("<" + tag + (attrs ? ' ' + attrs : '') + ">" + (child || '') + "</" + tag + ">" + (ifConditionsArr.join('')))
-}
-
-function convertAttr$1 (key, val) {
-  return (val === '' || typeof val === 'undefined') ? key : (key + "=\"" + val + "\"")
-}
-
-var utils$1 = {
-  toLowerCase: function toLowerCase (str) {
-    return str.replace(/([A-Z])/g, '-$1').toLowerCase().trim()
-  },
-
-  getChar: function getChar (index) {
-    return String.fromCharCode(0x61 + index)
-  },
-
-  log: function log (compiled) {
-    compiled.mpErrors = [];
-    compiled.mpTips = [];
-
-    return function (str, type) {
-      if (type === 'waring') {
-        compiled.mpTips.push(str);
-      } else {
-        compiled.mpErrors.push(str);
-      }
-    }
-  }
-};
-
-function compileToWxml$2 (compiled, options) {
+function compileToWxml (compiled, options) {
   if ( options === void 0 ) options = {};
 
   // TODO, compiled is undefined
   var components = options.components; if ( components === void 0 ) components = {};
-  var log = utils$1.log(compiled);
+  var log = utils.log(compiled);
 
-  var ref = wxmlAst$1(compiled, options, log);
+  var ref = mpmlAst$1(compiled, options, log);
   var wxast = ref.wxast;
   var deps = ref.deps; if ( deps === void 0 ) deps = {};
   var slots = ref.slots; if ( slots === void 0 ) slots = {};
-  var code = generate$3(wxast, options);
+  var code = generate$2(wxast, options);
 
   // 引用子模版
   var importCode = Object.keys(deps).map(function (k) { return components[k] ? ("<import src=\"" + (components[k].src) + "\" />") : ''; }).join('');
@@ -5766,7 +5355,7 @@ function compileToWxml$2 (compiled, options) {
   // 生成 slots code
   Object.keys(slots).forEach(function (k) {
     var slot = slots[k];
-    slot.code = generate$3(slot.node, options);
+    slot.code = generate$2(slot.node, options);
   });
 
   // TODO: 后期优化掉这种暴力全部 import，虽然对性能没啥大影响
@@ -5788,7 +5377,7 @@ var noSupport$2 = {
     return false
   }
 };
-var wxmlDirectiveMap$2 = {
+var directiveMap$2 = {
   'v-if': {
     name: 'tt:if',
     type: 0
@@ -5855,58 +5444,10 @@ var wxmlDirectiveMap$2 = {
   }
 };
 
-var tagConfig$2 = {
-  virtualTag: ['slot', 'template', 'block']
-};
-
-// babel-plugin-transform-object-to-ternary-operator.js
-
-function getStrByNode$2 (node, onlyStr) {
-  if ( onlyStr === void 0 ) onlyStr = false;
-
-  if (onlyStr) {
-    return node.value || node.name || ''
-  }
-  return node.type === 'StringLiteral' ? node : t.stringLiteral(node.name || '')
-}
-
-// 把 { key: value } 转换成 [ value ? 'key' : '' ]
-var objectVisitor$2 = {
-  ObjectExpression: function (path) {
-    var elements = path.node.properties.map(function (propertyItem) {
-      return t.conditionalExpression(propertyItem.value, getStrByNode$2(propertyItem.key), t.stringLiteral(''))
-    });
-    path.replaceWith(t.arrayExpression(elements));
-  }
-};
-
-function transformObjectToTernaryOperator$2 (babel$$1) {
-  return { visitor: objectVisitor$2 }
-}
-
-// 把 { key: value } 转换成 'key:' + value + ';'
-var objectToStringVisitor$2 = {
-  ObjectExpression: function (path) {
-    var expression = path.node.properties.map(function (propertyItem) {
-      var keyStr = getStrByNode$2(propertyItem.key, true);
-      var key = keyStr ? hyphenate(keyStr) : keyStr;
-      var ref = generate(t.ExpressionStatement(propertyItem.value));
-      var val = ref.code;
-      return ("'" + key + ":' + (" + (val.slice(0, -1)) + ") + ';'")
-    }).join('+');
-
-    var p = template(expression)({});
-    path.replaceWith(p.expression);
-  }
-};
-function transformObjectToString$2 (babel$$1) {
-  return { visitor: objectToStringVisitor$2 }
-}
-
 function transformDynamicClass$2 (staticClass, clsBinding) {
   if ( staticClass === void 0 ) staticClass = '';
 
-  var result = babel.transform(("!" + clsBinding), { plugins: [transformObjectToTernaryOperator$2] });
+  var result = babel.transform(("!" + clsBinding), { plugins: [transformObjectToTernaryOperator] });
   // 先实现功能，再优化代码
   // https://github.com/babel/babel/issues/7138
   var cls = prettier.format(result.code, { semi: false, singleQuote: true }).slice(1).slice(0, -1).replace(/\n|\r/g, '');
@@ -5916,7 +5457,7 @@ function transformDynamicClass$2 (staticClass, clsBinding) {
 function transformDynamicStyle$2 (staticStyle, styleBinding) {
   if ( staticStyle === void 0 ) staticStyle = '';
 
-  var result = babel.transform(("!" + styleBinding), { plugins: [transformObjectToString$2] });
+  var result = babel.transform(("!" + styleBinding), { plugins: [transformObjectToString] });
   var cls = prettier.format(result.code, { semi: false, singleQuote: true }).slice(1).slice(0, -1).replace(/\n|\r/g, '');
   return (staticStyle + " {{" + cls + "}}")
 }
@@ -5968,14 +5509,14 @@ var attrs$2 = {
         attrs = this$1.bind(key, val, attrs, tag, attrsMap['tt:key']);
       } else if (/^v\-model/.test(key)) {
         attrs = this$1.model(key, val, attrs, tag, log);
-      } else if (wxmlDirectiveMap$2[key]) {
-        var ref = wxmlDirectiveMap$2[key] || {};
+      } else if (directiveMap$2[key]) {
+        var ref = directiveMap$2[key] || {};
         var name = ref.name; if ( name === void 0 ) name = '';
         var type = ref.type;
         var map = ref.map; if ( map === void 0 ) map = {};
         var check = ref.check;
         if (!(check && !check(key, val, log)) && !(!name || typeof type !== 'number')) {
-          // 见 ./wxmlDirectiveMap.js 注释
+          // 见 ./directiveMap.js 注释
           if (type === 0) {
             attrs[name] = "{{" + val + "}}";
           }
@@ -5996,7 +5537,7 @@ var attrs$2 = {
       } else if (/^v\-/.test(key)) {
         log(("不支持此属性-> " + key + "=\"" + val + "\""), 'waring');
       } else {
-        if ((tagConfig$2.virtualTag.indexOf(tag) > -1) && (key === 'class' || key === 'style' || key === 'data-mpcomid')) {
+        if ((tagConfig.virtualTag.indexOf(tag) > -1) && (key === 'class' || key === 'style' || key === 'data-mpcomid')) {
           if (key !== 'data-mpcomid') {
             log(("template 不支持此属性-> " + key + "=\"" + val + "\""), 'waring');
           }
@@ -6020,8 +5561,8 @@ var attrs$2 = {
     var ref = name.split('.');
     var eventName = ref[0];
     var eventNameMap = ref.slice(1);
-    var eventMap = wxmlDirectiveMap$2['v-on'];
-    var check = wxmlDirectiveMap$2.check;
+    var eventMap = directiveMap$2['v-on'];
+    var check = directiveMap$2.check;
 
     if (check) {
       check(key, val);
@@ -6171,211 +5712,6 @@ var component$2 = {
   }
 };
 
-var tagMap$2 = {
-  'br': 'view',
-  'hr': 'view',
-
-  'p': 'view',
-  'h1': 'view',
-  'h2': 'view',
-  'h3': 'view',
-  'h4': 'view',
-  'h5': 'view',
-  'h6': 'view',
-  'abbr': 'view',
-  'address': 'view',
-  'b': 'view',
-  'bdi': 'view',
-  'bdo': 'view',
-  'blockquote': 'view',
-  'cite': 'view',
-  'code': 'view',
-  'del': 'view',
-  'ins': 'view',
-  'dfn': 'view',
-  'em': 'view',
-  'strong': 'view',
-  'samp': 'view',
-  'kbd': 'view',
-  'var': 'view',
-  'i': 'view',
-  'mark': 'view',
-  'pre': 'view',
-  'q': 'view',
-  'ruby': 'view',
-  'rp': 'view',
-  'rt': 'view',
-  's': 'view',
-  'small': 'view',
-  'sub': 'view',
-  'sup': 'view',
-  'time': 'view',
-  'u': 'view',
-  'wbr': 'view',
-
-  // 表单元素
-  'form': 'form',
-  'input': 'input',
-  'textarea': 'textarea',
-  'button': 'button',
-  'select': 'picker',
-  'option': 'view',
-  'optgroup': 'view',
-  'label': 'label',
-  'fieldset': 'view',
-  'datalist': 'picker',
-  'legend': 'view',
-  'output': 'view',
-
-  // 框架
-  'iframe': 'view',
-  // 图像
-  'img': 'image',
-  'canvas': 'canvas',
-  'figure': 'view',
-  'figcaption': 'view',
-
-  // 音视频
-  'audio': 'audio',
-  'source': 'audio',
-  'video': 'video',
-  'track': 'video',
-  // 链接
-  'a': 'navigator',
-  'nav': 'view',
-  'link': 'navigator',
-  // 列表
-  'ul': 'view',
-  'ol': 'view',
-  'li': 'view',
-  'dl': 'view',
-  'dt': 'view',
-  'dd': 'view',
-  'menu': 'view',
-  'command': 'view',
-
-  // 表格table
-  'table': 'view',
-  'caption': 'view',
-  'th': 'view',
-  'td': 'view',
-  'tr': 'view',
-  'thead': 'view',
-  'tbody': 'view',
-  'tfoot': 'view',
-  'col': 'view',
-  'colgroup': 'view',
-
-  // 样式 节
-  'div': 'view',
-  'main': 'view',
-  'span': 'label',
-  'header': 'view',
-  'footer': 'view',
-  'section': 'view',
-  'article': 'view',
-  'aside': 'view',
-  'details': 'view',
-  'dialog': 'view',
-  'summary': 'view',
-
-  'progress': 'progress',
-  'meter': 'progress', // todo
-  'head': 'view', // todo
-  'meta': 'view', // todo
-  'base': 'text', // todo
-  // 'map': 'image', // TODO不是很恰当
-  'area': 'navigator', // j结合map使用
-
-  'script': 'view',
-  'noscript': 'view',
-  'embed': 'view',
-  'object': 'view',
-  'param': 'view',
-
-  // https://mp.weixin.qq.com/debug/wxadoc/dev/component/
-  // [...document.querySelectorAll('.markdown-section tbody td:first-child')].map(v => v.textContent).join(',\n')
-  'view': 'view',
-  'scroll-view': 'scroll-view',
-  'swiper': 'swiper',
-  'icon': 'icon',
-  'text': 'text',
-  // 'progress': 'progress',
-  // 'button': 'button',
-  // 'form': 'form',
-  // 'input': 'input',
-  'checkbox': 'checkbox',
-  'radio': 'radio',
-  'picker': 'picker',
-  'picker-view': 'picker-view',
-  'slider': 'slider',
-  'switch': 'switch',
-  // 'label': 'label',
-  'navigator': 'navigator',
-  // 'audio': 'audio',
-  'image': 'image',
-  // 'video': 'video',
-  'map': 'map',
-  // 'canvas': 'canvas',
-  'contact-button': 'contact-button',
-  'block': 'block'
-};
-
-var tag$2 = function (ast, options) {
-  var tag = ast.tag;
-  var elseif = ast.elseif;
-  var elseText = ast.else;
-  var forText = ast.for;
-  var staticClass = ast.staticClass; if ( staticClass === void 0 ) staticClass = '';
-  var attrsMap = ast.attrsMap; if ( attrsMap === void 0 ) attrsMap = {};
-  var components = options.components;
-  var ifText = attrsMap['v-if'];
-  var href = attrsMap.href;
-  var bindHref = attrsMap['v-bind:href'];
-  var name = attrsMap.name;
-
-  if (!tag) {
-    return ast
-  }
-  var isComponent = component$2.isComponent(tag, components);
-  if (tag !== 'template' && tag !== 'block' && tag !== 'slot' && !isComponent) {
-    ast.staticClass = staticClass ? ("_" + tag + " " + staticClass) : ("_" + tag);
-  }
-  ast.tag = tagMap$2[tag] || tag;
-
-  var isSlot = tag === 'slot';
-
-  if ((ifText || elseif || elseText || forText) && tag === 'template') {
-    ast.tag = 'block';
-  } else if (isComponent || isSlot) {
-    var originSlotName = name || 'default';
-    var slotName = isSlot ? ("$slot" + originSlotName + " || '" + originSlotName + "'") : undefined;
-
-    // 用完必须删除，不然会被编译成 <template name="xxx"> 在小程序中就会表示这是一个模版申明而不是使用，小程序中不能同时申明和使用模版
-    delete ast.attrsMap.name;
-    ast = component$2.convertComponent(ast, components, slotName);
-    ast.tag = 'template';
-  } else if (tag === 'a' && !(href || bindHref)) {
-    ast.tag = 'view';
-  } else if (ast.events && ast.events.scroll) {
-    ast.tag = 'scroll-view';
-  } else if (tag === 'input') {
-    var type = attrsMap.type;
-    if (type && ['button', 'checkbox', 'radio'].indexOf(type) > -1) {
-      delete ast.attrsMap.type;
-      ast.tag = type;
-    }
-    if (type === 'button') {
-      ast.children.push({
-        text: attrsMap.value || '',
-        type: 3
-      });
-      delete ast.attrsMap.value;
-    }
-  }
-  return ast
-};
-
 var astMap$2 = {
   if: 'tt:if',
   iterator1: 'tt:for-index',
@@ -6409,191 +5745,25 @@ var convertFor$2 = function (ast) {
   return ast
 };
 
-function convertAst$2 (node, options, util) {
+function mpmlAst$2 (compiled, options, log) {
   if ( options === void 0 ) options = {};
 
-  var children = node.children;
-  var ifConditions = node.ifConditions;
-  var staticClass = node.staticClass; if ( staticClass === void 0 ) staticClass = '';
-  var mpcomid = node.mpcomid;
-  var tagName = node.tag;
-  var log = util.log;
-  var deps = util.deps;
-  var slots = util.slots;
-  var slotTemplates = util.slotTemplates;
-  var wxmlAst = Object.assign({}, node);
-  var moduleId = options.moduleId;
-  var components = options.components;
-  wxmlAst.tag = tagName = tagName ? hyphenate(tagName) : tagName;
-  // 引入 import, isSlot 是使用 slot 的编译地方，意即 <slot></slot> 的地方
-  var isSlot = tagName === 'slot';
-  if (isSlot) {
-    deps.slots = 'slots';
-    // 把当前 slot 节点包裹 template
-    var defSlot = Object.assign({}, wxmlAst);
-    defSlot.tag = 'template';
-    var templateName = "" + (defSlot.attrsMap.name || 'default');
-    defSlot.attrsMap.name = templateName;
-    wxmlAst.children = [];
-    defSlot.parent = node.parent.parent;
-    slotTemplates[templateName] = defSlot;
-  }
-
-  var currentIsComponent = component$2.isComponent(tagName, components);
-  if (currentIsComponent) {
-    deps[tagName] = tagName;
-  }
-
-  if (moduleId && !currentIsComponent && tagConfig$2.virtualTag.indexOf(tagName) < 0) {
-    wxmlAst.staticClass = staticClass ? (moduleId + " " + staticClass).replace(/\"/g, '') : moduleId;
-  } else {
-    wxmlAst.staticClass = staticClass.replace(/\"/g, '');
-  }
-
-  // 组件内部的node节点全部是 slot
-  wxmlAst.slots = {};
-  if (currentIsComponent && children && children.length) {
-    // 只检查组件下的子节点（不检查孙子节点）是不是具名 slot，不然就是 default slot
-    children
-      .reduce(function (res, n) {
-        var ref = n.attrsMap || {};
-        var slot = ref.slot;
-        // 不是具名的，全部放在第一个数组元素中
-        var arr = slot ? res : res[0];
-        arr.push(n);
-        return res
-      }, [[]])
-      .forEach(function (n) {
-        var isDefault = Array.isArray(n);
-        var slotName = isDefault ? 'default' : n.attrsMap.slot;
-        var slotId = moduleId + "-" + slotName + "-" + (mpcomid.replace(/\'/g, ''));
-        var node = isDefault ? { tag: 'slot', attrsMap: {}, children: n } : n;
-
-        node.tag = 'template';
-        node.attrsMap.name = slotId;
-        delete node.attrsMap.slot;
-        // 缓存，会集中生成一个 slots 文件
-        slots[slotId] = { node: convertAst$2(node, options, util), name: slotName, slotId: slotId };
-        wxmlAst.slots[slotName] = slotId;
-      });
-    // 清理当前组件下的节点信息，因为 slot 都被转移了
-    children.length = 0;
-    wxmlAst.children.length = 0;
-  }
-
-  wxmlAst.attrsMap = attrs$2.format(wxmlAst.attrsMap);
-  wxmlAst = tag$2(wxmlAst, options);
-  wxmlAst = convertFor$2(wxmlAst, options);
-  wxmlAst = attrs$2.convertAttr(wxmlAst, log);
-  if (children && !isSlot) {
-    wxmlAst.children = children.map(function (k) { return convertAst$2(k, options, util); });
-  }
-
-  if (ifConditions) {
-    var length = ifConditions.length;
-    for (var i = 1; i < length; i++) {
-      wxmlAst.ifConditions[i].block = convertAst$2(ifConditions[i].block, options, util);
-    }
-  }
-
-  return wxmlAst
+  var conventRule = { attrs: attrs$2, component: component$2, convertFor: convertFor$2 };
+  return getAstCommon(compiled, options, log, conventRule)
 }
 
-function wxmlAst$2 (compiled, options, log) {
-  if ( options === void 0 ) options = {};
-
-  var ast = compiled.ast;
-  var deps = {
-    // slots: 'slots'
-  };
-  var slots = {
-    // slotId: nodeAst
-  };
-  var slotTemplates = {
-  };
-
-  var wxast = convertAst$2(ast, options, { log: log, deps: deps, slots: slots, slotTemplates: slotTemplates });
-  var children = Object.keys(slotTemplates).map(function (k) { return convertAst$2(slotTemplates[k], options, { log: log, deps: deps, slots: slots, slotTemplates: slotTemplates }); });
-  wxast.children = children.concat(wxast.children);
-  return {
-    wxast: wxast,
-    deps: deps,
-    slots: slots
-  }
-}
-
-function generate$4 (obj, options) {
-  if ( options === void 0 ) options = {};
-
-  var tag = obj.tag;
-  var attrsMap = obj.attrsMap; if ( attrsMap === void 0 ) attrsMap = {};
-  var children = obj.children;
-  var text = obj.text;
-  var ifConditions = obj.ifConditions;
-  if (!tag) { return text }
-  var child = '';
-  if (children && children.length) {
-    // 递归子节点
-    child = children.map(function (v) { return generate$4(v, options); }).join('');
-  }
-
-  // v-if 指令
-  var ifConditionsArr = [];
-  if (ifConditions) {
-    var length = ifConditions.length;
-    for (var i = 1; i < length; i++) {
-      ifConditionsArr.push(generate$4(ifConditions[i].block, options));
-    }
-  }
-
-  var attrs = Object.keys(attrsMap).map(function (k) { return convertAttr$2(k, attrsMap[k]); }).join(' ');
-
-  var tags = ['progress', 'checkbox', 'switch', 'input', 'radio', 'slider', 'textarea'];
-  if (tags.indexOf(tag) > -1 && !(children && children.length)) {
-    return ("<" + tag + (attrs ? ' ' + attrs : '') + " />" + (ifConditionsArr.join('')))
-  }
-  return ("<" + tag + (attrs ? ' ' + attrs : '') + ">" + (child || '') + "</" + tag + ">" + (ifConditionsArr.join('')))
-}
-
-function convertAttr$2 (key, val) {
-  return (val === '' || typeof val === 'undefined') ? key : (key + "=\"" + val + "\"")
-}
-
-var utils$2 = {
-  toLowerCase: function toLowerCase (str) {
-    return str.replace(/([A-Z])/g, '-$1').toLowerCase().trim()
-  },
-
-  getChar: function getChar (index) {
-    return String.fromCharCode(0x61 + index)
-  },
-
-  log: function log (compiled) {
-    compiled.mpErrors = [];
-    compiled.mpTips = [];
-
-    return function (str, type) {
-      if (type === 'waring') {
-        compiled.mpTips.push(str);
-      } else {
-        compiled.mpErrors.push(str);
-      }
-    }
-  }
-};
-
-function compileToWxml$3 (compiled, options) {
+function compileToWxml$1 (compiled, options) {
   if ( options === void 0 ) options = {};
 
   // TODO, compiled is undefined
   var components = options.components; if ( components === void 0 ) components = {};
-  var log = utils$2.log(compiled);
+  var log = utils.log(compiled);
 
-  var ref = wxmlAst$2(compiled, options, log);
+  var ref = mpmlAst$2(compiled, options, log);
   var wxast = ref.wxast;
   var deps = ref.deps; if ( deps === void 0 ) deps = {};
   var slots = ref.slots; if ( slots === void 0 ) slots = {};
-  var code = generate$4(wxast, options);
+  var code = generate$2(wxast, options);
 
   // 引用子模版
   var importCode = Object.keys(deps).map(function (k) { return components[k] ? ("<import src=\"" + (components[k].src) + "\" />") : ''; }).join('');
@@ -6602,7 +5772,7 @@ function compileToWxml$3 (compiled, options) {
   // 生成 slots code
   Object.keys(slots).forEach(function (k) {
     var slot = slots[k];
-    slot.code = generate$4(slot.node, options);
+    slot.code = generate$2(slot.node, options);
   });
 
   // TODO: 后期优化掉这种暴力全部 import，虽然对性能没啥大影响
@@ -6611,20 +5781,20 @@ function compileToWxml$3 (compiled, options) {
 
 /*  */
 
-function compileToWxml (compiled, options, fileExt) {
+function compileToMPML (compiled, options, fileExt) {
     var code;
     switch(fileExt.platform) {
         case 'swan':
-            code = compileToWxml$2(compiled, options);
+            code = compileToWxml(compiled, options);
             break
         case 'wx':
-            code = compileToWxml$1(compiled, options);
+            code = compileToMPML$1(compiled, options);
             break
         case 'tt':
-            code = compileToWxml$3(compiled, options);
+            code = compileToWxml$1(compiled, options);
             break
         default:
-            code = compileToWxml$1(compiled, options);
+            code = compileToMPML$1(compiled, options);
     }
     return code
 }
@@ -6638,4 +5808,4 @@ var compileToFunctions = ref.compileToFunctions;
 exports.parseComponent = parseComponent;
 exports.compile = compile;
 exports.compileToFunctions = compileToFunctions;
-exports.compileToWxml = compileToWxml;
+exports.compileToMPML = compileToMPML;
