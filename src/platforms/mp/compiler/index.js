@@ -25,4 +25,8 @@ function compileToMPML (compiled, options, fileExt) {
 }
 
 const { compile, compileToFunctions } = createCompiler(baseOptions)
-export { compile, compileToFunctions, compileToMPML }
+export {
+    compile,
+    compileToFunctions,
+    compileToMPML
+}

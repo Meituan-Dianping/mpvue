@@ -56,7 +56,7 @@ function convertAst (node, options = {}, util, conventRule) {
         node.attrsMap.name = slotId
         delete node.attrsMap.slot
         // 缓存，会集中生成一个 slots 文件
-        slots[slotId] = { node: convertAst(node, options, util), name: slotName, slotId }
+        slots[slotId] = { node: convertAst(node, options, util, conventRule), name: slotName, slotId }
         mpmlAst.slots[slotName] = slotId
       })
     // 清理当前组件下的节点信息，因为 slot 都被转移了
@@ -69,13 +69,13 @@ function convertAst (node, options = {}, util, conventRule) {
   mpmlAst = conventRule.convertFor(mpmlAst, options)
   mpmlAst = conventRule.attrs.convertAttr(mpmlAst, log)
   if (children && !isSlot) {
-    mpmlAst.children = children.map((k) => convertAst(k, options, util))
+    mpmlAst.children = children.map((k) => convertAst(k, options, util, conventRule))
   }
 
   if (ifConditions) {
     const length = ifConditions.length
     for (let i = 1; i < length; i++) {
-      mpmlAst.ifConditions[i].block = convertAst(ifConditions[i].block, options, util)
+      mpmlAst.ifConditions[i].block = convertAst(ifConditions[i].block, options, util, conventRule)
     }
   }
 
@@ -94,7 +94,7 @@ export default function getAstCommon (compiled, options = {}, log, conventRule) 
   }
 
   const wxast = convertAst(ast, options, { log, deps, slots, slotTemplates }, conventRule)
-  const children = Object.keys(slotTemplates).map(k => convertAst(slotTemplates[k], options, { log, deps, slots, slotTemplates }))
+  const children = Object.keys(slotTemplates).map(k => convertAst(slotTemplates[k], options, { log, deps, slots, slotTemplates }, conventRule))
   wxast.children = children.concat(wxast.children)
   return {
     wxast,

@@ -4786,7 +4786,7 @@ function convertAst (node, options, util, conventRule) {
         node.attrsMap.name = slotId;
         delete node.attrsMap.slot;
         // 缓存，会集中生成一个 slots 文件
-        slots[slotId] = { node: convertAst(node, options, util), name: slotName, slotId: slotId };
+        slots[slotId] = { node: convertAst(node, options, util, conventRule), name: slotName, slotId: slotId };
         mpmlAst.slots[slotName] = slotId;
       });
     // 清理当前组件下的节点信息，因为 slot 都被转移了
@@ -4799,13 +4799,13 @@ function convertAst (node, options, util, conventRule) {
   mpmlAst = conventRule.convertFor(mpmlAst, options);
   mpmlAst = conventRule.attrs.convertAttr(mpmlAst, log);
   if (children && !isSlot) {
-    mpmlAst.children = children.map(function (k) { return convertAst(k, options, util); });
+    mpmlAst.children = children.map(function (k) { return convertAst(k, options, util, conventRule); });
   }
 
   if (ifConditions) {
     var length = ifConditions.length;
     for (var i = 1; i < length; i++) {
-      mpmlAst.ifConditions[i].block = convertAst(ifConditions[i].block, options, util);
+      mpmlAst.ifConditions[i].block = convertAst(ifConditions[i].block, options, util, conventRule);
     }
   }
 
@@ -4826,7 +4826,7 @@ function getAstCommon (compiled, options, log, conventRule) {
   };
 
   var wxast = convertAst(ast, options, { log: log, deps: deps, slots: slots, slotTemplates: slotTemplates }, conventRule);
-  var children = Object.keys(slotTemplates).map(function (k) { return convertAst(slotTemplates[k], options, { log: log, deps: deps, slots: slots, slotTemplates: slotTemplates }); });
+  var children = Object.keys(slotTemplates).map(function (k) { return convertAst(slotTemplates[k], options, { log: log, deps: deps, slots: slots, slotTemplates: slotTemplates }, conventRule); });
   wxast.children = children.concat(wxast.children);
   return {
     wxast: wxast,
