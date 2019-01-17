@@ -4,6 +4,7 @@ import { createCompiler } from './create-compiler'
 import codeGenWx from './wx/index'
 import codeGenSwan from './swan/index'
 import codeGenTt from './tt/index'
+import codeGenMy from './my/index'
 
 function compileToMPML (compiled, options, fileExt) {
   let code
@@ -16,6 +17,9 @@ function compileToMPML (compiled, options, fileExt) {
       break
     case 'tt':
       code = codeGenTt(compiled, options)
+      break
+    case 'my':
+      code = codeGenMy(compiled, options)
       break
     default:
       code = codeGenWx(compiled, options)
