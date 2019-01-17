@@ -8,7 +8,7 @@
 
 const noSupport = {
   type: 4,
-  check: (k, v, errors) => {
+  check (k, v, errors) {
     errors(`不支持此指令: ${k}="${v}"`)
     return false
   }

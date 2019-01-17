@@ -14,7 +14,7 @@ function getStrByNode (node, onlyStr = false) {
 
 // 把 { key: value } 转换成 [ value ? 'key' : '' ]
 const objectVisitor = {
-  ObjectExpression: function (path) {
+  ObjectExpression (path) {
     const elements = path.node.properties.map(propertyItem => {
       return t.conditionalExpression(propertyItem.value, getStrByNode(propertyItem.key), t.stringLiteral(''))
     })
@@ -28,7 +28,7 @@ export function transformObjectToTernaryOperator (babel) {
 
 // 把 { key: value } 转换成 'key:' + value + ';'
 const objectToStringVisitor = {
-  ObjectExpression: function (path) {
+  ObjectExpression (path) {
     const expression = path.node.properties.map(propertyItem => {
       const keyStr = getStrByNode(propertyItem.key, true)
       const key = keyStr ? hyphenate(keyStr) : keyStr
@@ -40,6 +40,7 @@ const objectToStringVisitor = {
     path.replaceWith(p.expression)
   }
 }
+
 export function transformObjectToString (babel) {
   return { visitor: objectToStringVisitor }
 }

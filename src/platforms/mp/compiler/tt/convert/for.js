@@ -2,7 +2,6 @@ import astMap from '../config/astMap'
 
 export default function (ast) {
   const { iterator1, for: forText, key, alias, attrsMap } = ast
-
   if (forText) {
     attrsMap[astMap['v-for']] = `{{${forText}}}`
     if (iterator1) {
