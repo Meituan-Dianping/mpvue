@@ -4,8 +4,13 @@ import Vue from 'core/index'
 // import config from 'core/config'
 import { mountComponent } from 'core/instance/lifecycle'
 
-import { mustUseProp, isReservedTag, isReservedAttr, getTagNamespace, isUnknownElement } from 'mp/util/index'
-
+import {
+  mustUseProp,
+  isReservedTag,
+  isReservedAttr,
+  getTagNamespace,
+  isUnknownElement
+} from 'mp/util/index'
 import { patch } from './patch'
 
 // install platform specific utils

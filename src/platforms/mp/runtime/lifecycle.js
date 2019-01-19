@@ -12,6 +12,8 @@ export function callHook (vm, hook, params) {
   let handlers = vm.$options[hook]
   if (hook === 'onError' && handlers) {
     handlers = [handlers]
+  } else if (hook === 'onPageNotFound' && handlers) {
+    handlers = [handlers]
   }
 
   let ret
@@ -225,6 +227,10 @@ export function initMP (mpType, next) {
 
       onError (err) {
         callHook(rootVueVM, 'onError', err)
+      },
+
+      onPageNotFound (err) {
+        callHook(rootVueVM, 'onPageNotFound', err)
       }
     })
   } else if (mpType === 'component') {

@@ -1,5 +1,6 @@
 // 节流方法，性能优化
 import { getComKey } from '../util/index'
+import { diffData } from './diff-data'
 
 // 全局的命名约定，为了节省编译的包大小一律采取形象的缩写，说明如下。
 // $c === $child
@@ -19,6 +20,8 @@ import { getComKey } from '../util/index'
 //     }
 //   }
 // }
+
+const KEY_SEP = '_'
 
 function getVmData (vm) {
   // 确保当前 vm 所有数据被同步
@@ -45,12 +48,12 @@ function getParentComKey (vm, res = []) {
 }
 
 function formatVmData (vm) {
-  const $p = getParentComKey(vm).join(',')
-  const $k = $p + ($p ? ',' : '') + getComKey(vm)
+  const $p = getParentComKey(vm).join(KEY_SEP)
+  const $k = $p + ($p ? KEY_SEP : '') + getComKey(vm)
 
   // getVmData 这儿获取当前组件内的所有数据，包含 props、computed 的数据
   // 改动 vue.runtime 所获的的核心能力
-  const data = Object.assign(getVmData(vm), { $k, $kk: `${$k},`, $p })
+  const data = Object.assign(getVmData(vm), { $k, $kk: `${$k}${KEY_SEP}`, $p })
   const key = '$root.' + $k
   const res = { [key]: data }
   return res
@@ -128,6 +131,7 @@ function getPage (vm) {
   return page
 }
 
+// 优化js变量动态变化时候引起全量更新
 // 优化每次 setData 都传递大量新数据
 export function updateDataToMP () {
   const page = getPage(this)
@@ -136,6 +140,7 @@ export function updateDataToMP () {
   }
 
   const data = formatVmData(this)
+  diffData(this, data)
   throttleSetData(page.setData.bind(page), data)
 }
 
