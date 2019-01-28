@@ -108,7 +108,7 @@ export function diffData (vm, data) {
   // console.log(rootKey)
 
   // 值类型变量不考虑优化，还是直接更新
-  const __keyPathOnThis = vmData.__keyPath || vm.__keyPath || {}
+  const __keyPathOnThis = getDeepData(['__ob__', '__keyPath'], vmData) || getDeepData(['__ob__', '__keyPath'], vm) || {}
   delete vm.__keyPath
   delete vmData.__keyPath
   delete vmProps.__keyPath
@@ -117,7 +117,6 @@ export function diffData (vm, data) {
     Object.keys(vmData).forEach((vmDataItemKey) => {
       if (vmData[vmDataItemKey] instanceof Object) {
         // 引用类型
-        if (vmDataItemKey === '__keyPath') { return }
         minifyDeepData(rootKey, vmDataItemKey, vmData[vmDataItemKey], data, vm._mpValueSet, vm)
       } else if (vmData[vmDataItemKey] !== undefined) {
         // _data上的值属性只有要更新的时候才赋值
@@ -130,7 +129,6 @@ export function diffData (vm, data) {
     Object.keys(vmProps).forEach((vmPropsItemKey) => {
       if (vmProps[vmPropsItemKey] instanceof Object) {
         // 引用类型
-        if (vmPropsItemKey === '__keyPath') { return }
         minifyDeepData(rootKey, vmPropsItemKey, vmProps[vmPropsItemKey], data, vm._mpValueSet, vm)
       } else if (vmProps[vmPropsItemKey] !== undefined) {
         data[rootKey + '.' + vmPropsItemKey] = vmProps[vmPropsItemKey]
