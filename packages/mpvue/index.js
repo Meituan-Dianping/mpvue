@@ -7,6 +7,14 @@ try {
   global.Page = global.Page || Page;
   global.Component = global.Component || Component;
   global.getApp = global.getApp || getApp;
+
+  if (typeof wx !== 'undefined') {
+    global.mpvue = wx;
+    global.mpvuePlatform = 'wx';
+  } else if (typeof swan !== 'undefined') {
+    global.mpvue = swan;
+    global.mpvuePlatform = 'swan';
+  }
 } catch (e) {}
 
 (function (global, factory) {
@@ -847,8 +855,6 @@ function observe (value, asRootData, key) {
     !value._isVue
   ) {
     ob = new Observer(value, key);
-    ob.__keyPath = ob.__keyPath ? ob.__keyPath : {};
-    ob.__keyPath[key] = true;
   }
   if (asRootData && ob) {
     ob.vmCount++;
@@ -872,8 +878,6 @@ function defineReactive$$1 (
   if (property && property.configurable === false) {
     return
   }
-
-  // TODO: 先试验标记一下 keyPath
 
   // cater for pre-defined getter/setters
   var getter = property && property.get;
@@ -914,8 +918,12 @@ function defineReactive$$1 (
       }
       childOb = !shallow && observe(newVal, undefined, key);
       dep.notify();
-      obj.__keyPath = obj.__keyPath ? obj.__keyPath : {};
-      obj.__keyPath[key] = true;
+
+      var ob = obj.__ob__;
+      if (!ob.__keyPath) {
+        def(ob, '__keyPath', {}, false);
+      }
+      ob.__keyPath[key] = true;
     }
   });
 }
@@ -948,8 +956,10 @@ function set (target, key, val) {
     return val
   }
   defineReactive$$1(ob.value, key, val);
-  // Vue.set 添加对象属性，渲染时候把val传给小程序渲染
-  target.__keyPath = target.__keyPath ? target.__keyPath : {};
+  // Vue.set 添加对象属性，渲染时候把 val 传给小程序渲染
+  if (!target.__keyPath) {
+    def(target, '__keyPath', {}, false);
+  }
   target.__keyPath[key] = true;
   ob.dep.notify();
   return val
@@ -978,8 +988,10 @@ function del (target, key) {
   if (!ob) {
     return
   }
-  target.__keyPath = target.__keyPath ? target.__keyPath : {};
-  // Vue.del 删除对象属性，渲染时候把这个属性设置为undefined
+  if (!target.__keyPath) {
+    def(target, '__keyPath', {}, false);
+  }
+  // Vue.del 删除对象属性，渲染时候把这个属性设置为 undefined
   target.__keyPath[key] = 'del';
   ob.dep.notify();
 }
@@ -4961,6 +4973,8 @@ function callHook$1 (vm, hook, params) {
   var handlers = vm.$options[hook];
   if (hook === 'onError' && handlers) {
     handlers = [handlers];
+  } else if (hook === 'onPageNotFound' && handlers) {
+    handlers = [handlers];
   }
 
   var ret;
@@ -5176,6 +5190,10 @@ function initMP (mpType, next) {
 
       onError: function onError (err) {
         callHook$1(rootVueVM, 'onError', err);
+      },
+
+      onPageNotFound: function onPageNotFound (err) {
+        callHook$1(rootVueVM, 'onPageNotFound', err);
       }
     });
   } else if (mpType === 'component') {
@@ -5343,13 +5361,14 @@ function getDeepData (keyList, viewData) {
     }
   }
 }
-function compareAndSetDeepData (key, newData, vm, data) {
+
+function compareAndSetDeepData (key, newData, vm, data, forceUpdate) {
   // 比较引用类型数据
   try {
     var keyList = key.split('.');
-     //page.__viewData__老版小程序不存在，使用mpvue里绑的data比对
+    // page.__viewData__老版小程序不存在，使用mpvue里绑的data比对
     var oldData = getDeepData(keyList, vm.$root.$mp.page.data);
-    if (oldData === null || JSON.stringify(oldData) !== JSON.stringify(newData)) {
+    if (oldData === null || JSON.stringify(oldData) !== JSON.stringify(newData) || forceUpdate) {
       data[key] = newData;
     }
   } catch (e) {
@@ -5369,7 +5388,7 @@ function minifyDeepData (rootKey, originKey, vmData, data, _mpValueSet, vm) {
   try {
     if (vmData instanceof Array) {
        // 数组
-      compareAndSetDeepData(rootKey + '.' + originKey, vmData, vm, data);
+      compareAndSetDeepData(rootKey + '.' + originKey, vmData, vm, data, true);
     } else {
       // Object
       var _keyPathOnThis = {}; // 存储这层对象的keyPath
@@ -5431,8 +5450,8 @@ function diffData (vm, data) {
   });
   // console.log(rootKey)
 
-    // 值类型变量不考虑优化，还是直接更新
-  var __keyPathOnThis = vmData.__keyPath || vm.__keyPath || {};
+  // 值类型变量不考虑优化，还是直接更新
+  var __keyPathOnThis = getDeepData(['__ob__', '__keyPath'], vmData) || getDeepData(['__ob__', '__keyPath'], vm) || {};
   delete vm.__keyPath;
   delete vmData.__keyPath;
   delete vmProps.__keyPath;
@@ -5440,11 +5459,10 @@ function diffData (vm, data) {
     // 第二次赋值才进行缩减操作
     Object.keys(vmData).forEach(function (vmDataItemKey) {
       if (vmData[vmDataItemKey] instanceof Object) {
-          // 引用类型
-        if (vmDataItemKey === '__keyPath') { return }
+        // 引用类型
         minifyDeepData(rootKey, vmDataItemKey, vmData[vmDataItemKey], data, vm._mpValueSet, vm);
-      } else if(vmData[vmDataItemKey] !== undefined){
-          // _data上的值属性只有要更新的时候才赋值
+      } else if (vmData[vmDataItemKey] !== undefined) {
+        // _data上的值属性只有要更新的时候才赋值
         if (__keyPathOnThis[vmDataItemKey] === true) {
           data[rootKey + '.' + vmDataItemKey] = vmData[vmDataItemKey];
         }
@@ -5454,9 +5472,8 @@ function diffData (vm, data) {
     Object.keys(vmProps).forEach(function (vmPropsItemKey) {
       if (vmProps[vmPropsItemKey] instanceof Object) {
         // 引用类型
-        if (vmPropsItemKey === '__keyPath') { return }
         minifyDeepData(rootKey, vmPropsItemKey, vmProps[vmPropsItemKey], data, vm._mpValueSet, vm);
-      } else if(vmProps[vmPropsItemKey] !== undefined){
+      } else if (vmProps[vmPropsItemKey] !== undefined) {
         data[rootKey + '.' + vmPropsItemKey] = vmProps[vmPropsItemKey];
       }
       // _props上的值属性只有要更新的时候才赋值
@@ -5471,14 +5488,14 @@ function diffData (vm, data) {
     Object.keys(vmComputedWatchers).forEach(function (computedItemKey) {
       data[rootKey + '.' + computedItemKey] = vm[computedItemKey];
     });
-      // 更新的时候要删除$root.0:{},否则会覆盖原正确数据
+    // 更新的时候要删除$root.0:{},否则会覆盖原正确数据
     delete data[rootKey];
   }
   if (vm._mpValueSet === undefined) {
-      // 第一次设置数据成功后，标记位置true,再更新到这个节点如果没有keyPath数组认为不需要更新
+    // 第一次设置数据成功后，标记位置true,再更新到这个节点如果没有keyPath数组认为不需要更新
     vm._mpValueSet = 'done';
   }
-  if (Vue$3.config.devtools) {
+  if (Vue$3.config._mpTrace) {
     // console.log('更新VM节点', vm)
     // console.log('实际传到Page.setData数据', data)
     diffLog(data);
@@ -5624,7 +5641,6 @@ function getPage (vm) {
 }
 
 // 优化js变量动态变化时候引起全量更新
-
 // 优化每次 setData 都传递大量新数据
 function updateDataToMP () {
   var page = getPage(this);
@@ -5633,9 +5649,7 @@ function updateDataToMP () {
   }
 
   var data = formatVmData(this);
-
   diffData(this, data);
-
   throttleSetData(page.setData.bind(page), data);
 }
 
@@ -5743,6 +5757,8 @@ function getWebEventByMP (e) {
   return event
 }
 
+
+var KEY_SEP$1 = '_';
 function handleProxyWithVue (e) {
   var rootVueVM = this.$root;
   var type = e.type;
@@ -5752,7 +5768,7 @@ function handleProxyWithVue (e) {
   var dataset = ref.dataset; if ( dataset === void 0 ) dataset = {};
   var comkey = dataset.comkey; if ( comkey === void 0 ) comkey = '';
   var eventid = dataset.eventid;
-  var vm = getVM(rootVueVM, comkey.split(','));
+  var vm = getVM(rootVueVM, comkey.split(KEY_SEP$1));
 
   if (!vm) {
     return

@@ -2894,8 +2894,6 @@ function observe (value, asRootData, key) {
     !value._isVue
   ) {
     ob = new Observer(value, key);
-    ob.__keyPath = ob.__keyPath ? ob.__keyPath : {};
-    ob.__keyPath[key] = true;
   }
   if (asRootData && ob) {
     ob.vmCount++;
@@ -2919,8 +2917,6 @@ function defineReactive$$1 (
   if (property && property.configurable === false) {
     return
   }
-
-  // TODO: 先试验标记一下 keyPath
 
   // cater for pre-defined getter/setters
   var getter = property && property.get;
@@ -2961,8 +2957,12 @@ function defineReactive$$1 (
       }
       childOb = !shallow && observe(newVal, undefined, key);
       dep.notify();
-      obj.__keyPath = obj.__keyPath ? obj.__keyPath : {};
-      obj.__keyPath[key] = true;
+
+      var ob = obj.__ob__;
+      if (!ob.__keyPath) {
+        def(ob, '__keyPath', {}, false);
+      }
+      ob.__keyPath[key] = true;
     }
   });
 }
@@ -2995,8 +2995,10 @@ function set (target, key, val) {
     return val
   }
   defineReactive$$1(ob.value, key, val);
-  // Vue.set 添加对象属性，渲染时候把val传给小程序渲染
-  target.__keyPath = target.__keyPath ? target.__keyPath : {};
+  // Vue.set 添加对象属性，渲染时候把 val 传给小程序渲染
+  if (!target.__keyPath) {
+    def(target, '__keyPath', {}, false);
+  }
   target.__keyPath[key] = true;
   ob.dep.notify();
   return val
@@ -4615,7 +4617,7 @@ var component = {
     var mpcomid = ast.mpcomid;
     var slots = ast.slots;
     if (slotName) {
-      attrsMap['data'] = "{{...$root[$k], $root}}";
+      attrsMap['data'] = "{{...$root[$p], ...$root[$k], $root}}";
       // bindedName is available when rendering slot in v-for
       var bindedName = attrsMap['v-bind:name'];
       if(bindedName) {
@@ -5290,7 +5292,7 @@ function getSlotsName$1 (obj) {
     .join(',')
 }
 
-function tmplateSlotsObj$1(obj) {
+function tmplateSlotsObj$1 (obj) {
   if (!obj) {
     return []
   }
@@ -5313,13 +5315,13 @@ var component$1 = {
     var mpcomid = ast.mpcomid;
     var slots = ast.slots;
     if (slotName) {
-      attrsMap['data'] = "{{{...$root[$k], $root}}}";
+      attrsMap['data'] = '{{{...$root[$k], $root}}}';
       // bindedName is available when rendering slot in v-for
       var bindedName = attrsMap['v-bind:name'];
-      if(bindedName) {
-        attrsMap['is'] = "{{$for[" + bindedName + "]}}";
+      if (bindedName) {
+        attrsMap['is'] = '{{$for[' + bindedName + ']}}';
       } else {
-        attrsMap['is'] = "{{" + slotName + "}}";
+        attrsMap['is'] = '{{' + slotName + '}}';
       }
     } else {
       var slotsName = getSlotsName$1(slots);
@@ -5537,7 +5539,7 @@ var tag$1 = function (ast, options) {
 };
 
 var astMap$1 = {
-  // 'if': 's-if',
+  'if': 's-if',
   'v-for': 's-for',
   'alias': 's-for-item',
   'iterator1': 's-for-index',
@@ -5644,6 +5646,7 @@ function convertAst$1 (node, options, util) {
     children.length = 0;
     wxmlAst.children.length = 0;
   }
+
   wxmlAst.attrsMap = attrs$1.format(wxmlAst.attrsMap);
   wxmlAst = tag$1(wxmlAst, options);
   wxmlAst = convertFor$1(wxmlAst, options);
@@ -5757,8 +5760,6 @@ function compileToWxml$2 (compiled, options) {
   var deps = ref.deps; if ( deps === void 0 ) deps = {};
   var slots = ref.slots; if ( slots === void 0 ) slots = {};
   var code = generate$3(wxast, options);
-
-  console.log(code);
 
   // 引用子模版
   var importCode = Object.keys(deps).map(function (k) { return components[k] ? ("<import src=\"" + (components[k].src) + "\" />") : ''; }).join('');
