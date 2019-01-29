@@ -185,11 +185,14 @@ export function defineReactive (
       childOb = !shallow && observe(newVal, undefined, key)
       dep.notify()
 
-      const ob = obj.__ob__
-      if (!ob.__keyPath) {
-        def(ob, '__keyPath', {}, false)
+      if (!obj.__keyPath) {
+        def(obj, '__keyPath', {}, false)
       }
-      ob.__keyPath[key] = true
+      obj.__keyPath[key] = true
+      if (newVal instanceof Object && !(newVal instanceof Array)) {
+        // 标记是否是通过this.Obj = {} 赋值印发的改动，解决少更新问题#1305
+        def(newVal, '__newReference', true, false)
+      }
     }
   })
 }

@@ -49,7 +49,7 @@ function minifyDeepData (rootKey, originKey, vmData, data, _mpValueSet, vm) {
     } else {
       // Object
       let __keyPathOnThis = {} // 存储这层对象的keyPath
-      if (vmData.__keyPath) {
+      if (vmData.__keyPath && !vmData.__newReference) {
         // 有更新列表 ，按照更新列表更新
         __keyPathOnThis = vmData.__keyPath
         Object.keys(vmData).forEach((_key) => {
@@ -77,6 +77,8 @@ function minifyDeepData (rootKey, originKey, vmData, data, _mpValueSet, vm) {
         // 没有更新列表
         compareAndSetDeepData(rootKey + '.' + originKey, vmData, vm, data)
       }
+      // 标记是否是通过this.Obj = {} 赋值印发的改动，解决少更新问题#1305
+      vmData.__newReference = false
     }
   } catch (e) {
     console.log(e, rootKey, originKey, vmData, data)
@@ -108,7 +110,7 @@ export function diffData (vm, data) {
   // console.log(rootKey)
 
   // 值类型变量不考虑优化，还是直接更新
-  const __keyPathOnThis = getDeepData(['__ob__', '__keyPath'], vmData) || getDeepData(['__ob__', '__keyPath'], vm) || {}
+  const __keyPathOnThis = vmData.__keyPath || vm.__keyPath || {}
   delete vm.__keyPath
   delete vmData.__keyPath
   delete vmProps.__keyPath
