@@ -919,11 +919,14 @@ function defineReactive$$1 (
       childOb = !shallow && observe(newVal, undefined, key);
       dep.notify();
 
-      var ob = obj.__ob__;
-      if (!ob.__keyPath) {
-        def(ob, '__keyPath', {}, false);
+      if (!obj.__keyPath) {
+        def(obj, '__keyPath', {}, false);
       }
-      ob.__keyPath[key] = true;
+      obj.__keyPath[key] = true;
+      if (newVal instanceof Object && !(newVal instanceof Array)) {
+        // 标记是否是通过this.Obj = {} 赋值印发的改动，解决少更新问题#1305
+        def(newVal, '__newReference', true, false);
+      }
     }
   });
 }
@@ -4176,7 +4179,7 @@ Object.defineProperty(Vue$3.prototype, '$ssrContext', {
 });
 
 Vue$3.version = '2.4.1';
-Vue$3.mpvueVersion = '1.0.13';
+Vue$3.mpvueVersion = '1.0.20';
 
 /* globals renderer */
 
@@ -5392,7 +5395,7 @@ function minifyDeepData (rootKey, originKey, vmData, data, _mpValueSet, vm) {
     } else {
       // Object
       var _keyPathOnThis = {}; // 存储这层对象的keyPath
-      if (vmData.__keyPath) {
+      if (vmData.__keyPath && !vmData.__newReference) {
         // 有更新列表 ，按照更新列表更新
         _keyPathOnThis = vmData.__keyPath;
         Object.keys(vmData).forEach(function (_key) {
@@ -5420,6 +5423,8 @@ function minifyDeepData (rootKey, originKey, vmData, data, _mpValueSet, vm) {
         // 没有更新列表
         compareAndSetDeepData(rootKey + '.' + originKey, vmData, vm, data);
       }
+      // 标记是否是通过this.Obj = {} 赋值印发的改动，解决少更新问题#1305
+      vmData.__newReference = false;
     }
   } catch (e) {
     console.log(e, rootKey, originKey, vmData, data);
@@ -5451,7 +5456,7 @@ function diffData (vm, data) {
   // console.log(rootKey)
 
   // 值类型变量不考虑优化，还是直接更新
-  var __keyPathOnThis = getDeepData(['__ob__', '__keyPath'], vmData) || getDeepData(['__ob__', '__keyPath'], vm) || {};
+  var __keyPathOnThis = vmData.__keyPath || vm.__keyPath || {};
   delete vm.__keyPath;
   delete vmData.__keyPath;
   delete vmProps.__keyPath;

@@ -1,6 +1,6 @@
 {
   "name": "mpvue",
-  "version": "1.0.19",
+  "version": "1.0.20",
   "description": "Vue Runtime for mini program",
   "main": "index.js",
   "repository": {
