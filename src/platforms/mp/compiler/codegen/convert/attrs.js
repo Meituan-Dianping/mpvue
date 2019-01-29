@@ -31,7 +31,7 @@ export default {
     return obj
   },
 
-  convertAttr (ast, log) {
+  convertAttr (ast, log, options) {
     const { attrsMap = {}, tag, staticClass } = ast
     let attrs = {}
     const wxClass = this.classObj(attrsMap['v-bind:class'], staticClass)
