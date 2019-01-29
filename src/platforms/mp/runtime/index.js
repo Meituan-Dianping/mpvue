@@ -11,7 +11,6 @@ import {
   getTagNamespace,
   isUnknownElement
 } from 'mp/util/index'
-
 import { patch } from './patch'
 
 // install platform specific utils
