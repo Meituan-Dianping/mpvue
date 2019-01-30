@@ -17,6 +17,9 @@ try {
   }else if (typeof tt !== 'undefined') {
     global.mpvue = tt;
     global.mpvuePlatform = 'tt';
+  }else if (typeof my !== 'undefined') {
+    global.mpvue = my;
+    global.mpvuePlatform = 'my';
   }
 } catch (e) {}
 
@@ -4177,7 +4180,7 @@ Object.defineProperty(Vue$3.prototype, '$ssrContext', {
 });
 
 Vue$3.version = '2.4.1';
-Vue$3.mpvueVersion = '1.0.13';
+Vue$3.mpvueVersion = '1.1.1';
 
 /* globals renderer */
 
@@ -5760,6 +5763,7 @@ function getWebEventByMP (e) {
   return event
 }
 
+var KEY_SEP$1 = '_';
 function handleProxyWithVue (e) {
   var rootVueVM = this.$root;
   var type = e.type;
@@ -5769,7 +5773,7 @@ function handleProxyWithVue (e) {
   var dataset = ref.dataset; if ( dataset === void 0 ) dataset = {};
   var comkey = dataset.comkey; if ( comkey === void 0 ) comkey = '';
   var eventid = dataset.eventid;
-  var vm = getVM(rootVueVM, comkey.split(','));
+  var vm = getVM(rootVueVM, comkey.split(KEY_SEP$1));
 
   if (!vm) {
     return

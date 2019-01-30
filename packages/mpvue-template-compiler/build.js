@@ -4041,7 +4041,7 @@ var tagMap = {
   'col': 'view',
   'colgroup': 'view',
 
-  // 样式 节
+  // 样式
   'div': 'view',
   'main': 'view',
   'span': 'label',
@@ -4055,12 +4055,11 @@ var tagMap = {
   'summary': 'view',
 
   'progress': 'progress',
-  'meter': 'progress', // todo
-  'head': 'view', // todo
-  'meta': 'view', // todo
-  'base': 'text', // todo
-  // 'map': 'image', // TODO不是很恰当
-  'area': 'navigator', // j结合map使用
+  'meter': 'progress',
+  'head': 'view',
+  'meta': 'view',
+  'base': 'text',
+  'area': 'navigator',
 
   'script': 'view',
   'noscript': 'view',
@@ -4075,23 +4074,15 @@ var tagMap = {
   'swiper': 'swiper',
   'icon': 'icon',
   'text': 'text',
-  // 'progress': 'progress',
-  // 'button': 'button',
-  // 'form': 'form',
-  // 'input': 'input',
   'checkbox': 'checkbox',
   'radio': 'radio',
   'picker': 'picker',
   'picker-view': 'picker-view',
   'slider': 'slider',
   'switch': 'switch',
-  // 'label': 'label',
   'navigator': 'navigator',
-  // 'audio': 'audio',
   'image': 'image',
-  // 'video': 'video',
   'map': 'map',
-  // 'canvas': 'canvas',
   'contact-button': 'contact-button',
   'block': 'block'
 };
@@ -4245,7 +4236,7 @@ var createCompiler = createCompilerCreator(function baseCompile (
 
 var noSupport = {
   type: 4,
-  check: function (k, v, errors) {
+  check: function check (k, v, errors) {
     errors(("不支持此指令: " + k + "=\"" + v + "\""));
     return false
   }
@@ -4334,7 +4325,7 @@ function getStrByNode (node, onlyStr) {
 
 // 把 { key: value } 转换成 [ value ? 'key' : '' ]
 var objectVisitor = {
-  ObjectExpression: function (path) {
+  ObjectExpression: function ObjectExpression (path) {
     var elements = path.node.properties.map(function (propertyItem) {
       return t.conditionalExpression(propertyItem.value, getStrByNode(propertyItem.key), t.stringLiteral(''))
     });
@@ -4348,7 +4339,7 @@ function transformObjectToTernaryOperator (babel$$1) {
 
 // 把 { key: value } 转换成 'key:' + value + ';'
 var objectToStringVisitor = {
-  ObjectExpression: function (path) {
+  ObjectExpression: function ObjectExpression (path) {
     var expression = path.node.properties.map(function (propertyItem) {
       var keyStr = getStrByNode(propertyItem.key, true);
       var key = keyStr ? hyphenate(keyStr) : keyStr;
@@ -4361,6 +4352,7 @@ var objectToStringVisitor = {
     path.replaceWith(p.expression);
   }
 };
+
 function transformObjectToString (babel$$1) {
   return { visitor: objectToStringVisitor }
 }
@@ -4842,43 +4834,6 @@ function mpmlAst (compiled, options, log) {
   return getAstCommon(compiled, options, log, conventRule)
 }
 
-function generate$2 (obj, options) {
-  if ( options === void 0 ) options = {};
-
-  var tag = obj.tag;
-  var attrsMap = obj.attrsMap; if ( attrsMap === void 0 ) attrsMap = {};
-  var children = obj.children;
-  var text = obj.text;
-  var ifConditions = obj.ifConditions;
-  if (!tag) { return text }
-  var child = '';
-  if (children && children.length) {
-    // 递归子节点
-    child = children.map(function (v) { return generate$2(v, options); }).join('');
-  }
-
-  // v-if 指令
-  var ifConditionsArr = [];
-  if (ifConditions) {
-    var length = ifConditions.length;
-    for (var i = 1; i < length; i++) {
-      ifConditionsArr.push(generate$2(ifConditions[i].block, options));
-    }
-  }
-
-  var attrs = Object.keys(attrsMap).map(function (k) { return convertAttr(k, attrsMap[k]); }).join(' ');
-
-  var tags = ['progress', 'checkbox', 'switch', 'input', 'radio', 'slider', 'textarea'];
-  if (tags.indexOf(tag) > -1 && !(children && children.length)) {
-    return ("<" + tag + (attrs ? ' ' + attrs : '') + " />" + (ifConditionsArr.join('')))
-  }
-  return ("<" + tag + (attrs ? ' ' + attrs : '') + ">" + (child || '') + "</" + tag + ">" + (ifConditionsArr.join('')))
-}
-
-function convertAttr (key, val) {
-  return (val === '' || typeof val === 'undefined') ? key : (key + "=\"" + val + "\"")
-}
-
 var utils = {
   toLowerCase: function toLowerCase (str) {
     return str.replace(/([A-Z])/g, '-$1').toLowerCase().trim()
@@ -4902,18 +4857,69 @@ var utils = {
   }
 };
 
-function compileToMPML$1 (compiled, options) {
+var autoEndTags = [
+  'progress',
+  'checkbox',
+  'switch',
+  'input',
+  'radio',
+  'slider',
+  'textarea'
+];
+
+function convertAttr (key, val) {
+  return (val === '' || typeof val === 'undefined') ? key : (key + "=\"" + val + "\"")
+}
+
+function generateCode (nodeAst, options) {
+  if ( options === void 0 ) options = {};
+
+  var tag = nodeAst.tag;
+  var attrsMap = nodeAst.attrsMap; if ( attrsMap === void 0 ) attrsMap = {};
+  var children = nodeAst.children; if ( children === void 0 ) children = [];
+  var text = nodeAst.text;
+  var ifConditions = nodeAst.ifConditions; if ( ifConditions === void 0 ) ifConditions = [];
+  if (!tag) {
+    return text
+  }
+
+  var childrenContent = children.map(function (childAst) { return generateCode(childAst, options); }).join('');
+  var attrs = Object.keys(attrsMap).map(function (key) { return convertAttr(key, attrsMap[key]); }).join(' ');
+  attrs = attrs ? (" " + attrs) : '';
+
+  if (autoEndTags.indexOf(tag) > -1 && !childrenContent) {
+    return ("<" + tag + attrs + " />")
+  }
+  return ("<" + tag + attrs + ">" + childrenContent + "</" + tag + ">")
+
+  // // v-if 指令
+  // const ifConditionsArr = []
+  // if (ifConditions) {
+  //   const length = ifConditions.length
+  //   for (let i = 1; i < length; i++) {
+  //     ifConditionsArr.push(generateCode(ifConditions[i].block, options))
+  //   }
+  // }
+
+  // if (autoEndTags.indexOf(tag) > -1 && !children.length) {
+  //   return `<${tag}${attrs ? ' ' + attrs : ''} />${ifConditionsArr.join('')}`
+  // }
+  // return `<${tag}${attrs ? ' ' + attrs : ''}>${childrenContent}</${tag}>${ifConditionsArr.join('')}`
+}
+
+
+function compileToMPMLCommon (compiled, options, getAst) {
   if ( options === void 0 ) options = {};
 
   // TODO, compiled is undefined
   var components = options.components; if ( components === void 0 ) components = {};
   var log = utils.log(compiled);
 
-  var ref = mpmlAst(compiled, options, log);
+  var ref = getAst(compiled, options, log);
   var wxast = ref.wxast;
   var deps = ref.deps; if ( deps === void 0 ) deps = {};
   var slots = ref.slots; if ( slots === void 0 ) slots = {};
-  var code = generate$2(wxast, options);
+  var code = generateCode(wxast, options);
 
   // 引用子模版
   var importCode = Object.keys(deps).map(function (k) { return components[k] ? ("<import src=\"" + (components[k].src) + "\" />") : ''; }).join('');
@@ -4922,11 +4928,17 @@ function compileToMPML$1 (compiled, options) {
   // 生成 slots code
   Object.keys(slots).forEach(function (k) {
     var slot = slots[k];
-    slot.code = generate$2(slot.node, options);
+    slot.code = generateCode(slot.node, options);
   });
 
   // TODO: 后期优化掉这种暴力全部 import，虽然对性能没啥大影响
   return { code: code, compiled: compiled, slots: slots, importCode: importCode }
+}
+
+function compileToMPML$1 (compiled, options) {
+  if ( options === void 0 ) options = {};
+
+  return compileToMPMLCommon(compiled, options, mpmlAst)
 }
 
 // type：
@@ -4939,7 +4951,7 @@ function compileToMPML$1 (compiled, options) {
 
 var noSupport$1 = {
   type: 4,
-  check: function (k, v, errors) {
+  check: function check (k, v, errors) {
     errors(("不支持此指令: " + k + "=\"" + v + "\""));
     return false
   }
@@ -5335,31 +5347,10 @@ function mpmlAst$1 (compiled, options, log) {
   return getAstCommon(compiled, options, log, conventRule)
 }
 
-function compileToWxml (compiled, options) {
+function compileToMPML$2 (compiled, options) {
   if ( options === void 0 ) options = {};
 
-  // TODO, compiled is undefined
-  var components = options.components; if ( components === void 0 ) components = {};
-  var log = utils.log(compiled);
-
-  var ref = mpmlAst$1(compiled, options, log);
-  var wxast = ref.wxast;
-  var deps = ref.deps; if ( deps === void 0 ) deps = {};
-  var slots = ref.slots; if ( slots === void 0 ) slots = {};
-  var code = generate$2(wxast, options);
-
-  // 引用子模版
-  var importCode = Object.keys(deps).map(function (k) { return components[k] ? ("<import src=\"" + (components[k].src) + "\" />") : ''; }).join('');
-  code = importCode + "<template name=\"" + (options.name) + "\">" + code + "</template>";
-
-  // 生成 slots code
-  Object.keys(slots).forEach(function (k) {
-    var slot = slots[k];
-    slot.code = generate$2(slot.node, options);
-  });
-
-  // TODO: 后期优化掉这种暴力全部 import，虽然对性能没啥大影响
-  return { code: code, compiled: compiled, slots: slots, importCode: importCode }
+  return compileToMPMLCommon(compiled, options, mpmlAst$1)
 }
 
 // type：
@@ -5372,7 +5363,7 @@ function compileToWxml (compiled, options) {
 
 var noSupport$2 = {
   type: 4,
-  check: function (k, v, errors) {
+  check: function check (k, v, errors) {
     errors(("不支持此指令: " + k + "=\"" + v + "\""));
     return false
   }
@@ -5713,10 +5704,10 @@ var component$2 = {
 };
 
 var astMap$2 = {
-  if: 'tt:if',
-  iterator1: 'tt:for-index',
-  key: 'tt:key',
-  alias: 'tt:for-item',
+  'if': 'tt:if',
+  'iterator1': 'tt:for-index',
+  'key': 'tt:key',
+  'alias': 'tt:for-item',
   'v-for': 'tt:for'
 };
 
@@ -5726,7 +5717,6 @@ var convertFor$2 = function (ast) {
   var key = ast.key;
   var alias = ast.alias;
   var attrsMap = ast.attrsMap;
-
   if (forText) {
     attrsMap[astMap$2['v-for']] = "{{" + forText + "}}";
     if (iterator1) {
@@ -5752,51 +5742,427 @@ function mpmlAst$2 (compiled, options, log) {
   return getAstCommon(compiled, options, log, conventRule)
 }
 
-function compileToWxml$1 (compiled, options) {
+function compileToMPML$3 (compiled, options) {
   if ( options === void 0 ) options = {};
 
-  // TODO, compiled is undefined
-  var components = options.components; if ( components === void 0 ) components = {};
-  var log = utils.log(compiled);
-
-  var ref = mpmlAst$2(compiled, options, log);
-  var wxast = ref.wxast;
-  var deps = ref.deps; if ( deps === void 0 ) deps = {};
-  var slots = ref.slots; if ( slots === void 0 ) slots = {};
-  var code = generate$2(wxast, options);
-
-  // 引用子模版
-  var importCode = Object.keys(deps).map(function (k) { return components[k] ? ("<import src=\"" + (components[k].src) + "\" />") : ''; }).join('');
-  code = importCode + "<template name=\"" + (options.name) + "\">" + code + "</template>";
-
-  // 生成 slots code
-  Object.keys(slots).forEach(function (k) {
-    var slot = slots[k];
-    slot.code = generate$2(slot.node, options);
-  });
-
-  // TODO: 后期优化掉这种暴力全部 import，虽然对性能没啥大影响
-  return { code: code, compiled: compiled, slots: slots, importCode: importCode }
+  return compileToMPMLCommon(compiled, options, mpmlAst$2)
 }
 
-/*  */
+// type：
+// 0, 默认值, 拼接 ${name}={{ ${content} }}
+// 1, 拼接 ${name}
+// 2, 拼接 ${map[key]}={{ '${content}' }}
+// 3, 拼接 {{ ${content} }}
+// 4, 拼接为空字符串
+// 5, 不需要在wxml上表现出来，可直接清除
+
+var noSupport$3 = {
+  type: 4,
+  check: function (k, v, errors) {
+    errors(("不支持此指令: " + k + "=\"" + v + "\""));
+    return false
+  }
+};
+
+var directiveMap$3 = {
+  'v-if': {
+    name: 'a:if',
+    type: 0
+  },
+  'v-else-if': {
+    name: 'a:elif',
+    type: 0
+  },
+  'v-else': {
+    name: 'a:else',
+    type: 1
+  },
+  'v-text': {
+    name: '',
+    type: 1
+  },
+  'v-html': {
+    name: '',
+    type: 1
+  },
+  'v-on': {
+    name: '',
+    map: {
+      click: 'tap',
+      touchstart: 'touchStart',
+      touchmove: 'touchMove',
+      touchcancel: 'touchCancel',
+      touchend: 'touchEnd',
+      tap: 'tap',
+      longtap: 'longTap',
+      input: 'input',
+      change: 'change',
+      submit: 'submit',
+      blur: 'blur',
+      focus: 'focus',
+      reset: 'reset',
+      confirm: 'confirm',
+      columnchange: 'columnChange',
+      linechange: 'lineChange',
+      error: 'error',
+      scrolltoupper: 'scrollToUpper',
+      scrolltolower: 'scrollToLower',
+      scroll: 'scroll',
+      load: 'load'
+    },
+    type: 2
+  },
+  'v-bind': {
+    name: '',
+    map: {
+      'href': 'url'
+    },
+    type: 3
+  },
+  'href': {
+    name: 'url',
+    type: 2
+  },
+  'v-pre': noSupport$3,
+  'v-cloak': noSupport$3,
+  'v-once': {
+    name: '',
+    type: 5
+  }
+};
+
+function transformDynamicClass$3 (staticClass, clsBinding) {
+  if ( staticClass === void 0 ) staticClass = '';
+
+  var result = babel.transform(("!" + clsBinding), { plugins: [transformObjectToTernaryOperator] });
+  // 先实现功能，再优化代码
+  // https://github.com/babel/babel/issues/7138
+  var cls = prettier.format(result.code, { semi: false, singleQuote: true }).slice(1).slice(0, -1).replace(/\n|\r/g, '');
+  return (staticClass + " {{" + cls + "}}")
+}
+
+function transformDynamicStyle$3 (staticStyle, styleBinding) {
+  if ( staticStyle === void 0 ) staticStyle = '';
+
+  var result = babel.transform(("!" + styleBinding), { plugins: [transformObjectToString] });
+  var cls = prettier.format(result.code, { semi: false, singleQuote: true }).slice(1).slice(0, -1).replace(/\n|\r/g, '');
+  return (staticStyle + " {{" + cls + "}}")
+}
+
+var attrs$3 = {
+  format: function format (attrs) {
+    if ( attrs === void 0 ) attrs = {};
+
+    var obj = {};
+
+    Object.keys(attrs).map(function (key) {
+      var val = attrs[key];
+      obj[key.replace('@', 'v-on:').replace(/^:/, 'v-bind:')] = val;
+    });
+    return obj
+  },
+
+  convertAttr: function convertAttr (ast, log) {
+    var this$1 = this;
+
+    var attrsMap = ast.attrsMap; if ( attrsMap === void 0 ) attrsMap = {};
+    var tag = ast.tag;
+    var staticClass = ast.staticClass;
+    var attrs = {};
+    var wxClass = this.classObj(attrsMap['v-bind:class'], staticClass);
+    wxClass.length ? attrsMap['class'] = wxClass : '';
+    var wxStyle = this.styleObj(attrsMap['v-bind:style'], attrsMap['style']);
+    wxStyle.length ? attrsMap['style'] = wxStyle : '';
+
+    Object.keys(attrsMap).map(function (key) {
+      var val = attrsMap[key];
+      if (key === 'v-bind:class' || key === 'v-bind:style') {
+        return
+      }
+      if (key === 'v-text') {
+        ast.children.unshift({
+          text: ("{{" + val + "}}"),
+          type: 3
+        });
+      } else if (key === 'v-html') {
+        ast.tag = 'rich-text';
+        attrs['nodes'] = "{{" + val + "}}";
+      } else if (key === 'v-show') {
+        attrs['hidden'] = "{{!(" + val + ")}}";
+      } else if (/^v\-on\:/i.test(key)) {
+        attrs = this$1.event(key, val, attrs, tag);
+      } else if (/^v\-bind\:/i.test(key)) {
+        attrs = this$1.bind(key, val, attrs, tag, attrsMap['wx:key']);
+      } else if (/^v\-model/.test(key)) {
+        attrs = this$1.model(key, val, attrs, tag, log);
+      } else if (directiveMap$3[key]) {
+        var ref = directiveMap$3[key] || {};
+        var name = ref.name; if ( name === void 0 ) name = '';
+        var type = ref.type;
+        var map = ref.map; if ( map === void 0 ) map = {};
+        var check = ref.check;
+        if (!(check && !check(key, val, log)) && !(!name || typeof type !== 'number')) {
+          // 见 ./directiveMap.js 注释
+          if (type === 0) {
+            attrs[name] = "{{" + val + "}}";
+          }
+
+          if (type === 1) {
+            attrs[name] = undefined;
+          }
+
+          if (type === 2) {
+            attrs[name] = val;
+          }
+
+          if (type === 3) {
+            attrs[map[name] || name] = "{{" + val + "}}";
+            return
+          }
+        }
+      } else if (/^v\-/.test(key)) {
+        log(("不支持此属性-> " + key + "=\"" + val + "\""), 'waring');
+      } else {
+        if ((tagConfig.virtualTag.indexOf(tag) > -1) && (key === 'class' || key === 'style' || key === 'data-mpcomid')) {
+          if (key !== 'data-mpcomid') {
+            log(("template 不支持此属性-> " + key + "=\"" + val + "\""), 'waring');
+          }
+        } else {
+          attrs[key] = val;
+        }
+      }
+    });
+    ast.attrsMap = attrs;
+    return ast
+  },
+
+  event: function event (key, val, attrs, tag) {
+    // 小程序能力所致，bind 和 catch 事件同时绑定时候，只会触发 bind ,catch 不会被触发。
+    // .stop 的使用会阻止冒泡，但是同时绑定了一个非冒泡事件，会导致该元素上的 catchEventName 失效！
+    // .prevent 可以直接干掉，因为小程序里没有什么默认事件，比如submit并不会跳转页面
+    // .capture 不能做，因为小程序没有捕获类型的事件
+    // .self 没有可以判断的标识
+    // .once 也不能做，因为小程序没有 removeEventListener, 虽然可以直接在 handleProxy 中处理，但非常的不优雅，违背了原意，暂不考虑
+    var name = key.replace(/^v\-on\:/i, '').replace(/\.prevent/i, '');
+    var ref = name.split('.');
+    var eventName = ref[0];
+    var eventNameMap = ref.slice(1);
+    var eventMap = directiveMap$3['v-on'];
+    var check = directiveMap$3.check;
+
+    if (check) {
+      check(key, val);
+    }
+    var wxmlEventName = '';
+    if (eventName === 'change' && (tag === 'input' || tag === 'textarea')) {
+      wxmlEventName = 'blur';
+    } else {
+      wxmlEventName = eventMap.map[eventName];
+    }
+
+    var eventType = 'on';
+    var isStop = eventNameMap.includes('stop');
+    if (eventNameMap.includes('capture')) {
+      eventType = isStop ? 'capture-catch:' : 'capture-bind:';
+    } else if (isStop) {
+      eventType = 'catch';
+    }
+    var camelCaseEvent = (wxmlEventName || eventName).replace(/^\S/, function (letter) { return letter.toUpperCase(); });
+    wxmlEventName = eventType + camelCaseEvent;
+    attrs[wxmlEventName] = 'handleProxy';
+
+    return attrs
+  },
+
+  bind: function bind (key, val, attrs, tag, isIf) {
+    var name = key.replace(/^v\-bind\:/i, '');
+
+    if (isIf && name === 'key') {
+      attrs['wx:key'] = val;
+    }
+
+    if (tag === 'template') {
+      return attrs
+    }
+
+    if (name === 'href') {
+      attrs['url'] = "{{" + val + "}}";
+    } else {
+      attrs[name] = "{{" + val + "}}";
+    }
+
+    return attrs
+  },
+
+  classObj: function classObj (clsBinding, staticCls) {
+    if ( clsBinding === void 0 ) clsBinding = '';
+
+    if (!clsBinding && !staticCls) {
+      return ''
+    }
+    if (!clsBinding && staticCls) {
+      return staticCls
+    }
+
+    return transformDynamicClass$3(staticCls, clsBinding)
+  },
+
+  styleObj: function styleObj (styleBinding, staticStyle) {
+    if ( styleBinding === void 0 ) styleBinding = '';
+
+    if (!styleBinding && !staticStyle) {
+      return ''
+    }
+    if (!styleBinding && staticStyle) {
+      return staticStyle
+    }
+
+    return transformDynamicStyle$3(staticStyle, styleBinding)
+  },
+
+  model: function model (key, val, attrs, tag) {
+    var isFormInput = tag === 'input' || tag === 'textarea';
+    attrs['value'] = "{{" + val + "}}";
+    if (key === 'v-model.lazy') {
+      if (isFormInput) {
+        attrs['bindblur'] = 'handleProxy';
+      } else {
+        attrs['bindchange'] = 'handleProxy';
+      }
+    } else {
+      if (isFormInput) {
+        attrs['bindinput'] = 'handleProxy';
+      } else {
+        attrs['bindchange'] = 'handleProxy';
+      }
+    }
+
+    return attrs
+  }
+};
+
+function getSlotsName$3 (obj) {
+  if (!obj) {
+    return ''
+  }
+  // wxml模板中 data="{{ a:{a1:'string2'}, b:'string'}}" 键a不能放在最后，会出错
+  return tmplateSlotsObj$3(obj)
+    .concat(
+      Object.keys(obj).map(function (k) {
+        return '$slot' + k + ":'" + obj[k] + "'"
+      })
+    )
+    .join(',')
+}
+
+function tmplateSlotsObj$3 (obj) {
+  if (!obj) {
+    return []
+  }
+  // wxml模板中 data="{{ a:{a1:'string2'}, b:'string'}}" 键a1不能写成 'a1' 带引号的形式，会出错
+  var $for = Object.keys(obj)
+    .map(function (k) {
+      return (k + ":'" + (obj[k]) + "'")
+    })
+    .join(',');
+  return $for ? [("$for:{" + $for + "}")] : []
+}
+
+var component$3 = {
+  isComponent: function isComponent (tagName, components) {
+    if ( components === void 0 ) components = {};
+
+    return !!components[tagName]
+  },
+  convertComponent: function convertComponent (ast, components, slotName) {
+    var attrsMap = ast.attrsMap;
+    var tag = ast.tag;
+    var mpcomid = ast.mpcomid;
+    var slots = ast.slots;
+    if (slotName) {
+      attrsMap['data'] = "{{...$root[$p], ...$root[$k], $root}}";
+      // bindedName is available when rendering slot in v-for
+      var bindedName = attrsMap['v-bind:name'];
+      if (bindedName) {
+        attrsMap['is'] = "{{$for[" + bindedName + "]}}";
+      } else {
+        attrsMap['is'] = "{{" + slotName + "}}";
+      }
+    } else {
+      var slotsName = getSlotsName$3(slots);
+      var restSlotsName = slotsName ? (", " + slotsName) : '';
+      attrsMap['data'] = "{{...$root[$kk+" + mpcomid + "], $root" + restSlotsName + "}}";
+      attrsMap['is'] = components[tag].name;
+    }
+    return ast
+  }
+};
+
+var astMap$3 = {
+  'if': 'a:if',
+  'iterator1': 'a:for-index',
+  'key': 'a:key',
+  'alias': 'a:for-item',
+  'v-for': 'a:for'
+};
+
+var convertFor$3 = function (ast) {
+  var iterator1 = ast.iterator1;
+  var forText = ast.for;
+  var key = ast.key;
+  var alias = ast.alias;
+  var attrsMap = ast.attrsMap;
+
+  if (forText) {
+    attrsMap[astMap$3['v-for']] = "{{" + forText + "}}";
+    if (iterator1) {
+      attrsMap[astMap$3['iterator1']] = iterator1;
+    }
+    if (key) {
+      attrsMap[astMap$3['key']] = key;
+    }
+    if (alias) {
+      attrsMap[astMap$3['alias']] = alias;
+    }
+
+    delete attrsMap['v-for'];
+  }
+
+  return ast
+};
+
+function mpmlAst$3 (compiled, options, log) {
+  if ( options === void 0 ) options = {};
+
+  var conventRule = { attrs: attrs$3, component: component$3, convertFor: convertFor$3 };
+  return getAstCommon(compiled, options, log, conventRule)
+}
+
+function compileToMPML$4 (compiled, options) {
+  if ( options === void 0 ) options = {};
+
+  return compileToMPMLCommon(compiled, options, mpmlAst$3)
+}
 
 function compileToMPML (compiled, options, fileExt) {
-    var code;
-    switch(fileExt.platform) {
-        case 'swan':
-            code = compileToWxml(compiled, options);
-            break
-        case 'wx':
-            code = compileToMPML$1(compiled, options);
-            break
-        case 'tt':
-            code = compileToWxml$1(compiled, options);
-            break
-        default:
-            code = compileToMPML$1(compiled, options);
-    }
-    return code
+  var code;
+  switch (fileExt.platform) {
+    case 'swan':
+      code = compileToMPML$2(compiled, options);
+      break
+    case 'wx':
+      code = compileToMPML$1(compiled, options);
+      break
+    case 'tt':
+      code = compileToMPML$3(compiled, options);
+      break
+    case 'my':
+      code = compileToMPML$4(compiled, options);
+      break
+    default:
+      code = compileToMPML$1(compiled, options);
+  }
+  return code
 }
 
 var ref = createCompiler(baseOptions);
