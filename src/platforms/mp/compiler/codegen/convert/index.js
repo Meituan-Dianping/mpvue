@@ -41,27 +41,27 @@ function convertAst (node, options = {}, util) {
   wxmlAst.slots = {}
   if (currentIsComponent && children && children.length) {
     // 只检查组件下的子节点（不检查孙子节点）是不是具名 slot，不然就是 default slot
-    children
-      .reduce((res, n) => {
-        const { slot } = n.attrsMap || {}
-        // 不是具名的，全部放在第一个数组元素中
-        const arr = slot ? res : res[0]
-        arr.push(n)
-        return res
-      }, [[]])
-      .forEach(n => {
-        const isDefault = Array.isArray(n)
-        const slotName = isDefault ? 'default' : n.attrsMap.slot
-        const slotId = `${moduleId}-${slotName}-${mpcomid.replace(/\'/g, '')}`
-        const node = isDefault ? { tag: 'slot', attrsMap: {}, children: n } : n
+    const slotMap = { default: [] }
 
-        node.tag = 'template'
-        node.attrsMap.name = slotId
-        delete node.attrsMap.slot
-        // 缓存，会集中生成一个 slots 文件
-        slots[slotId] = { node: convertAst(node, options, util), name: slotName, slotId }
-        wxmlAst.slots[slotName] = slotId
-      })
+    children.forEach(child => {
+      const slotName = (child.attrsMap && child.attrsMap.slot) || 'default'
+      if (!slotMap[slotName]) {
+        slotMap[slotName] = []
+      }
+      if (child.attrsMap) {
+        delete child.attrsMap.slot
+      }
+      slotMap[slotName].push(child)
+    })
+
+    Object.keys(slotMap).forEach(slotName => {
+      const slotId = `${moduleId}-${slotName}-${mpcomid.replace(/\'/g, '')}`
+      const node = { tag: 'template', attrsMap: { name: slotId }, children: slotMap[slotName] }
+
+      // 缓存，会集中生成一个 slots 文件
+      slots[slotId] = { node: convertAst(node, options, util), name: slotName, slotId }
+      wxmlAst.slots[slotName] = slotId
+    })
     // 清理当前组件下的节点信息，因为 slot 都被转移了
     children.length = 0
     wxmlAst.children.length = 0
