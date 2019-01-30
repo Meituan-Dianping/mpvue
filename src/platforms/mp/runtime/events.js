@@ -60,7 +60,7 @@ function getHandle (vnode, eventid, eventTypes = []) {
 }
 
 function getWebEventByMP (e) {
-  const { type, timeStamp, touches, detail = {}, target = {}, currentTarget = {} } = e
+  const { type, timeStamp, touches, detail = {}, target = {}, currentTarget = {}} = e
   const { x, y } = detail
   const event = {
     mp: e,
@@ -86,7 +86,7 @@ const KEY_SEP = '_'
 export function handleProxyWithVue (e) {
   const rootVueVM = this.$root
   const { type, target = {}, currentTarget } = e
-  const { dataset = {} } = currentTarget || target
+  const { dataset = {}} = currentTarget || target
   const { comkey = '', eventid } = dataset
   const vm = getVM(rootVueVM, comkey.split(KEY_SEP))
 
