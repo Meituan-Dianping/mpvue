@@ -54,9 +54,9 @@ export default {
       } else if (key === 'v-show') {
         attrs['hidden'] = `{{!(${val})}}`
       } else if (/^v\-on\:/i.test(key)) {
-        attrs = this.event(key, val, attrs, tag)
+        attrs = this.event(key, val, attrs, tag, log)
       } else if (/^v\-bind\:/i.test(key)) {
-        attrs = this.bind(key, val, attrs, tag, attrsMap['wx:key'])
+        attrs = this.bind(key, val, attrs, tag, attrsMap['a:key'])
       } else if (/^v\-model/.test(key)) {
         attrs = this.model(key, val, attrs, tag, log)
       } else if (directiveMap[key]) {
@@ -96,7 +96,7 @@ export default {
     return ast
   },
 
-  event (key, val, attrs, tag) {
+  event (key, val, attrs, tag, log) {
     // 小程序能力所致，bind 和 catch 事件同时绑定时候，只会触发 bind ,catch 不会被触发。
     // .stop 的使用会阻止冒泡，但是同时绑定了一个非冒泡事件，会导致该元素上的 catchEventName 失效！
     // .prevent 可以直接干掉，因为小程序里没有什么默认事件，比如submit并不会跳转页面
@@ -120,7 +120,7 @@ export default {
     let eventType = 'on'
     const isStop = eventNameMap.includes('stop')
     if (eventNameMap.includes('capture')) {
-      eventType = isStop ? 'capture-catch:' : 'capture-bind:'
+      log('支付宝小程序不支持事件捕获')
     } else if (isStop) {
       eventType = 'catch'
     }
@@ -135,7 +135,7 @@ export default {
     const name = key.replace(/^v\-bind\:/i, '')
 
     if (isIf && name === 'key') {
-      attrs['wx:key'] = val
+      attrs['a:key'] = val
     }
 
     if (tag === 'template') {
@@ -178,18 +178,17 @@ export default {
     attrs['value'] = `{{${val}}}`
     if (key === 'v-model.lazy') {
       if (isFormInput) {
-        attrs['bindblur'] = 'handleProxy'
+        attrs['onBlur'] = 'handleProxy'
       } else {
-        attrs['bindchange'] = 'handleProxy'
+        attrs['onChange'] = 'handleProxy'
       }
     } else {
       if (isFormInput) {
-        attrs['bindinput'] = 'handleProxy'
+        attrs['onInput'] = 'handleProxy'
       } else {
-        attrs['bindchange'] = 'handleProxy'
+        attrs['onChange'] = 'handleProxy'
       }
     }
-
     return attrs
   }
 }
