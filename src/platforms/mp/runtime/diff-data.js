@@ -49,7 +49,7 @@ function minifyDeepData (rootKey, originKey, vmData, data, _mpValueSet, vm) {
     } else {
       // Object
       let __keyPathOnThis = {} // 存储这层对象的keyPath
-      if (vmData.__keyPath) {
+      if (vmData.__keyPath && !vmData.__newReference) {
         // 有更新列表 ，按照更新列表更新
         __keyPathOnThis = vmData.__keyPath
         Object.keys(vmData).forEach((_key) => {
@@ -77,6 +77,8 @@ function minifyDeepData (rootKey, originKey, vmData, data, _mpValueSet, vm) {
         // 没有更新列表
         compareAndSetDeepData(rootKey + '.' + originKey, vmData, vm, data)
       }
+      // 标记是否是通过this.Obj = {} 赋值印发的改动，解决少更新问题#1305
+      vmData.__newReference = false
     }
   } catch (e) {
     console.log(e, rootKey, originKey, vmData, data)
@@ -117,7 +119,6 @@ export function diffData (vm, data) {
     Object.keys(vmData).forEach((vmDataItemKey) => {
       if (vmData[vmDataItemKey] instanceof Object) {
         // 引用类型
-        if (vmDataItemKey === '__keyPath') { return }
         minifyDeepData(rootKey, vmDataItemKey, vmData[vmDataItemKey], data, vm._mpValueSet, vm)
       } else if (vmData[vmDataItemKey] !== undefined) {
         // _data上的值属性只有要更新的时候才赋值
@@ -130,7 +131,6 @@ export function diffData (vm, data) {
     Object.keys(vmProps).forEach((vmPropsItemKey) => {
       if (vmProps[vmPropsItemKey] instanceof Object) {
         // 引用类型
-        if (vmPropsItemKey === '__keyPath') { return }
         minifyDeepData(rootKey, vmPropsItemKey, vmProps[vmPropsItemKey], data, vm._mpValueSet, vm)
       } else if (vmProps[vmPropsItemKey] !== undefined) {
         data[rootKey + '.' + vmPropsItemKey] = vmProps[vmPropsItemKey]
