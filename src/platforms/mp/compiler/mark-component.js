@@ -1,4 +1,4 @@
-import convertTagMap from './codegen/config/wxmlTagMap'
+import convertTagMap from './common/tagMap'
 
 function maybeTag (tagName) {
   return convertTagMap[tagName]

@@ -14,6 +14,12 @@ try {
   } else if (typeof swan !== 'undefined') {
     global.mpvue = swan;
     global.mpvuePlatform = 'swan';
+  }else if (typeof tt !== 'undefined') {
+    global.mpvue = tt;
+    global.mpvuePlatform = 'tt';
+  }else if (typeof my !== 'undefined') {
+    global.mpvue = my;
+    global.mpvuePlatform = 'my';
   }
 } catch (e) {}
 
@@ -5465,6 +5471,7 @@ function diffData (vm, data) {
     Object.keys(vmData).forEach(function (vmDataItemKey) {
       if (vmData[vmDataItemKey] instanceof Object) {
         // 引用类型
+        if (vmDataItemKey === '__keyPath') { return }
         minifyDeepData(rootKey, vmDataItemKey, vmData[vmDataItemKey], data, vm._mpValueSet, vm);
       } else if (vmData[vmDataItemKey] !== undefined) {
         // _data上的值属性只有要更新的时候才赋值
@@ -5761,7 +5768,6 @@ function getWebEventByMP (e) {
   }
   return event
 }
-
 
 var KEY_SEP$1 = '_';
 function handleProxyWithVue (e) {

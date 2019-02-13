@@ -81,7 +81,6 @@ function getWebEventByMP (e) {
   return event
 }
 
-
 const KEY_SEP = '_'
 export function handleProxyWithVue (e) {
   const rootVueVM = this.$root
