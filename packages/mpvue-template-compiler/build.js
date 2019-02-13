@@ -5895,9 +5895,9 @@ var attrs$3 = {
       } else if (key === 'v-show') {
         attrs['hidden'] = "{{!(" + val + ")}}";
       } else if (/^v\-on\:/i.test(key)) {
-        attrs = this$1.event(key, val, attrs, tag);
+        attrs = this$1.event(key, val, attrs, tag, log);
       } else if (/^v\-bind\:/i.test(key)) {
-        attrs = this$1.bind(key, val, attrs, tag, attrsMap['wx:key']);
+        attrs = this$1.bind(key, val, attrs, tag, attrsMap['a:key']);
       } else if (/^v\-model/.test(key)) {
         attrs = this$1.model(key, val, attrs, tag, log);
       } else if (directiveMap$3[key]) {
@@ -5941,7 +5941,7 @@ var attrs$3 = {
     return ast
   },
 
-  event: function event (key, val, attrs, tag) {
+  event: function event (key, val, attrs, tag, log) {
     // 小程序能力所致，bind 和 catch 事件同时绑定时候，只会触发 bind ,catch 不会被触发。
     // .stop 的使用会阻止冒泡，但是同时绑定了一个非冒泡事件，会导致该元素上的 catchEventName 失效！
     // .prevent 可以直接干掉，因为小程序里没有什么默认事件，比如submit并不会跳转页面
@@ -5968,7 +5968,7 @@ var attrs$3 = {
     var eventType = 'on';
     var isStop = eventNameMap.includes('stop');
     if (eventNameMap.includes('capture')) {
-      eventType = isStop ? 'capture-catch:' : 'capture-bind:';
+      log('支付宝小程序不支持事件捕获');
     } else if (isStop) {
       eventType = 'catch';
     }
@@ -5983,28 +5983,12 @@ var attrs$3 = {
     var name = key.replace(/^v\-bind\:/i, '');
 
     if (isIf && name === 'key') {
-      attrs['wx:key'] = val;
+      attrs['a:key'] = val;
     }
 
-        node.tag = 'template';
-        node.attrsMap.name = slotId;
-        delete node.attrsMap.slot;
-        // 缓存，会集中生成一个 slots 文件
-        slots[slotId] = { node: convertAst$1(node, options, util), name: slotName, slotId: slotId };
-        wxmlAst.slots[slotName] = slotId;
-      });
-    // 清理当前组件下的节点信息，因为 slot 都被转移了
-    children.length = 0;
-    wxmlAst.children.length = 0;
-  }
-
-  wxmlAst.attrsMap = attrs$1.format(wxmlAst.attrsMap);
-  wxmlAst = tag$1(wxmlAst, options);
-  wxmlAst = convertFor$1(wxmlAst, options);
-  wxmlAst = attrs$1.convertAttr(wxmlAst, log);
-  if (children && !isSlot) {
-    wxmlAst.children = children.map(function (k) { return convertAst$1(k, options, util); });
-  }
+    if (tag === 'template') {
+      return attrs
+    }
 
     if (name === 'href') {
       attrs['url'] = "{{" + val + "}}";
@@ -6046,18 +6030,17 @@ var attrs$3 = {
     attrs['value'] = "{{" + val + "}}";
     if (key === 'v-model.lazy') {
       if (isFormInput) {
-        attrs['bindblur'] = 'handleProxy';
+        attrs['onBlur'] = 'handleProxy';
       } else {
-        attrs['bindchange'] = 'handleProxy';
+        attrs['onChange'] = 'handleProxy';
       }
     } else {
       if (isFormInput) {
-        attrs['bindinput'] = 'handleProxy';
+        attrs['onInput'] = 'handleProxy';
       } else {
-        attrs['bindchange'] = 'handleProxy';
+        attrs['onChange'] = 'handleProxy';
       }
     }
-
     return attrs
   }
 };
@@ -6146,9 +6129,11 @@ var convertFor$3 = function (ast) {
       attrsMap[astMap$3['alias']] = alias;
     }
 
-  // 引用子模版
-  var importCode = Object.keys(deps).map(function (k) { return components[k] ? ("<import src=\"" + (components[k].src) + "\" />") : ''; }).join('');
-  code = importCode + "<template name=\"" + (options.name) + "\">" + code + "</template>";
+    delete attrsMap['v-for'];
+  }
+
+  return ast
+};
 
 function mpmlAst$3 (compiled, options, log) {
   if ( options === void 0 ) options = {};

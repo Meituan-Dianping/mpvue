@@ -4185,7 +4185,7 @@ Object.defineProperty(Vue$3.prototype, '$ssrContext', {
 });
 
 Vue$3.version = '2.4.1';
-Vue$3.mpvueVersion = '1.0.20';
+Vue$3.mpvueVersion = '2.0.0';
 
 /* globals renderer */
 
@@ -5471,7 +5471,6 @@ function diffData (vm, data) {
     Object.keys(vmData).forEach(function (vmDataItemKey) {
       if (vmData[vmDataItemKey] instanceof Object) {
         // 引用类型
-        if (vmDataItemKey === '__keyPath') { return }
         minifyDeepData(rootKey, vmDataItemKey, vmData[vmDataItemKey], data, vm._mpValueSet, vm);
       } else if (vmData[vmDataItemKey] !== undefined) {
         // _data上的值属性只有要更新的时候才赋值
