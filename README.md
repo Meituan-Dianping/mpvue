@@ -14,9 +14,7 @@
 
 mpvue 2.0 开始正式支持 **百度智能小程序**、**头条小程序** 和 **支付宝小程序**，使用 `mpvue-quickstart` 项目模板新创建的项目，将默认升级到 2.0。老项目可继续使用原有版本。详情请参见 [**mpvue 2.0 升级指南**](https://github.com/Meituan-Dianping/mpvue/releases/tag/2.0.0)
 
-<div style="color:red;font-weight:bold;">
-新版本的问题或建议，有请各位关注者及时反馈，mpvue 2.0 祝大家节日快乐~ 2019.02.14
-</div>
+**新版本的问题或建议，有请各位关注者及时反馈，mpvue 2.0 祝大家节日快乐~ ** -2019.02.14
 
 [mpvue 文档](http://mpvue.com)
 
