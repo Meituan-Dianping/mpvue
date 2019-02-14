@@ -8,7 +8,7 @@
 > Vue.js 小程序版, fork 自 [vuejs/vue@2.4.1](https://github.com/vuejs/vue)，保留了 vue runtime 能力，添加了小程序平台的支持。
 
 
-`mpvue` 是一个使用 [Vue.js](https://vuejs.org) 开发小程序的前端框架，目前支持 `微信小程序`、`百度只能小程序`，`头条小程序` 和 `支付宝小程序`。 框架基于 `Vue.js`，修改了的运行时框架 runtime 和代码编译器 compiler 实现，使其可运行在小程序环境中，从而为小程序开发引入了 `Vue.js` 开发体验。
+`mpvue` 是一个使用 [Vue.js](https://vuejs.org) 开发小程序的前端框架，目前支持 `微信小程序`、`百度智能小程序`，`头条小程序` 和 `支付宝小程序`。 框架基于 `Vue.js`，修改了的运行时框架 runtime 和代码编译器 compiler 实现，使其可运行在小程序环境中，从而为小程序开发引入了 `Vue.js` 开发体验。
 
 ## mpvue 2.0
 
