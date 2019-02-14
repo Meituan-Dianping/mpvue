@@ -8,15 +8,15 @@
 > Vue.js 小程序版, fork 自 [vuejs/vue@2.4.1](https://github.com/vuejs/vue)，保留了 vue runtime 能力，添加了小程序平台的支持。
 
 
-`mpvue` 是一个使用 [Vue.js](https://vuejs.org) 开发小程序的前端框架。框架基于 `Vue.js` 核心，`mpvue` 修改了 `Vue.js` 的 runtime 和 compiler 实现，使其可以运行在小程序环境中，从而为小程序开发引入了整套 `Vue.js` 开发体验。
+`mpvue` 是一个使用 [Vue.js](https://vuejs.org) 开发小程序的前端框架，目前支持 `微信小程序`、`百度只能小程序`，`头条小程序` 和 `支付宝小程序`。 框架基于 `Vue.js`，修改了的运行时框架 runtime 和代码编译器 compiler 实现，使其可运行在小程序环境中，从而为小程序开发引入了 `Vue.js` 开发体验。
 
-## 文档
+## mpvue 2.0
+
+mpvue 2.0 开始正式支持 **百度智能小程序**、**头条小程序** 和 **支付宝小程序**，使用 `mpvue-quickstart` 项目模板新创建的项目，将默认升级到 2.0。老项目可继续使用原有版本。详情请参见 [**mpvue 2.0 升级指南**](https://github.com/Meituan-Dianping/mpvue/releases/tag/2.0.0)
+
+**新版本的问题或建议，有请各位关注者及时反馈，mpvue 2.0 祝大家节日快乐~** -2019.02.14
 
 [mpvue 文档](http://mpvue.com)
-
-## 实践案例
-
-美团旗下小程序：`美团火车票12306抢票`、`美团汽车票` 和 `美团充电`，此外，正有一大批小程序正在接入中。
 
 ## 快速开始
 
@@ -39,15 +39,6 @@
 
 其它特性正在等着你去探索。
 
-### H5 和小程序如何复用代码
-[先来看一段视频](http://mpvue.com/assets/20170810-022809-HD.mp4)
-<video src="http://mpvue.com/assets/20170810-022809-HD.mp4" width="863" height="480" controls="controls"></video>
-
-在左侧为已经上线的 H5 页面，右侧为同代码的小程序页面，其中只需要更改小部分平台差异代码和更新下 webpack 的建构配置就可以直接运行。
-
-在未来最理想的状态是，可以一套代码可以直接跑在多端：WEB、小程序（微信和支付宝）、Native（借助weex）。
-
-当然从产品的层面，我们不建议这么做，各个端有自己的差异性，我们期望的只是开发和调试体验一致。
 
 ## 配套设施
 `mpvue` 作为小程序版本的 `Vue.js`，在框架 SDK 之外，完整的技术体系还包括如下设施。
