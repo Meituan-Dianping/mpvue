@@ -861,8 +861,6 @@ function observe (value, asRootData, key) {
     !value._isVue
   ) {
     ob = new Observer(value, key);
-    ob.__keyPath = ob.__keyPath ? ob.__keyPath : {};
-    ob.__keyPath[key] = true;
   }
   if (asRootData && ob) {
     ob.vmCount++;
@@ -926,8 +924,15 @@ function defineReactive$$1 (
       }
       childOb = !shallow && observe(newVal, undefined, key);
       dep.notify();
-      obj.__keyPath = obj.__keyPath ? obj.__keyPath : {};
+
+      if (!obj.__keyPath) {
+        def(obj, '__keyPath', {}, false);
+      }
       obj.__keyPath[key] = true;
+      if (newVal instanceof Object && !(newVal instanceof Array)) {
+        // 标记是否是通过this.Obj = {} 赋值印发的改动，解决少更新问题#1305
+        def(newVal, '__newReference', true, false);
+      }
     }
   });
 }
@@ -962,7 +967,7 @@ function set (target, key, val) {
   defineReactive$$1(ob.value, key, val);
   // Vue.set 添加对象属性，渲染时候把 val 传给小程序渲染
   if (!target.__keyPath) {
-    target.__keyPath = {};
+    def(target, '__keyPath', {}, false);
   }
   target.__keyPath[key] = true;
   ob.dep.notify();
@@ -993,7 +998,7 @@ function del (target, key) {
     return
   }
   if (!target.__keyPath) {
-    target.__keyPath = {};
+    def(target, '__keyPath', {}, false);
   }
   // Vue.del 删除对象属性，渲染时候把这个属性设置为 undefined
   target.__keyPath[key] = 'del';
@@ -4180,7 +4185,7 @@ Object.defineProperty(Vue$3.prototype, '$ssrContext', {
 });
 
 Vue$3.version = '2.4.1';
-Vue$3.mpvueVersion = '1.1.1';
+Vue$3.mpvueVersion = '1.0.20';
 
 /* globals renderer */
 
@@ -5396,7 +5401,7 @@ function minifyDeepData (rootKey, originKey, vmData, data, _mpValueSet, vm) {
     } else {
       // Object
       var _keyPathOnThis = {}; // 存储这层对象的keyPath
-      if (vmData.__keyPath) {
+      if (vmData.__keyPath && !vmData.__newReference) {
         // 有更新列表 ，按照更新列表更新
         _keyPathOnThis = vmData.__keyPath;
         Object.keys(vmData).forEach(function (_key) {
@@ -5424,6 +5429,8 @@ function minifyDeepData (rootKey, originKey, vmData, data, _mpValueSet, vm) {
         // 没有更新列表
         compareAndSetDeepData(rootKey + '.' + originKey, vmData, vm, data);
       }
+      // 标记是否是通过this.Obj = {} 赋值印发的改动，解决少更新问题#1305
+      vmData.__newReference = false;
     }
   } catch (e) {
     console.log(e, rootKey, originKey, vmData, data);
@@ -5477,7 +5484,6 @@ function diffData (vm, data) {
     Object.keys(vmProps).forEach(function (vmPropsItemKey) {
       if (vmProps[vmPropsItemKey] instanceof Object) {
         // 引用类型
-        if (vmPropsItemKey === '__keyPath') { return }
         minifyDeepData(rootKey, vmPropsItemKey, vmProps[vmPropsItemKey], data, vm._mpValueSet, vm);
       } else if (vmProps[vmPropsItemKey] !== undefined) {
         data[rootKey + '.' + vmPropsItemKey] = vmProps[vmPropsItemKey];

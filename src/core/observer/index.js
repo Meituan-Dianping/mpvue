@@ -121,8 +121,6 @@ export function observe (value: any, asRootData: ?boolean, key: any): Observer |
     !value._isVue
   ) {
     ob = new Observer(value, key)
-    ob.__keyPath = ob.__keyPath ? ob.__keyPath : {}
-    ob.__keyPath[key] = true
   }
   if (asRootData && ob) {
     ob.vmCount++
@@ -186,8 +184,15 @@ export function defineReactive (
       }
       childOb = !shallow && observe(newVal, undefined, key)
       dep.notify()
-      obj.__keyPath = obj.__keyPath ? obj.__keyPath : {}
+
+      if (!obj.__keyPath) {
+        def(obj, '__keyPath', {}, false)
+      }
       obj.__keyPath[key] = true
+      if (newVal instanceof Object && !(newVal instanceof Array)) {
+        // 标记是否是通过this.Obj = {} 赋值印发的改动，解决少更新问题#1305
+        def(newVal, '__newReference', true, false)
+      }
     }
   })
 }
@@ -222,7 +227,7 @@ export function set (target: Array<any> | Object, key: any, val: any): any {
   defineReactive(ob.value, key, val)
   // Vue.set 添加对象属性，渲染时候把 val 传给小程序渲染
   if (!target.__keyPath) {
-    target.__keyPath = {}
+    def(target, '__keyPath', {}, false)
   }
   target.__keyPath[key] = true
   ob.dep.notify()
@@ -253,7 +258,7 @@ export function del (target: Array<any> | Object, key: any) {
     return
   }
   if (!target.__keyPath) {
-    target.__keyPath = {}
+    def(target, '__keyPath', {}, false)
   }
   // Vue.del 删除对象属性，渲染时候把这个属性设置为 undefined
   target.__keyPath[key] = 'del'

@@ -2894,8 +2894,6 @@ function observe (value, asRootData, key) {
     !value._isVue
   ) {
     ob = new Observer(value, key);
-    ob.__keyPath = ob.__keyPath ? ob.__keyPath : {};
-    ob.__keyPath[key] = true;
   }
   if (asRootData && ob) {
     ob.vmCount++;
@@ -2959,8 +2957,15 @@ function defineReactive$$1 (
       }
       childOb = !shallow && observe(newVal, undefined, key);
       dep.notify();
-      obj.__keyPath = obj.__keyPath ? obj.__keyPath : {};
+
+      if (!obj.__keyPath) {
+        def(obj, '__keyPath', {}, false);
+      }
       obj.__keyPath[key] = true;
+      if (newVal instanceof Object && !(newVal instanceof Array)) {
+        // 标记是否是通过this.Obj = {} 赋值印发的改动，解决少更新问题#1305
+        def(newVal, '__newReference', true, false);
+      }
     }
   });
 }
@@ -2995,7 +3000,7 @@ function set (target, key, val) {
   defineReactive$$1(ob.value, key, val);
   // Vue.set 添加对象属性，渲染时候把 val 传给小程序渲染
   if (!target.__keyPath) {
-    target.__keyPath = {};
+    def(target, '__keyPath', {}, false);
   }
   target.__keyPath[key] = true;
   ob.dep.notify();
@@ -5981,9 +5986,25 @@ var attrs$3 = {
       attrs['wx:key'] = val;
     }
 
-    if (tag === 'template') {
-      return attrs
-    }
+        node.tag = 'template';
+        node.attrsMap.name = slotId;
+        delete node.attrsMap.slot;
+        // 缓存，会集中生成一个 slots 文件
+        slots[slotId] = { node: convertAst$1(node, options, util), name: slotName, slotId: slotId };
+        wxmlAst.slots[slotName] = slotId;
+      });
+    // 清理当前组件下的节点信息，因为 slot 都被转移了
+    children.length = 0;
+    wxmlAst.children.length = 0;
+  }
+
+  wxmlAst.attrsMap = attrs$1.format(wxmlAst.attrsMap);
+  wxmlAst = tag$1(wxmlAst, options);
+  wxmlAst = convertFor$1(wxmlAst, options);
+  wxmlAst = attrs$1.convertAttr(wxmlAst, log);
+  if (children && !isSlot) {
+    wxmlAst.children = children.map(function (k) { return convertAst$1(k, options, util); });
+  }
 
     if (name === 'href') {
       attrs['url'] = "{{" + val + "}}";
@@ -6125,11 +6146,9 @@ var convertFor$3 = function (ast) {
       attrsMap[astMap$3['alias']] = alias;
     }
 
-    delete attrsMap['v-for'];
-  }
-
-  return ast
-};
+  // 引用子模版
+  var importCode = Object.keys(deps).map(function (k) { return components[k] ? ("<import src=\"" + (components[k].src) + "\" />") : ''; }).join('');
+  code = importCode + "<template name=\"" + (options.name) + "\">" + code + "</template>";
 
 function mpmlAst$3 (compiled, options, log) {
   if ( options === void 0 ) options = {};
