@@ -19,7 +19,7 @@ function generateCode (nodeAst, options = {}) {
   if (!tag) {
     return text
   }
-  // // v-if 指令
+  // v-if 指令
   const ifConditionsArr = []
   if (ifConditions) {
     const length = ifConditions.length
