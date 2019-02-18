@@ -4185,7 +4185,7 @@ Object.defineProperty(Vue$3.prototype, '$ssrContext', {
 });
 
 Vue$3.version = '2.4.1';
-Vue$3.mpvueVersion = '2.0.0';
+Vue$3.mpvueVersion = '2.0.1';
 
 /* globals renderer */
 
@@ -5685,7 +5685,7 @@ function getVM (vm, comkeys) {
     for (var i = 0; i < len; i++) {
       var v = res.$children[i];
       var k = getComKey(v);
-      if (k === key) {
+      if (k === keys.join(KEY_SEP$1)) {
         res = v;
         return res
       }
