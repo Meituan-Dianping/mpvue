@@ -4887,24 +4887,22 @@ function generateCode (nodeAst, options) {
   if (!tag) {
     return text
   }
-
+  // v-if 指令
+  var ifConditionsArr = [];
+  if (ifConditions) {
+    var length = ifConditions.length;
+    for (var i = 1; i < length; i++) {
+      ifConditionsArr.push(generateCode(ifConditions[i].block, options));
+    }
+  }
   var childrenContent = children.map(function (childAst) { return generateCode(childAst, options); }).join('');
   var attrs = Object.keys(attrsMap).map(function (key) { return convertAttr(key, attrsMap[key]); }).join(' ');
   attrs = attrs ? (" " + attrs) : '';
 
   if (autoEndTags.indexOf(tag) > -1 && !childrenContent) {
-    return ("<" + tag + attrs + " />")
+    return ("<" + tag + attrs + " />" + (ifConditionsArr.join('')))
   }
-  return ("<" + tag + attrs + ">" + childrenContent + "</" + tag + ">")
-
-  // // v-if 指令
-  // const ifConditionsArr = []
-  // if (ifConditions) {
-  //   const length = ifConditions.length
-  //   for (let i = 1; i < length; i++) {
-  //     ifConditionsArr.push(generateCode(ifConditions[i].block, options))
-  //   }
-  // }
+  return ("<" + tag + attrs + ">" + childrenContent + "</" + tag + ">" + (ifConditionsArr.join('')))
 
   // if (autoEndTags.indexOf(tag) > -1 && !children.length) {
   //   return `<${tag}${attrs ? ' ' + attrs : ''} />${ifConditionsArr.join('')}`
@@ -4971,7 +4969,7 @@ var directiveMap$1 = {
     type: 2
   },
   'v-else': {
-    name: 'w-else',
+    name: 's-else',
     type: 1
   },
   'v-text': {
