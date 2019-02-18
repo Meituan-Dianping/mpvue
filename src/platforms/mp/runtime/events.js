@@ -10,7 +10,7 @@ function getVM (vm, comkeys = []) {
     for (let i = 0; i < len; i++) {
       const v = res.$children[i]
       const k = getComKey(v)
-      if (k === key) {
+      if (k === keys.join(KEY_SEP)) {
         res = v
         return res
       }
