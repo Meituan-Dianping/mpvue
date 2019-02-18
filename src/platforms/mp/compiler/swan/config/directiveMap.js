@@ -23,7 +23,7 @@ export default {
     type: 2
   },
   'v-else': {
-    name: 'w-else',
+    name: 's-else',
     type: 1
   },
   'v-text': {
