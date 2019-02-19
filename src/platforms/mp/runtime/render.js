@@ -62,7 +62,7 @@ function formatVmData (vm) {
 function collectVmData (vm, res = {}) {
   const { $children: vms } = vm
   if (vms && vms.length) {
-    vms.forEach(v => collectVmData(v, res))
+    vms.forEach((v) => collectVmData(v, res))
   }
   return Object.assign(res, formatVmData(vm))
 }
@@ -107,7 +107,7 @@ function throttle (func, wait, options) {
       previous = now
       result = func.apply(context, args)
       if (!timeout) context = args = null
-    // 如果延迟执行不存在，且没有设定结尾边界不执行选项
+      // 如果延迟执行不存在，且没有设定结尾边界不执行选项
     } else if (!timeout && options.trailing !== false) {
       timeout = setTimeout(later, remaining)
     }
@@ -152,4 +152,22 @@ export function initDataToMP () {
 
   const data = collectVmData(this.$root)
   page.setData(data)
+}
+
+export function restoreMPToData (page) {
+  var $p = getParentComKey(this).join(',')
+  var $k = $p + ($p ? ',' : '') + getComKey(this)
+
+  const data = page.data.$root[$k]
+  if (data) {
+    Object.assign(
+      this.$data,
+      Object.keys(this.$data).reduce((res, key) => {
+        if (data.hasOwnProperty(key)) {
+          res[key] = data[key]
+        }
+        return res
+      }, {})
+    )
+  }
 }
