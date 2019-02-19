@@ -5,12 +5,20 @@ function getVM (vm, comkeys = []) {
   const keys = comkeys.slice(1)
   if (!keys.length) return vm
 
+  // bugfix #1375: 虚拟dom的compid和真实dom的comkey在组件嵌套时匹配出错，comid会丢失前缀，需要从父节点补充
+  let comkey = keys.join(KEY_SEP)
+  let comidPrefix = ''
   return keys.reduce((res, key) => {
     const len = res.$children.length
     for (let i = 0; i < len; i++) {
       const v = res.$children[i]
-      const k = getComKey(v)
-      if (k === keys.join(KEY_SEP)) {
+      let k = getComKey(v)
+      if (comidPrefix) {
+        k = comidPrefix + KEY_SEP + k
+      }
+      // 找到匹配的父节点
+      if (comkey.indexOf(k) === 0) {
+        comidPrefix = k
         res = v
         return res
       }
