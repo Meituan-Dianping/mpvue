@@ -4185,7 +4185,7 @@ Object.defineProperty(Vue$3.prototype, '$ssrContext', {
 });
 
 Vue$3.version = '2.4.1';
-Vue$3.mpvueVersion = '2.0.1';
+Vue$3.mpvueVersion = '2.0.3';
 
 /* globals renderer */
 
@@ -5680,12 +5680,20 @@ function getVM (vm, comkeys) {
   var keys = comkeys.slice(1);
   if (!keys.length) { return vm }
 
+  // bugfix #1375: 虚拟dom的compid和真实dom的comkey在组件嵌套时匹配出错，comid会丢失前缀，需要从父节点补充
+  var comkey = keys.join(KEY_SEP$1);
+  var comidPrefix = '';
   return keys.reduce(function (res, key) {
     var len = res.$children.length;
     for (var i = 0; i < len; i++) {
       var v = res.$children[i];
       var k = getComKey(v);
-      if (k === keys.join(KEY_SEP$1)) {
+      if (comidPrefix) {
+        k = comidPrefix + KEY_SEP$1 + k;
+      }
+      // 找到匹配的父节点
+      if (comkey.indexOf(k) === 0) {
+        comidPrefix = k;
         res = v;
         return res
       }
