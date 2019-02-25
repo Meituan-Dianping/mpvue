@@ -4185,7 +4185,7 @@ Object.defineProperty(Vue$3.prototype, '$ssrContext', {
 });
 
 Vue$3.version = '2.4.1';
-Vue$3.mpvueVersion = '2.0.3';
+Vue$3.mpvueVersion = '2.0.4';
 
 /* globals renderer */
 
@@ -5674,6 +5674,17 @@ function initDataToMP () {
   page.setData(data);
 }
 
+// 虚拟dom的compid与真实dom的comkey匹配，多层嵌套的先补齐虚拟dom的compid直到完全匹配为止
+function isVmKeyMatchedCompkey (k, comkey) {
+  if (!k || !comkey) {
+    return false
+  }
+  // 完全匹配 comkey = '1_0_1', k = '1_0_1'
+  // 部分匹配 comkey = '1_0_10_1', k = '1_0_10'
+  // k + KEY_SEP防止k = '1_0_1'误匹配comkey = '1_0_10_1'
+  return comkey === k || comkey.indexOf(k + KEY_SEP$1) === 0
+}
+
 function getVM (vm, comkeys) {
   if ( comkeys === void 0 ) comkeys = [];
 
@@ -5692,7 +5703,7 @@ function getVM (vm, comkeys) {
         k = comidPrefix + KEY_SEP$1 + k;
       }
       // 找到匹配的父节点
-      if (comkey.indexOf(k) === 0) {
+      if (isVmKeyMatchedCompkey(k, comkey)) {
         comidPrefix = k;
         res = v;
         return res
