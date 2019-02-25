@@ -2,22 +2,7 @@ import { getComKey, eventTypeMap } from '../util/index'
 import { noop } from 'shared/util'
 
 // 虚拟dom的compid与真是dom的comkey匹配，多层嵌套的先补齐虚拟dom的compid直到完全匹配为止
-function compareWithCompkey(k, comkey, keySep) {
-  if (!k || !comkey) {
-    return false
-  }
-  // 部分匹配的要看真实dom的comkey剩余部分是否要存在'_'，也就是是否还有子节点，存在则继续递归匹配
-  let subStr = comkey.substr(k.length)
-  if (comkey.indexOf(k) === 0
-    && subStr
-    && subStr.indexOf(keySep) === 0
-  ) {
-    return true
-  }
-  return comkey === k
-}
-
-function isVmKeyMatchedCompkey(k, comkey) {
+function isVmKeyMatchedCompkey (k, comkey) {
   if (!k || !comkey) {
     return false
   }
