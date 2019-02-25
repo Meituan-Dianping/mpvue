@@ -28,7 +28,6 @@ function getVM (vm, comkeys = []) {
         k = comidPrefix + KEY_SEP + k
       }
       // 找到匹配的父节点
-      (comkey + KEY_SEP).indexOf(k + KEY_SEP) === 0
       if (isVmKeyMatchedCompkey(k, comkey)) {
         comidPrefix = k
         res = v
