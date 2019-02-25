@@ -17,6 +17,16 @@ function compareWithCompkey(k, comkey, keySep) {
   return comkey === k
 }
 
+function isVmKeyMatchedCompkey(k, comkey) {
+  if (!k || !comkey) {
+    return false
+  }
+  // 完全匹配 comkey = '1_0_1', k = '1_0_1'
+  // 部分匹配 comkey = '1_0_10_1', k = '1_0_10'
+  // k + KEY_SEP防止k = '1_0_1'误匹配comkey = '1_0_10_1'
+  return comkey === k || comkey.indexOf(k + KEY_SEP) === 0
+}
+
 function getVM (vm, comkeys = []) {
   const keys = comkeys.slice(1)
   if (!keys.length) return vm
@@ -33,7 +43,8 @@ function getVM (vm, comkeys = []) {
         k = comidPrefix + KEY_SEP + k
       }
       // 找到匹配的父节点
-      if (compareWithCompkey(k, comkey, KEY_SEP)) {
+      (comkey + KEY_SEP).indexOf(k + KEY_SEP) === 0
+      if (isVmKeyMatchedCompkey(k, comkey)) {
         comidPrefix = k
         res = v
         return res
