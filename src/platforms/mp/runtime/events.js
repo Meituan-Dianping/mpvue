@@ -1,7 +1,7 @@
 import { getComKey, eventTypeMap } from '../util/index'
 import { noop } from 'shared/util'
 
-// 虚拟dom的compid与真是dom的comkey匹配，多层嵌套的先补齐虚拟dom的compid直到完全匹配为止
+// 虚拟dom的compid与真实dom的comkey匹配，多层嵌套的先补齐虚拟dom的compid直到完全匹配为止
 function isVmKeyMatchedCompkey (k, comkey) {
   if (!k || !comkey) {
     return false
