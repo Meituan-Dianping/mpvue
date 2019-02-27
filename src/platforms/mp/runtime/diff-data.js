@@ -1,6 +1,8 @@
 import Vue from 'core/index'
 import { diffLog } from './runtime-trace'
 
+const KEY_SEP = '_'
+
 function getDeepData (keyList, viewData) {
   if (keyList.length > 1) {
     const _key = keyList.splice(0, 1)
@@ -87,10 +89,10 @@ function minifyDeepData (rootKey, originKey, vmData, data, _mpValueSet, vm) {
 
 function getRootKey (vm, rootKey) {
   if (!vm.$parent.$attrs) {
-    rootKey = '$root.0' + ',' + rootKey
+    rootKey = '$root.0' + KEY_SEP + rootKey
     return rootKey
   } else {
-    rootKey = vm.$parent.$attrs.mpcomid + ',' + rootKey
+    rootKey = vm.$parent.$attrs.mpcomid + KEY_SEP + rootKey
     return getRootKey(vm.$parent, rootKey)
   }
 }
