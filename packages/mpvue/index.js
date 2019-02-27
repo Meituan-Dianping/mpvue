@@ -4185,7 +4185,7 @@ Object.defineProperty(Vue$3.prototype, '$ssrContext', {
 });
 
 Vue$3.version = '2.4.1';
-Vue$3.mpvueVersion = '2.0.4';
+Vue$3.mpvueVersion = '2.0.5';
 
 /* globals renderer */
 
@@ -5353,6 +5353,8 @@ function diffLog (updateData) {
   }
 }
 
+var KEY_SEP$1 = '_';
+
 function getDeepData (keyList, viewData) {
   if (keyList.length > 1) {
     var _key = keyList.splice(0, 1);
@@ -5439,10 +5441,10 @@ function minifyDeepData (rootKey, originKey, vmData, data, _mpValueSet, vm) {
 
 function getRootKey (vm, rootKey) {
   if (!vm.$parent.$attrs) {
-    rootKey = '$root.0' + ',' + rootKey;
+    rootKey = '$root.0' + KEY_SEP$1 + rootKey;
     return rootKey
   } else {
-    rootKey = vm.$parent.$attrs.mpcomid + ',' + rootKey;
+    rootKey = vm.$parent.$attrs.mpcomid + KEY_SEP$1 + rootKey;
     return getRootKey(vm.$parent, rootKey)
   }
 }
@@ -5682,7 +5684,7 @@ function isVmKeyMatchedCompkey (k, comkey) {
   // 完全匹配 comkey = '1_0_1', k = '1_0_1'
   // 部分匹配 comkey = '1_0_10_1', k = '1_0_10'
   // k + KEY_SEP防止k = '1_0_1'误匹配comkey = '1_0_10_1'
-  return comkey === k || comkey.indexOf(k + KEY_SEP$1) === 0
+  return comkey === k || comkey.indexOf(k + KEY_SEP$2) === 0
 }
 
 function getVM (vm, comkeys) {
@@ -5692,7 +5694,7 @@ function getVM (vm, comkeys) {
   if (!keys.length) { return vm }
 
   // bugfix #1375: 虚拟dom的compid和真实dom的comkey在组件嵌套时匹配出错，comid会丢失前缀，需要从父节点补充
-  var comkey = keys.join(KEY_SEP$1);
+  var comkey = keys.join(KEY_SEP$2);
   var comidPrefix = '';
   return keys.reduce(function (res, key) {
     var len = res.$children.length;
@@ -5700,7 +5702,7 @@ function getVM (vm, comkeys) {
       var v = res.$children[i];
       var k = getComKey(v);
       if (comidPrefix) {
-        k = comidPrefix + KEY_SEP$1 + k;
+        k = comidPrefix + KEY_SEP$2 + k;
       }
       // 找到匹配的父节点
       if (isVmKeyMatchedCompkey(k, comkey)) {
@@ -5787,7 +5789,7 @@ function getWebEventByMP (e) {
   return event
 }
 
-var KEY_SEP$1 = '_';
+var KEY_SEP$2 = '_';
 function handleProxyWithVue (e) {
   var rootVueVM = this.$root;
   var type = e.type;
@@ -5797,7 +5799,7 @@ function handleProxyWithVue (e) {
   var dataset = ref.dataset; if ( dataset === void 0 ) dataset = {};
   var comkey = dataset.comkey; if ( comkey === void 0 ) comkey = '';
   var eventid = dataset.eventid;
-  var vm = getVM(rootVueVM, comkey.split(KEY_SEP$1));
+  var vm = getVM(rootVueVM, comkey.split(KEY_SEP$2));
 
   if (!vm) {
     return
