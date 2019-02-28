@@ -51,7 +51,8 @@ function formatVmData (vm) {
 
   // getVmData 这儿获取当前组件内的所有数据，包含 props、computed 的数据
   // 改动 vue.runtime 所获的的核心能力
-  const data = Object.assign(getVmData(vm), { $k, $p })
+  // const data = Object.assign(getVmData(vm), { $k, $p })
+  const data = Object.assign(getVmData(vm), { $k })
   const key = '$root.' + $k
   const res = { [key]: data }
   return res
