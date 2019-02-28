@@ -1,5 +1,5 @@
 // 节流方法，性能优化
-import { getComKey } from '../util/index'
+import { getComKey, COMKEY_SEP } from '../util/index'
 import { diffData } from './diff-data'
 
 // 全局的命名约定，为了节省编译的包大小一律采取形象的缩写，说明如下。
@@ -20,8 +20,6 @@ import { diffData } from './diff-data'
 //     }
 //   }
 // }
-
-const KEY_SEP = '_'
 
 function getVmData (vm) {
   // 确保当前 vm 所有数据被同步
@@ -48,12 +46,12 @@ function getParentComKey (vm, res = []) {
 }
 
 function formatVmData (vm) {
-  const $p = getParentComKey(vm).join(KEY_SEP)
-  const $k = $p + ($p ? KEY_SEP : '') + getComKey(vm)
+  const $p = getParentComKey(vm).join(COMKEY_SEP)
+  const $k = $p + ($p ? COMKEY_SEP : '') + getComKey(vm)
 
   // getVmData 这儿获取当前组件内的所有数据，包含 props、computed 的数据
   // 改动 vue.runtime 所获的的核心能力
-  const data = Object.assign(getVmData(vm), { $k, $kk: `${$k}${KEY_SEP}`, $p })
+  const data = Object.assign(getVmData(vm), { $k, $p })
   const key = '$root.' + $k
   const res = { [key]: data }
   return res

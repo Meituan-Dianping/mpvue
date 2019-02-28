@@ -62,3 +62,5 @@ export const eventTypeMap = {
   scrolltolower: ['scrolltolower'],
   scroll: ['scroll']
 }
+
+export const COMKEY_SEP = '_'

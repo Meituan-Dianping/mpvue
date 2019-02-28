@@ -1,3 +1,4 @@
+import { COMKEY_SEP } from '../../../util/index'
 function getSlotsName (obj) {
   if (!obj) {
     return ''
@@ -39,7 +40,9 @@ export default {
     } else {
       const slotsName = getSlotsName(slots)
       const restSlotsName = slotsName ? `, ${slotsName}` : ''
-      attrsMap['data'] = `{{{...$root[$kk+${mpcomid}], $root${restSlotsName}}}}`
+      // mpcomid格式 ’\'0\'' 转换后：’\'_0\''
+      const comId = `'${COMKEY_SEP + mpcomid.slice(1, -1)}'`
+      attrsMap['data'] = `{{...$root[$k+${comId}], $root${restSlotsName}}}`
       attrsMap['is'] = components[tag].name
     }
     return ast
