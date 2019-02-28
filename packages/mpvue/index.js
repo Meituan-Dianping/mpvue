@@ -4185,7 +4185,7 @@ Object.defineProperty(Vue$3.prototype, '$ssrContext', {
 });
 
 Vue$3.version = '2.4.1';
-Vue$3.mpvueVersion = '2.0.5';
+Vue$3.mpvueVersion = '2.0.6';
 
 /* globals renderer */
 
@@ -5381,6 +5381,14 @@ function compareAndSetDeepData (key, newData, vm, data, forceUpdate) {
     var oldData = getDeepData(keyList, vm.$root.$mp.page.data);
     if (oldData === null || JSON.stringify(oldData) !== JSON.stringify(newData) || forceUpdate) {
       data[key] = newData;
+    } else {
+      var keys = Object.keys(oldData);
+      keys.forEach(function (_key) {
+        var properties = Object.getOwnPropertyDescriptor(oldData, _key);
+        if (!properties['get'] && !properties['set']) {
+          data[key + '.' + _key] = newData[_key];
+        }
+      });
     }
   } catch (e) {
     console.log(e, key, newData, vm);
@@ -5432,7 +5440,7 @@ function minifyDeepData (rootKey, originKey, vmData, data, _mpValueSet, vm) {
         compareAndSetDeepData(rootKey + '.' + originKey, vmData, vm, data);
       }
       // 标记是否是通过this.Obj = {} 赋值印发的改动，解决少更新问题#1305
-      vmData.__newReference = false;
+      def(vmData, '__newReference', false, false);
     }
   } catch (e) {
     console.log(e, rootKey, originKey, vmData, data);
