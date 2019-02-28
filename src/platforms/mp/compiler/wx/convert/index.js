@@ -1,5 +1,5 @@
 import attrs from './attrs'
-import component from './component'
+import component from '../../common/convert/component'
 import convertFor from './for'
 import getAstCommon from '../../common/convert/index'
 
