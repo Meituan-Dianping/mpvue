@@ -22,14 +22,12 @@ function transformDynamicStyle (staticStyle = '', styleBinding) {
 
 export default {
   format (attrs = {}) {
-    const obj = {}
-
-    Object.keys(attrs).map((key) => {
-      const val = attrs[key]
-      obj[key.replace('@', 'v-on:').replace(/^:/, 'v-bind:')] = val
+    const formatedAttrs = {}
+    Object.keys(attrs).map(key => {
+      const newKey = key.replace('@', 'v-on:').replace(/^:/, 'v-bind:')
+      formatedAttrs[newKey] = attrs[key]
     })
-
-    return obj
+    return formatedAttrs
   },
 
   convertAttr (ast, log, directiveMap, prefix = 'wx') {
@@ -160,7 +158,7 @@ export default {
     }
 
     if (name === 'href') {
-      attrs['url'] = `{{${val}}}`
+      attrs.url = `{{${val}}}`
     } else {
       attrs[name] = `{{${val}}}`
     }
@@ -203,7 +201,7 @@ export default {
     }
 
     attrs[event] = 'handleProxy'
-    attrs['value'] = `{{${val}}}`
+    attrs.value = `{{${val}}}`
     return attrs
   }
 }
