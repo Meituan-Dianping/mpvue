@@ -17,7 +17,7 @@ mpvue 2.0 开始正式支持 **百度智能小程序**、**头条小程序** 和
 **新版本的问题或建议，有请各位关注者及时反馈，mpvue 2.0 祝大家节日快乐~** -2019.02.14
 
 ### mpvue 1.x 稳定版本
-**对于不升级 2.0 的项目，可以继续使用1.x 的大版本，目前1.x 会持续在 1.4.x 上继续维护**
+**对于不升级 2.0 的项目，可以继续使用1.x 的大版本，目前1.x 会持续在 1.4.x 上继续维护** 同时请注意在构建脚本中同步一下 fileExt 配置选项，参见 [config/index.js](https://github.com/mpvue/mpvue-quickstart/blob/master/template/config/index.js#L50)
 
 - mpvue@1.4.0
 - mpvue-template-compiler@1.4.0
