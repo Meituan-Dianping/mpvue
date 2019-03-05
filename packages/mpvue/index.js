@@ -2179,7 +2179,7 @@ function mountComponent (
   vm.$el = el;
   if (!vm.$options.render) {
     vm.$options.render = createEmptyVNode;
-    
+
   }
   callHook(vm, 'beforeMount');
 
@@ -2274,7 +2274,7 @@ function updateChildComponent (
     vm.$forceUpdate();
   }
 
-  
+
 }
 
 function isInInactiveTree (vm) {
@@ -2885,7 +2885,7 @@ function initMethods (vm, methods) {
   var props = vm.$options.props;
   for (var key in methods) {
     vm[key] = methods[key] == null ? noop : bind(methods[key], vm);
-    
+
   }
 }
 
@@ -5432,7 +5432,7 @@ function minifyDeepData (rootKey, originKey, vmData, data, _mpValueSet, vm) {
         compareAndSetDeepData(rootKey + '.' + originKey, vmData, vm, data);
       }
       // 标记是否是通过this.Obj = {} 赋值印发的改动，解决少更新问题#1305
-      vmData.__newReference = false;
+      def(vmData, '__newReference', false, false);
     }
   } catch (e) {
     console.log(e, rootKey, originKey, vmData, data);
