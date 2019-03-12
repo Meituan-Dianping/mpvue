@@ -81,7 +81,13 @@ function mark (path, options, deps, iteratorArr = []) {
   const needEventsID = events || hasModel
 
   if (needEventsID) {
-    const eventId = getWxEleId(deps.eventIndex, currentArr)
+    let level = 0
+    let _path = Object.assign({}, path)
+    while (_path && _path.parent) {
+      level++
+      _path = _path.parent
+    }
+    const eventId = getWxEleId(level + '_' + deps.eventIndex, currentArr)
     // const eventId = getWxEleId(eIndex, currentArr)
     addAttr(path, 'eventid', eventId)
     path.attrsMap['data-comkey'] = '{{$k}}'
