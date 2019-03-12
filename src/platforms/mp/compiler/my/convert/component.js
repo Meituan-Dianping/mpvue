@@ -32,7 +32,7 @@ export default {
   convertComponent (ast, components, slotName) {
     const { attrsMap, tag, mpcomid, slots } = ast
     if (slotName) {
-      attrsMap['data'] = "{{...$root[$p], ...$root[$k], $root}}"
+      attrsMap['data'] = "{{...$root[$p], $root}}"
       // bindedName is available when rendering slot in v-for
       const bindedName = attrsMap['v-bind:name']
       if (bindedName) {
