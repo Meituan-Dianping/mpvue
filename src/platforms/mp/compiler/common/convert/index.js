@@ -65,7 +65,7 @@ function convertAst (node, options = {}, util, conventRule) {
   }
 
   mpmlAst.attrsMap = conventRule.attrs.format(mpmlAst.attrsMap)
-  mpmlAst = tag(mpmlAst, options, conventRule.component)
+  mpmlAst = tag(mpmlAst, options, conventRule.component, conventRule.attrs)
   mpmlAst = conventRule.convertFor(mpmlAst, options)
   mpmlAst = conventRule.attrs.convertAttr(mpmlAst, log)
   if (children && !isSlot) {
