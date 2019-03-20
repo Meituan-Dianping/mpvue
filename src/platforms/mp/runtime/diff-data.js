@@ -22,15 +22,68 @@ function getDeepData (keyList, viewData) {
   }
 }
 
-function compareAndSetDeepData (key, newData, vm, data, forceUpdate) {
+function deepDiff (oldData, newData, data, key) {
+  if (oldData === newData) {
+    return
+  }
+  // 新旧数据如果存在值为null则添加到需要更新的表中
+  if (oldData === null || newData === null) {
+    data[key] = newData
+    return
+  }
+  if (Object.prototype.toString.call(oldData) !== Object.prototype.toString.call(newData)) {
+    data[key] = newData
+    return
+  }
+  // 如果新旧数据均为数组，则进行diff
+  if (Array.isArray(newData) && Array.isArray(oldData)) {
+    if (newData.length === oldData.length) {
+      for (let i = 0, len = newData.length; i < len; i++) {
+        // 递归处理，处理数据中包含数据或者包含对象的情况
+        deepDiff(oldData[i], newData[i], data, key + '[' + i + ']')
+      }
+    } else {
+      // 数组长度不一样直接setData
+      data[key] = newData
+    }
+    return
+  }
+  // 如果新旧数据均为对象，进行diff
+  if (typeof oldData === 'object' && typeof newData === 'object') {
+    var newKeys = Object.keys(newData)
+    var oldKeys = Object.keys(oldData)
+    var uniqueKeys = new Set([...newKeys, ...oldKeys])
+    uniqueKeys.forEach(itemKey => {
+      if (oldData[itemKey] &&
+        newData[itemKey] &&
+        typeof newData[itemKey] === 'object' &&
+        Object.prototype.toString.call(oldData) === Object.prototype.toString.call(newData)
+      ) {
+        deepDiff(oldData[itemKey], newData[itemKey], data, key + '.' + itemKey)
+        return
+      }
+      if (oldData[itemKey] !== newData[itemKey]) {
+        data[key + '.' + itemKey] = newData[itemKey] || ''
+      }
+    })
+    return
+  }
+  if (oldData !== newData) {
+    data[key] = newData
+  }
+}
+
+function compareAndSetDeepData (key, newData, vm, data) {
   // 比较引用类型数据
   try {
     const keyList = key.split('.')
     // page.__viewData__老版小程序不存在，使用mpvue里绑的data比对
     const oldData = getDeepData(keyList, vm.$root.$mp.page.data)
-    if (oldData === null || JSON.stringify(oldData) !== JSON.stringify(newData) || forceUpdate) {
+    if (!oldData) {
       data[key] = newData
+      return
     }
+    deepDiff(oldData, newData, data, key)
   } catch (e) {
     console.log(e, key, newData, vm)
   }
@@ -48,7 +101,7 @@ function minifyDeepData (rootKey, originKey, vmData, data, _mpValueSet, vm) {
   try {
     if (vmData instanceof Array) {
        // 数组
-      compareAndSetDeepData(rootKey + '.' + originKey, vmData, vm, data, true)
+      compareAndSetDeepData(rootKey + '.' + originKey, vmData, vm, data)
     } else {
       // Object
       let __keyPathOnThis = {} // 存储这层对象的keyPath
