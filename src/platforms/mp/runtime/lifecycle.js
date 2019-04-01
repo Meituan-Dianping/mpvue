@@ -183,6 +183,12 @@ export function initMP (mpType, next) {
   // Please do not register multiple Pages
   // if (mp.registered) {
   if (mp.status) {
+    if (mpType === 'app') {
+      callHook(this, 'onLaunch', mp.appOptions)
+    } else {
+      callHook(this, 'onLoad', mp.query)
+      callHook(this, 'onReady')
+    }
     return next()
   }
   // mp.registered = true
@@ -215,8 +221,6 @@ export function createMp ({ mpType, init }) {
         mp.status = 'launch'
         this.globalData.appOptions = mp.appOptions = options
         this.rootVueVM.$mount()
-        callHook(this.rootVueVM, 'onLaunch', options)
-        _next(this.rootVueVM)
       },
 
       // Do something when app show.
@@ -266,7 +270,6 @@ export function createMp ({ mpType, init }) {
         mp.status = 'load'
         getGlobalData(app, this.rootVueVM)
         this.rootVueVM.$mount()
-        callHook(this.rootVueVM, 'onLoad', query)
       },
 
       // 生命周期函数--监听页面显示
@@ -285,7 +288,6 @@ export function createMp ({ mpType, init }) {
       onReady () {
         const mp = this.rootVueVM.$mp
         mp.status = 'ready'
-        callHook(this.rootVueVM, 'onReady')
         return _next(this.rootVueVM)
       },
 
