@@ -50,11 +50,12 @@ function convertAst (node, options = {}, util, conventRule) {
         const isDefault = Array.isArray(n)
         const slotName = isDefault ? 'default' : n.attrsMap.slot
         const slotId = `${moduleId}-${slotName}-${mpcomid.replace(/\'/g, '')}`
-        const node = isDefault ? { tag: 'slot', attrsMap: {}, children: n } : n
-
+        if (!isDefault) {
+          delete n.attrsMap.slot
+        }
+        const node = isDefault ? { tag: 'slot', attrsMap: {}, children: n } : { tag: 'slot', attrsMap: {}, children: [n] }
         node.tag = 'template'
         node.attrsMap.name = slotId
-        delete node.attrsMap.slot
         // 缓存，会集中生成一个 slots 文件
         slots[slotId] = { node: convertAst(node, options, util, conventRule), name: slotName, slotId }
         mpmlAst.slots[slotName] = slotId
