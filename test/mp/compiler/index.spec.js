@@ -1,10 +1,10 @@
-const { compile, compileToWxml } = require('../../../packages/mpvue-template-compiler')
+const { compile, compileToMPML } = require('../../../packages/mpvue-template-compiler')
 // const { strToRegExp } = require('../helpers/index')
 
 function assertCodegen (template, assertTemplate, options, parmas = {}) {
   const { errors = [], mpErrors = [], slots = {}, mpTips = [] } = parmas
   const compiled = compile(template, {})
-  const output = compileToWxml(compiled, options)
+  const output = compileToMPML(compiled, options)
   expect(output.compiled.mpErrors).toEqual(mpErrors)
   expect(output.compiled.mpTips).toEqual(mpTips)
   expect(output.compiled.errors).toEqual(errors)

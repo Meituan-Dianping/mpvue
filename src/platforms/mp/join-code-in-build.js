@@ -9,6 +9,20 @@ try {
   global.Page = global.Page || Page;
   global.Component = global.Component || Component;
   global.getApp = global.getApp || getApp;
+
+  if (typeof wx !== 'undefined') {
+    global.mpvue = wx;
+    global.mpvuePlatform = 'wx';
+  } else if (typeof swan !== 'undefined') {
+    global.mpvue = swan;
+    global.mpvuePlatform = 'swan';
+  }else if (typeof tt !== 'undefined') {
+    global.mpvue = tt;
+    global.mpvuePlatform = 'tt';
+  }else if (typeof my !== 'undefined') {
+    global.mpvue = my;
+    global.mpvuePlatform = 'my';
+  }
 } catch (e) {}
 `
 

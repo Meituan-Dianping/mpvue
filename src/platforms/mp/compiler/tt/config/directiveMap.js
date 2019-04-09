@@ -8,22 +8,22 @@
 
 const noSupport = {
   type: 4,
-  check: (k, v, errors) => {
+  check (k, v, errors) {
     errors(`不支持此指令: ${k}="${v}"`)
     return false
   }
 }
 export default {
   'v-if': {
-    name: 'wx:if',
+    name: 'tt:if',
     type: 0
   },
   'v-else-if': {
-    name: 'wx:elif',
+    name: 'tt:elif',
     type: 0
   },
   'v-else': {
-    name: 'wx:else',
+    name: 'tt:else',
     type: 1
   },
   'v-text': {

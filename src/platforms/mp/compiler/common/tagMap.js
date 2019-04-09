@@ -93,7 +93,7 @@ export default {
   'col': 'view',
   'colgroup': 'view',
 
-  // 样式 节
+  // 样式
   'div': 'view',
   'main': 'view',
   'span': 'label',
@@ -107,12 +107,11 @@ export default {
   'summary': 'view',
 
   'progress': 'progress',
-  'meter': 'progress', // todo
-  'head': 'view', // todo
-  'meta': 'view', // todo
-  'base': 'text', // todo
-  // 'map': 'image', // TODO不是很恰当
-  'area': 'navigator', // j结合map使用
+  'meter': 'progress',
+  'head': 'view',
+  'meta': 'view',
+  'base': 'text',
+  'area': 'navigator',
 
   'script': 'view',
   'noscript': 'view',
@@ -127,23 +126,15 @@ export default {
   'swiper': 'swiper',
   'icon': 'icon',
   'text': 'text',
-  // 'progress': 'progress',
-  // 'button': 'button',
-  // 'form': 'form',
-  // 'input': 'input',
   'checkbox': 'checkbox',
   'radio': 'radio',
   'picker': 'picker',
   'picker-view': 'picker-view',
   'slider': 'slider',
   'switch': 'switch',
-  // 'label': 'label',
   'navigator': 'navigator',
-  // 'audio': 'audio',
   'image': 'image',
-  // 'video': 'video',
   'map': 'map',
-  // 'canvas': 'canvas',
   'contact-button': 'contact-button',
   'block': 'block'
 }

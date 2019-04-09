@@ -1,6 +1,6 @@
 /*!
  * Vue.js v2.4.1
- * (c) 2014-2018 Evan You
+ * (c) 2014-2019 Evan You
  * Released under the MIT License.
  */
 (function (global, factory) {
@@ -840,10 +840,13 @@ var observerState = {
  * object's property keys into getter/setters that
  * collect dependencies and dispatches updates.
  */
-var Observer = function Observer (value) {
+var Observer = function Observer (value, key) {
   this.value = value;
   this.dep = new Dep();
   this.vmCount = 0;
+  if (key) {
+    this.key = key;
+  }
   def(value, '__ob__', this);
   if (Array.isArray(value)) {
     var augment = hasProto
@@ -906,7 +909,7 @@ function copyAugment (target, src, keys) {
  * returns the new observer if successfully observed,
  * or the existing observer if the value already has one.
  */
-function observe (value, asRootData) {
+function observe (value, asRootData, key) {
   if (!isObject(value)) {
     return
   }
@@ -920,7 +923,9 @@ function observe (value, asRootData) {
     Object.isExtensible(value) &&
     !value._isVue
   ) {
-    ob = new Observer(value);
+    ob = new Observer(value, key);
+    ob.__keyPath = ob.__keyPath ? ob.__keyPath : {};
+    ob.__keyPath[key] = true;
   }
   if (asRootData && ob) {
     ob.vmCount++;
@@ -949,7 +954,7 @@ function defineReactive$$1 (
   var getter = property && property.get;
   var setter = property && property.set;
 
-  var childOb = !shallow && observe(val);
+  var childOb = !shallow && observe(val, undefined, key);
   Object.defineProperty(obj, key, {
     enumerable: true,
     configurable: true,
@@ -972,6 +977,7 @@ function defineReactive$$1 (
       if (newVal === value || (newVal !== newVal && value !== value)) {
         return
       }
+
       /* eslint-enable no-self-compare */
       if ("development" !== 'production' && customSetter) {
         customSetter();
@@ -981,8 +987,10 @@ function defineReactive$$1 (
       } else {
         val = newVal;
       }
-      childOb = !shallow && observe(newVal);
+      childOb = !shallow && observe(newVal, undefined, key);
       dep.notify();
+      obj.__keyPath = obj.__keyPath ? obj.__keyPath : {};
+      obj.__keyPath[key] = true;
     }
   });
 }
@@ -1015,6 +1023,11 @@ function set (target, key, val) {
     return val
   }
   defineReactive$$1(ob.value, key, val);
+  // Vue.set 添加对象属性，渲染时候把 val 传给小程序渲染
+  if (!target.__keyPath) {
+    target.__keyPath = {};
+  }
+  target.__keyPath[key] = true;
   ob.dep.notify();
   return val
 }
@@ -1042,6 +1055,11 @@ function del (target, key) {
   if (!ob) {
     return
   }
+  if (!target.__keyPath) {
+    target.__keyPath = {};
+  }
+  // Vue.del 删除对象属性，渲染时候把这个属性设置为 undefined
+  target.__keyPath[key] = 'del';
   ob.dep.notify();
 }
 
@@ -4618,7 +4636,7 @@ Object.defineProperty(Vue$3.prototype, '$ssrContext', {
 });
 
 Vue$3.version = '2.4.1';
-Vue$3.mpvueVersion = '1.0.11';
+Vue$3.mpvueVersion = '1.0.13';
 
 /*  */
 

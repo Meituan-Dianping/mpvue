@@ -1,44 +1,41 @@
-import attrs from './attrs'
 import tag from './tag'
-import component from './component'
-import convertFor from './for'
-import tagConfig from '../config/config'
+import tagConfig from '../config'
 import { hyphenate } from 'shared/util'
 
-function convertAst (node, options = {}, util) {
+function convertAst (node, options = {}, util, conventRule) {
   const { children, ifConditions, staticClass = '', mpcomid } = node
   let { tag: tagName } = node
   const { log, deps, slots, slotTemplates } = util
-  let wxmlAst = Object.assign({}, node)
+  let mpmlAst = Object.assign({}, node)
   const { moduleId, components } = options
-  wxmlAst.tag = tagName = tagName ? hyphenate(tagName) : tagName
+  mpmlAst.tag = tagName = tagName ? hyphenate(tagName) : tagName
   // 引入 import, isSlot 是使用 slot 的编译地方，意即 <slot></slot> 的地方
   const isSlot = tagName === 'slot'
   if (isSlot) {
     deps.slots = 'slots'
     // 把当前 slot 节点包裹 template
-    const defSlot = Object.assign({}, wxmlAst)
+    const defSlot = Object.assign({}, mpmlAst)
     defSlot.tag = 'template'
     const templateName = `${defSlot.attrsMap.name || 'default'}`
     defSlot.attrsMap.name = templateName
-    wxmlAst.children = []
+    mpmlAst.children = []
     defSlot.parent = node.parent.parent
     slotTemplates[templateName] = defSlot
   }
 
-  const currentIsComponent = component.isComponent(tagName, components)
+  const currentIsComponent = conventRule.component.isComponent(tagName, components)
   if (currentIsComponent) {
     deps[tagName] = tagName
   }
 
   if (moduleId && !currentIsComponent && tagConfig.virtualTag.indexOf(tagName) < 0) {
-    wxmlAst.staticClass = staticClass ? `${moduleId} ${staticClass}`.replace(/\"/g, '') : moduleId
+    mpmlAst.staticClass = staticClass ? `${moduleId} ${staticClass}`.replace(/\"/g, '') : moduleId
   } else {
-    wxmlAst.staticClass = staticClass.replace(/\"/g, '')
+    mpmlAst.staticClass = staticClass.replace(/\"/g, '')
   }
 
   // 组件内部的node节点全部是 slot
-  wxmlAst.slots = {}
+  mpmlAst.slots = {}
   if (currentIsComponent && children && children.length) {
     // 只检查组件下的子节点（不检查孙子节点）是不是具名 slot，不然就是 default slot
     children
@@ -59,33 +56,33 @@ function convertAst (node, options = {}, util) {
         node.attrsMap.name = slotId
         delete node.attrsMap.slot
         // 缓存，会集中生成一个 slots 文件
-        slots[slotId] = { node: convertAst(node, options, util), name: slotName, slotId }
-        wxmlAst.slots[slotName] = slotId
+        slots[slotId] = { node: convertAst(node, options, util, conventRule), name: slotName, slotId }
+        mpmlAst.slots[slotName] = slotId
       })
     // 清理当前组件下的节点信息，因为 slot 都被转移了
     children.length = 0
-    wxmlAst.children.length = 0
+    mpmlAst.children.length = 0
   }
 
-  wxmlAst.attrsMap = attrs.format(wxmlAst.attrsMap)
-  wxmlAst = tag(wxmlAst, options)
-  wxmlAst = convertFor(wxmlAst, options)
-  wxmlAst = attrs.convertAttr(wxmlAst, log)
+  mpmlAst.attrsMap = conventRule.attrs.format(mpmlAst.attrsMap)
+  mpmlAst = tag(mpmlAst, options, conventRule.component, conventRule.attrs)
+  mpmlAst = conventRule.convertFor(mpmlAst, options)
+  mpmlAst = conventRule.attrs.convertAttr(mpmlAst, log)
   if (children && !isSlot) {
-    wxmlAst.children = children.map((k) => convertAst(k, options, util))
+    mpmlAst.children = children.map((k) => convertAst(k, options, util, conventRule))
   }
 
   if (ifConditions) {
     const length = ifConditions.length
     for (let i = 1; i < length; i++) {
-      wxmlAst.ifConditions[i].block = convertAst(ifConditions[i].block, options, util)
+      mpmlAst.ifConditions[i].block = convertAst(ifConditions[i].block, options, util, conventRule)
     }
   }
 
-  return wxmlAst
+  return mpmlAst
 }
 
-export default function wxmlAst (compiled, options = {}, log) {
+export default function getAstCommon (compiled, options = {}, log, conventRule) {
   const { ast } = compiled
   const deps = {
     // slots: 'slots'
@@ -96,8 +93,8 @@ export default function wxmlAst (compiled, options = {}, log) {
   const slotTemplates = {
   }
 
-  const wxast = convertAst(ast, options, { log, deps, slots, slotTemplates })
-  const children = Object.keys(slotTemplates).map(k => convertAst(slotTemplates[k], options, { log, deps, slots, slotTemplates }))
+  const wxast = convertAst(ast, options, { log, deps, slots, slotTemplates }, conventRule)
+  const children = Object.keys(slotTemplates).map(k => convertAst(slotTemplates[k], options, { log, deps, slots, slotTemplates }, conventRule))
   wxast.children = children.concat(wxast.children)
   return {
     wxast,

@@ -1,7 +1,8 @@
-import component from './component'
-import tagMap from '../config/wxmlTagMap'
+// import component from './component'
+import tagMap from '../../common/tagMap'
+import _ from 'lodash'
 
-export default function (ast, options) {
+export default function (ast, options, component, attrs) {
   const { tag, elseif, else: elseText, for: forText, staticClass = '', attrsMap = {}} = ast
   const { components } = options
   const { 'v-if': ifText, href, 'v-bind:href': bindHref, name } = attrsMap
@@ -27,6 +28,45 @@ export default function (ast, options) {
     delete ast.attrsMap.name
     ast = component.convertComponent(ast, components, slotName)
     ast.tag = 'template'
+    if (isSlot) {
+      const originParent = ast.parent
+      const _copyAstOne = _.cloneDeep(ast)
+      const _copyAstTwo = _.cloneDeep(ast)
+      const baseObject = {
+        type: ast.type,
+        tag: 'block'
+      }
+      const childOne = attrs.convertAttr(Object.assign({
+        if: `$slot${originSlotName}`,
+        attrsMap: {
+          'v-if': `$slot${originSlotName}`
+        }
+      }, baseObject))
+      const childTwo = attrs.convertAttr(Object.assign({
+        else: `'${originSlotName}'`,
+        attrsMap: {
+          'v-else': ''
+        }
+      }, baseObject))
+      _copyAstOne.attrsMap['is'] = '{{' + `$slot${originSlotName}` + '}}'
+      _copyAstTwo.attrsMap['is'] = '{{' + `'${originSlotName}'` + '}}'
+      _copyAstOne.parent = childOne
+      _copyAstTwo.parent = childTwo
+      childOne.children = [_copyAstOne]
+      childTwo.children = [_copyAstTwo]
+      const parentObject = {
+        type: ast.type,
+        tag: 'block',
+        parent: originParent
+      }
+      childOne.parent = parentObject
+      childTwo.parent = parentObject
+      parentObject.children = [
+        childOne,
+        childTwo
+      ]
+      ast = parentObject
+    }
   } else if (tag === 'a' && !(href || bindHref)) {
     ast.tag = 'view'
   } else if (ast.events && ast.events.scroll) {

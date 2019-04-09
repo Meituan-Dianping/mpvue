@@ -7,6 +7,20 @@ try {
   global.Page = global.Page || Page;
   global.Component = global.Component || Component;
   global.getApp = global.getApp || getApp;
+
+  if (typeof wx !== 'undefined') {
+    global.mpvue = wx;
+    global.mpvuePlatform = 'wx';
+  } else if (typeof swan !== 'undefined') {
+    global.mpvue = swan;
+    global.mpvuePlatform = 'swan';
+  }else if (typeof tt !== 'undefined') {
+    global.mpvue = tt;
+    global.mpvuePlatform = 'tt';
+  }else if (typeof my !== 'undefined') {
+    global.mpvue = my;
+    global.mpvuePlatform = 'my';
+  }
 } catch (e) {}
 
 (function (global, factory) {
@@ -847,8 +861,6 @@ function observe (value, asRootData, key) {
     !value._isVue
   ) {
     ob = new Observer(value, key);
-    ob.__keyPath = ob.__keyPath ? ob.__keyPath : {};
-    ob.__keyPath[key] = true;
   }
   if (asRootData && ob) {
     ob.vmCount++;
@@ -872,8 +884,6 @@ function defineReactive$$1 (
   if (property && property.configurable === false) {
     return
   }
-
-  // TODO: 先试验标记一下 keyPath
 
   // cater for pre-defined getter/setters
   var getter = property && property.get;
@@ -914,8 +924,15 @@ function defineReactive$$1 (
       }
       childOb = !shallow && observe(newVal, undefined, key);
       dep.notify();
-      obj.__keyPath = obj.__keyPath ? obj.__keyPath : {};
+
+      if (!obj.__keyPath) {
+        def(obj, '__keyPath', {}, false);
+      }
       obj.__keyPath[key] = true;
+      if (newVal instanceof Object && !(newVal instanceof Array)) {
+        // 标记是否是通过this.Obj = {} 赋值印发的改动，解决少更新问题#1305
+        def(newVal, '__newReference', true, false);
+      }
     }
   });
 }
@@ -948,8 +965,10 @@ function set (target, key, val) {
     return val
   }
   defineReactive$$1(ob.value, key, val);
-  // Vue.set 添加对象属性，渲染时候把val传给小程序渲染
-  target.__keyPath = target.__keyPath ? target.__keyPath : {};
+  // Vue.set 添加对象属性，渲染时候把 val 传给小程序渲染
+  if (!target.__keyPath) {
+    def(target, '__keyPath', {}, false);
+  }
   target.__keyPath[key] = true;
   ob.dep.notify();
   return val
@@ -978,8 +997,10 @@ function del (target, key) {
   if (!ob) {
     return
   }
-  target.__keyPath = target.__keyPath ? target.__keyPath : {};
-  // Vue.del 删除对象属性，渲染时候把这个属性设置为undefined
+  if (!target.__keyPath) {
+    def(target, '__keyPath', {}, false);
+  }
+  // Vue.del 删除对象属性，渲染时候把这个属性设置为 undefined
   target.__keyPath[key] = 'del';
   ob.dep.notify();
 }
@@ -4164,7 +4185,7 @@ Object.defineProperty(Vue$3.prototype, '$ssrContext', {
 });
 
 Vue$3.version = '2.4.1';
-Vue$3.mpvueVersion = '1.0.13';
+Vue$3.mpvueVersion = '2.0.6';
 
 /* globals renderer */
 
@@ -4961,6 +4982,8 @@ function callHook$1 (vm, hook, params) {
   var handlers = vm.$options[hook];
   if (hook === 'onError' && handlers) {
     handlers = [handlers];
+  } else if (hook === 'onPageNotFound' && handlers) {
+    handlers = [handlers];
   }
 
   var ret;
@@ -5176,6 +5199,10 @@ function initMP (mpType, next) {
 
       onError: function onError (err) {
         callHook$1(rootVueVM, 'onError', err);
+      },
+
+      onPageNotFound: function onPageNotFound (err) {
+        callHook$1(rootVueVM, 'onPageNotFound', err);
       }
     });
   } else if (mpType === 'component') {
@@ -5326,6 +5353,8 @@ function diffLog (updateData) {
   }
 }
 
+var KEY_SEP$1 = '_';
+
 function getDeepData (keyList, viewData) {
   if (keyList.length > 1) {
     var _key = keyList.splice(0, 1);
@@ -5343,14 +5372,23 @@ function getDeepData (keyList, viewData) {
     }
   }
 }
-function compareAndSetDeepData (key, newData, vm, data) {
+
+function compareAndSetDeepData (key, newData, vm, data, forceUpdate) {
   // 比较引用类型数据
   try {
     var keyList = key.split('.');
-     //page.__viewData__老版小程序不存在，使用mpvue里绑的data比对
+    // page.__viewData__老版小程序不存在，使用mpvue里绑的data比对
     var oldData = getDeepData(keyList, vm.$root.$mp.page.data);
-    if (oldData === null || JSON.stringify(oldData) !== JSON.stringify(newData)) {
+    if (oldData === null || JSON.stringify(oldData) !== JSON.stringify(newData) || forceUpdate) {
       data[key] = newData;
+    } else {
+      var keys = Object.keys(oldData);
+      keys.forEach(function (_key) {
+        var properties = Object.getOwnPropertyDescriptor(oldData, _key);
+        if (!properties['get'] && !properties['set']) {
+          data[key + '.' + _key] = newData[_key];
+        }
+      });
     }
   } catch (e) {
     console.log(e, key, newData, vm);
@@ -5369,11 +5407,11 @@ function minifyDeepData (rootKey, originKey, vmData, data, _mpValueSet, vm) {
   try {
     if (vmData instanceof Array) {
        // 数组
-      compareAndSetDeepData(rootKey + '.' + originKey, vmData, vm, data);
+      compareAndSetDeepData(rootKey + '.' + originKey, vmData, vm, data, true);
     } else {
       // Object
       var _keyPathOnThis = {}; // 存储这层对象的keyPath
-      if (vmData.__keyPath) {
+      if (vmData.__keyPath && !vmData.__newReference) {
         // 有更新列表 ，按照更新列表更新
         _keyPathOnThis = vmData.__keyPath;
         Object.keys(vmData).forEach(function (_key) {
@@ -5401,6 +5439,8 @@ function minifyDeepData (rootKey, originKey, vmData, data, _mpValueSet, vm) {
         // 没有更新列表
         compareAndSetDeepData(rootKey + '.' + originKey, vmData, vm, data);
       }
+      // 标记是否是通过this.Obj = {} 赋值印发的改动，解决少更新问题#1305
+      def(vmData, '__newReference', false, false);
     }
   } catch (e) {
     console.log(e, rootKey, originKey, vmData, data);
@@ -5409,10 +5449,10 @@ function minifyDeepData (rootKey, originKey, vmData, data, _mpValueSet, vm) {
 
 function getRootKey (vm, rootKey) {
   if (!vm.$parent.$attrs) {
-    rootKey = '$root.0' + ',' + rootKey;
+    rootKey = '$root.0' + KEY_SEP$1 + rootKey;
     return rootKey
   } else {
-    rootKey = vm.$parent.$attrs.mpcomid + ',' + rootKey;
+    rootKey = vm.$parent.$attrs.mpcomid + KEY_SEP$1 + rootKey;
     return getRootKey(vm.$parent, rootKey)
   }
 }
@@ -5431,7 +5471,7 @@ function diffData (vm, data) {
   });
   // console.log(rootKey)
 
-    // 值类型变量不考虑优化，还是直接更新
+  // 值类型变量不考虑优化，还是直接更新
   var __keyPathOnThis = vmData.__keyPath || vm.__keyPath || {};
   delete vm.__keyPath;
   delete vmData.__keyPath;
@@ -5440,11 +5480,10 @@ function diffData (vm, data) {
     // 第二次赋值才进行缩减操作
     Object.keys(vmData).forEach(function (vmDataItemKey) {
       if (vmData[vmDataItemKey] instanceof Object) {
-          // 引用类型
-        if (vmDataItemKey === '__keyPath') { return }
+        // 引用类型
         minifyDeepData(rootKey, vmDataItemKey, vmData[vmDataItemKey], data, vm._mpValueSet, vm);
-      } else if(vmData[vmDataItemKey] !== undefined){
-          // _data上的值属性只有要更新的时候才赋值
+      } else if (vmData[vmDataItemKey] !== undefined) {
+        // _data上的值属性只有要更新的时候才赋值
         if (__keyPathOnThis[vmDataItemKey] === true) {
           data[rootKey + '.' + vmDataItemKey] = vmData[vmDataItemKey];
         }
@@ -5454,9 +5493,8 @@ function diffData (vm, data) {
     Object.keys(vmProps).forEach(function (vmPropsItemKey) {
       if (vmProps[vmPropsItemKey] instanceof Object) {
         // 引用类型
-        if (vmPropsItemKey === '__keyPath') { return }
         minifyDeepData(rootKey, vmPropsItemKey, vmProps[vmPropsItemKey], data, vm._mpValueSet, vm);
-      } else if(vmProps[vmPropsItemKey] !== undefined){
+      } else if (vmProps[vmPropsItemKey] !== undefined) {
         data[rootKey + '.' + vmPropsItemKey] = vmProps[vmPropsItemKey];
       }
       // _props上的值属性只有要更新的时候才赋值
@@ -5471,14 +5509,14 @@ function diffData (vm, data) {
     Object.keys(vmComputedWatchers).forEach(function (computedItemKey) {
       data[rootKey + '.' + computedItemKey] = vm[computedItemKey];
     });
-      // 更新的时候要删除$root.0:{},否则会覆盖原正确数据
+    // 更新的时候要删除$root.0:{},否则会覆盖原正确数据
     delete data[rootKey];
   }
   if (vm._mpValueSet === undefined) {
-      // 第一次设置数据成功后，标记位置true,再更新到这个节点如果没有keyPath数组认为不需要更新
+    // 第一次设置数据成功后，标记位置true,再更新到这个节点如果没有keyPath数组认为不需要更新
     vm._mpValueSet = 'done';
   }
-  if (Vue$3.config.devtools) {
+  if (Vue$3.config._mpTrace) {
     // console.log('更新VM节点', vm)
     // console.log('实际传到Page.setData数据', data)
     diffLog(data);
@@ -5504,6 +5542,8 @@ function diffData (vm, data) {
 //     }
 //   }
 // }
+
+var KEY_SEP = '_';
 
 function getVmData (vm) {
   // 确保当前 vm 所有数据被同步
@@ -5533,12 +5573,12 @@ function getParentComKey (vm, res) {
 }
 
 function formatVmData (vm) {
-  var $p = getParentComKey(vm).join(',');
-  var $k = $p + ($p ? ',' : '') + getComKey(vm);
+  var $p = getParentComKey(vm).join(KEY_SEP);
+  var $k = $p + ($p ? KEY_SEP : '') + getComKey(vm);
 
   // getVmData 这儿获取当前组件内的所有数据，包含 props、computed 的数据
   // 改动 vue.runtime 所获的的核心能力
-  var data = Object.assign(getVmData(vm), { $k: $k, $kk: ($k + ","), $p: $p });
+  var data = Object.assign(getVmData(vm), { $k: $k, $kk: ("" + $k + KEY_SEP), $p: $p });
   var key = '$root.' + $k;
   var res = {};
   res[key] = data;
@@ -5622,7 +5662,6 @@ function getPage (vm) {
 }
 
 // 优化js变量动态变化时候引起全量更新
-
 // 优化每次 setData 都传递大量新数据
 function updateDataToMP () {
   var page = getPage(this);
@@ -5631,9 +5670,7 @@ function updateDataToMP () {
   }
 
   var data = formatVmData(this);
-
   diffData(this, data);
-
   throttleSetData(page.setData.bind(page), data);
 }
 
@@ -5647,18 +5684,37 @@ function initDataToMP () {
   page.setData(data);
 }
 
+// 虚拟dom的compid与真实dom的comkey匹配，多层嵌套的先补齐虚拟dom的compid直到完全匹配为止
+function isVmKeyMatchedCompkey (k, comkey) {
+  if (!k || !comkey) {
+    return false
+  }
+  // 完全匹配 comkey = '1_0_1', k = '1_0_1'
+  // 部分匹配 comkey = '1_0_10_1', k = '1_0_10'
+  // k + KEY_SEP防止k = '1_0_1'误匹配comkey = '1_0_10_1'
+  return comkey === k || comkey.indexOf(k + KEY_SEP$2) === 0
+}
+
 function getVM (vm, comkeys) {
   if ( comkeys === void 0 ) comkeys = [];
 
   var keys = comkeys.slice(1);
   if (!keys.length) { return vm }
 
+  // bugfix #1375: 虚拟dom的compid和真实dom的comkey在组件嵌套时匹配出错，comid会丢失前缀，需要从父节点补充
+  var comkey = keys.join(KEY_SEP$2);
+  var comidPrefix = '';
   return keys.reduce(function (res, key) {
     var len = res.$children.length;
     for (var i = 0; i < len; i++) {
       var v = res.$children[i];
       var k = getComKey(v);
-      if (k === key) {
+      if (comidPrefix) {
+        k = comidPrefix + KEY_SEP$2 + k;
+      }
+      // 找到匹配的父节点
+      if (isVmKeyMatchedCompkey(k, comkey)) {
+        comidPrefix = k;
         res = v;
         return res
       }
@@ -5741,6 +5797,7 @@ function getWebEventByMP (e) {
   return event
 }
 
+var KEY_SEP$2 = '_';
 function handleProxyWithVue (e) {
   var rootVueVM = this.$root;
   var type = e.type;
@@ -5750,7 +5807,7 @@ function handleProxyWithVue (e) {
   var dataset = ref.dataset; if ( dataset === void 0 ) dataset = {};
   var comkey = dataset.comkey; if ( comkey === void 0 ) comkey = '';
   var eventid = dataset.eventid;
-  var vm = getVM(rootVueVM, comkey.split(','));
+  var vm = getVM(rootVueVM, comkey.split(KEY_SEP$2));
 
   if (!vm) {
     return
