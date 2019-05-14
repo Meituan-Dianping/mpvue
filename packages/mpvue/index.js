@@ -4179,7 +4179,7 @@ Object.defineProperty(Vue$3.prototype, '$ssrContext', {
 });
 
 Vue$3.version = '2.4.1';
-Vue$3.mpvueVersion = '1.4.3';
+Vue$3.mpvueVersion = '1.4.4';
 
 /* globals renderer */
 
