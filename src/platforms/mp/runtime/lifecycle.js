@@ -214,8 +214,11 @@ export function createMp ({ mpType, init }) {
 
       // Do something initial when launch.
       onLaunch (options = {}) {
-        this.rootVueVM = init()
-        const mp = this.rootVueVM.$mp = {}
+        if (!this.rootVueVM) {
+          this.rootVueVM = init()
+          this.rootVueVM.$mp = {}
+        }
+        const mp = this.rootVueVM
         mp.mpType = 'app'
         mp.app = this
         mp.status = 'launch'
@@ -225,6 +228,12 @@ export function createMp ({ mpType, init }) {
 
       // Do something when app show.
       onShow (options = {}) {
+        // 百度小程序onLaunch与onShow存在bug
+        // 如果this.rootVueVM不存在则初始化
+        if (!this.rootVueVM) {
+          this.rootVueVM = init()
+          this.rootVueVM.$mp = {}
+        }
         const mp = this.rootVueVM.$mp
         mp.status = 'show'
         this.globalData.appOptions = mp.appOptions = options
