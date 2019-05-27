@@ -6,6 +6,9 @@ import { handleError } from './error'
 // can we use __proto__?
 export const hasProto = '__proto__' in {}
 
+// Wechat Miniprogram does not support __proto__ when using plugins
+export const isSupportArrayProto = hasProto && !(typeof wx !== 'undefined' && 'nv_push' in Array.prototype);
+
 // Browser environment sniffing
 export const inBrowser = typeof window !== 'undefined'
 export const UA = inBrowser && window.navigator.userAgent.toLowerCase()
