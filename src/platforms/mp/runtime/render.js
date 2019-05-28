@@ -154,5 +154,5 @@ export function initDataToMP () {
   }
 
   const data = collectVmData(this.$root)
-  page.setData(data)
+  page.setData(cloneDeep(data))
 }
