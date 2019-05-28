@@ -1,5 +1,6 @@
 import Vue from 'core/index'
 import { diffLog } from './runtime-trace'
+import { def } from 'core/util/index'
 
 const KEY_SEP = '_'
 
@@ -133,7 +134,7 @@ function minifyDeepData (rootKey, originKey, vmData, data, _mpValueSet, vm) {
         compareAndSetDeepData(rootKey + '.' + originKey, vmData, vm, data)
       }
       // 标记是否是通过this.Obj = {} 赋值印发的改动，解决少更新问题#1305
-      vmData.__newReference = false
+      def(vmData, '__newReference', false, false)
     }
   } catch (e) {
     console.log(e, rootKey, originKey, vmData, data)
@@ -142,10 +143,10 @@ function minifyDeepData (rootKey, originKey, vmData, data, _mpValueSet, vm) {
 
 function getRootKey (vm, rootKey) {
   if (!vm.$parent.$attrs) {
-    rootKey = '$root.0' + ',' + rootKey
+    rootKey = '$root.0' + KEY_SEP + rootKey
     return rootKey
   } else {
-    rootKey = vm.$parent.$attrs.mpcomid + ',' + rootKey
+    rootKey = vm.$parent.$attrs.mpcomid + KEY_SEP + rootKey
     return getRootKey(vm.$parent, rootKey)
   }
 }
