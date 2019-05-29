@@ -72,6 +72,9 @@ export function cloneDeep (data, hash = new WeakMap()) {
   if (!isObject(data)) {
     return data
   }
+  if (!data || !data.constructor) {
+    return data
+  }
   let copyData
   const Constructor = data.constructor
   // 实际情况中，正则表达式会被以{}存储，Date对象会以时间字符串形式存储
@@ -91,13 +94,15 @@ export function cloneDeep (data, hash = new WeakMap()) {
       copyData = new Constructor()
       hash.set(data, copyData)
   }
+  // 属性名称为Symbol类型的拷贝
   const symbols = Object.getOwnPropertySymbols(data)
   if (symbols && symbols.length) {
     symbols.forEach(symkey => {
       copyData[symkey] = isObject(data[symkey]) ? cloneDeep(data[symkey], hash) : data[symkey]
     })
   }
-  for (var key in data) {
+  // 普通数组/纯对象遍历
+  for (const key in data) {
     copyData[key] = isObject(data[key]) ? cloneDeep(data[key], hash) : data[key]
   }
   return copyData
