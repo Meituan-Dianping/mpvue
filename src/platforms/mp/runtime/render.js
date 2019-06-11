@@ -115,7 +115,7 @@ function throttle (func, wait, options) {
 
 // 优化频繁的 setData: https://mp.weixin.qq.com/debug/wxadoc/dev/framework/performance/tips.html
 const throttleSetData = throttle((handle, data) => {
-  if (!handle) return;
+  if (!handle) return
   handle(data)
 }, 50)
 
