@@ -53,7 +53,7 @@ function convertAst (node, options = {}, util, conventRule) {
         if (!isDefault) {
           delete n.attrsMap.slot
         }
-        const node = isDefault ? { tag: 'slot', attrsMap: {}, children: n } : { tag: 'slot', attrsMap: {}, children: [n] }
+        const node = { tag: 'slot', attrsMap: {}, children: isDefault ? n : [n] }
         node.tag = 'template'
         node.attrsMap.name = slotId
         // 缓存，会集中生成一个 slots 文件
