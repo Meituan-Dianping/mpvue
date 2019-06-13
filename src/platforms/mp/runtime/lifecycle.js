@@ -1,6 +1,11 @@
 import { handleError } from 'core/util/index'
 import { observe } from 'core/observer/index'
 import { proxy } from 'core/instance/state'
+import { mountComponent } from 'core/instance/lifecycle'
+
+function _next (rootVueVM) {
+  return mountComponent(rootVueVM, undefined, undefined)
+}
 
 import {
   camelize,
@@ -178,7 +183,6 @@ export function initMP (mpType, next) {
   // Please do not register multiple Pages
   // if (mp.registered) {
   if (mp.status) {
-    // 处理子组件的小程序生命周期
     if (mpType === 'app') {
       callHook(this, 'onLaunch', mp.appOptions)
     } else {
@@ -191,7 +195,10 @@ export function initMP (mpType, next) {
 
   mp.mpType = mpType
   mp.status = 'register'
+}
 
+export function createMP ({ mpType, init }) {
+  if (!mpType) mpType = 'page'
   if (mpType === 'app') {
     global.App({
       // 页面的初始数据
@@ -200,88 +207,54 @@ export function initMP (mpType, next) {
       },
 
       handleProxy (e) {
-        return rootVueVM.$handleProxyWithVue(e)
+        return this.rootVueVM.$handleProxyWithVue(e)
       },
 
       // Do something initial when launch.
       onLaunch (options = {}) {
+        if (!this.rootVueVM) {
+          this.rootVueVM = init()
+          this.rootVueVM.$mp = {}
+        }
+        const mp = this.rootVueVM
+        mp.mpType = 'app'
         mp.app = this
         mp.status = 'launch'
         this.globalData.appOptions = mp.appOptions = options
-        callHook(rootVueVM, 'onLaunch', options)
-        next()
+        this.rootVueVM.$mount()
       },
 
       // Do something when app show.
       onShow (options = {}) {
+        // 百度小程序onLaunch与onShow存在bug
+        // 如果this.rootVueVM不存在则初始化
+        if (!this.rootVueVM) {
+          this.rootVueVM = init()
+          this.rootVueVM.$mp = {}
+        }
+        const mp = this.rootVueVM.$mp
         mp.status = 'show'
         this.globalData.appOptions = mp.appOptions = options
-        callHook(rootVueVM, 'onShow', options)
+        callHook(this.rootVueVM, 'onShow', options)
       },
 
       // Do something when app hide.
       onHide () {
+        const mp = this.rootVueVM.$mp
         mp.status = 'hide'
-        callHook(rootVueVM, 'onHide')
+        callHook(this.rootVueVM, 'onHide')
       },
 
       onError (err) {
-        callHook(rootVueVM, 'onError', err)
+        callHook(this.rootVueVM, 'onError', err)
       },
 
       onPageNotFound (err) {
-        callHook(rootVueVM, 'onPageNotFound', err)
+        callHook(this.rootVueVM, 'onPageNotFound', err)
       }
     })
-  } else if (mpType === 'component') {
-    initMpProps(rootVueVM)
-
-    global.Component({
-      // 小程序原生的组件属性
-      properties: normalizeProperties(rootVueVM),
-      // 页面的初始数据
-      data: {
-        $root: {}
-      },
-      methods: {
-        handleProxy (e) {
-          return rootVueVM.$handleProxyWithVue(e)
-        }
-      },
-      // mp lifecycle for vue
-      // 组件生命周期函数，在组件实例进入页面节点树时执行，注意此时不能调用 setData
-      created () {
-        mp.status = 'created'
-        mp.page = this
-      },
-      // 组件生命周期函数，在组件实例进入页面节点树时执行
-      attached () {
-        mp.status = 'attached'
-        callHook(rootVueVM, 'attached')
-      },
-      // 组件生命周期函数，在组件布局完成后执行，此时可以获取节点信息（使用 SelectorQuery ）
-      ready () {
-        mp.status = 'ready'
-
-        callHook(rootVueVM, 'ready')
-        next()
-
-        // 只有页面需要 setData
-        rootVueVM.$nextTick(() => {
-          rootVueVM._initDataToMP()
-        })
-      },
-      // 组件生命周期函数，在组件实例被移动到节点树另一个位置时执行
-      moved () {
-        callHook(rootVueVM, 'moved')
-      },
-      // 组件生命周期函数，在组件实例被从页面节点树移除时执行
-      detached () {
-        mp.status = 'detached'
-        callHook(rootVueVM, 'detached')
-      }
-    })
-  } else {
+  }
+  if (mpType === 'page') {
     const app = global.getApp()
     global.Page({
       // 页面的初始数据
@@ -290,75 +263,138 @@ export function initMP (mpType, next) {
       },
 
       handleProxy (e) {
-        return rootVueVM.$handleProxyWithVue(e)
+        return this.rootVueVM.$handleProxyWithVue(e)
       },
 
       // mp lifecycle for vue
       // 生命周期函数--监听页面加载
       onLoad (query) {
+        this.rootVueVM = init()
+        const mp = this.rootVueVM.$mp = {}
+        mp.mpType = 'page'
         mp.page = this
         mp.query = query
         mp.status = 'load'
-        getGlobalData(app, rootVueVM)
-        callHook(rootVueVM, 'onLoad', query)
+        getGlobalData(app, this.rootVueVM)
+        this.rootVueVM.$mount()
       },
 
       // 生命周期函数--监听页面显示
       onShow () {
+        const mp = this.rootVueVM.$mp
         mp.page = this
         mp.status = 'show'
-        callHook(rootVueVM, 'onShow')
-
+        callHook(this.rootVueVM, 'onShow')
         // 只有页面需要 setData
-        rootVueVM.$nextTick(() => {
-          rootVueVM._initDataToMP()
+        this.rootVueVM.$nextTick(() => {
+          this.rootVueVM._initDataToMP()
         })
       },
 
       // 生命周期函数--监听页面初次渲染完成
       onReady () {
+        const mp = this.rootVueVM.$mp
         mp.status = 'ready'
-
-        callHook(rootVueVM, 'onReady')
-        next()
+        return _next(this.rootVueVM)
       },
 
       // 生命周期函数--监听页面隐藏
       onHide () {
+        const mp = this.rootVueVM.$mp
         mp.status = 'hide'
-        callHook(rootVueVM, 'onHide')
+        callHook(this.rootVueVM, 'onHide')
         mp.page = null
       },
 
       // 生命周期函数--监听页面卸载
       onUnload () {
+        const mp = this.rootVueVM.$mp
         mp.status = 'unload'
-        callHook(rootVueVM, 'onUnload')
+        callHook(this.rootVueVM, 'onUnload')
         mp.page = null
       },
 
       // 页面相关事件处理函数--监听用户下拉动作
       onPullDownRefresh () {
-        callHook(rootVueVM, 'onPullDownRefresh')
+        callHook(this.rootVueVM, 'onPullDownRefresh')
       },
 
       // 页面上拉触底事件的处理函数
       onReachBottom () {
-        callHook(rootVueVM, 'onReachBottom')
+        callHook(this.rootVueVM, 'onReachBottom')
       },
 
       // 用户点击右上角分享
-      onShareAppMessage: rootVueVM.$options.onShareAppMessage
-        ? options => callHook(rootVueVM, 'onShareAppMessage', options) : null,
+      onShareAppMessage (options) {
+        if (this.rootVueVM.$options.onShareAppMessage) {
+          callHook(this.rootVueVM, 'onShareAppMessage', options)
+        }
+      },
 
       // Do something when page scroll
       onPageScroll (options) {
-        callHook(rootVueVM, 'onPageScroll', options)
+        callHook(this.rootVueVM, 'onPageScroll', options)
       },
 
       // 当前是 tab 页时，点击 tab 时触发
       onTabItemTap (options) {
-        callHook(rootVueVM, 'onTabItemTap', options)
+        callHook(this.rootVueVM, 'onTabItemTap', options)
+      }
+    })
+  }
+  if (mpType === 'component') {
+    global.Component({
+      // 小程序原生的组件属性
+      properties: {},
+      // 页面的初始数据
+      data: {
+        $root: {}
+      },
+      methods: {
+        handleProxy (e) {
+          return this.rootVueVM.$handleProxyWithVue(e)
+        }
+      },
+      // mp lifecycle for vue
+      // 组件生命周期函数，在组件实例进入页面节点树时执行，注意此时不能调用 setData
+      created () {
+        this.rootVueVM = init()
+        initMpProps(this.rootVueVM)
+        this.properties = normalizeProperties(this.rootVueVM)
+        const mp = this.rootVueVM.$mp = {}
+        mp.mpType = 'component'
+        mp.status = 'created'
+        mp.page = this
+        this.rootVueVM.$mount()
+        callHook(this.rootVueVM, 'created')
+      },
+      // 组件生命周期函数，在组件实例进入页面节点树时执行
+      attached () {
+        const mp = this.rootVueVM.$mp
+        mp.status = 'attached'
+        callHook(this.rootVueVM, 'attached')
+      },
+      // 组件生命周期函数，在组件布局完成后执行，此时可以获取节点信息（使用 SelectorQuery ）
+      ready () {
+        const mp = this.rootVueVM.$mp
+        mp.status = 'ready'
+        callHook(this.rootVueVM, 'ready')
+        _next(this.rootVueVM)
+
+        // 只有页面需要 setData
+        this.rootVueVM.$nextTick(() => {
+          this.rootVueVM._initDataToMP()
+        })
+      },
+      // 组件生命周期函数，在组件实例被移动到节点树另一个位置时执行
+      moved () {
+        callHook(this.rootVueVM, 'moved')
+      },
+      // 组件生命周期函数，在组件实例被从页面节点树移除时执行
+      detached () {
+        const mp = this.rootVueVM.$mp
+        mp.status = 'detached'
+        callHook(this.rootVueVM, 'detached')
       }
     })
   }
