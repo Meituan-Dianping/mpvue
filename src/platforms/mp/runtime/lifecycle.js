@@ -197,10 +197,8 @@ export function initMP (mpType, next) {
   mp.status = 'register'
 }
 
-export function createMp ({ mpType, init }) {
-  if (!mpType || !init) {
-    throw Error('缺少mpType类型或初始化配置')
-  }
+export function createMP ({ mpType, init }) {
+  if (!mpType) mpType = 'page'
   if (mpType === 'app') {
     global.App({
       // 页面的初始数据

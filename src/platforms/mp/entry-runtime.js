@@ -1,9 +1,9 @@
 /* @flow */
 
 import Vue from './runtime/index'
-import { createMp } from './runtime/lifecycle'
+import { createMP } from './runtime/lifecycle'
 
 export default {
   Vue,
-  createMp
+  createMP
 }

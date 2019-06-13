@@ -69,7 +69,7 @@ function isObject (obj) {
 }
 
 export function cloneDeep (data, hash = new WeakMap()) {
-  if (!isObject(data)) {
+  if (!isObject(data) || !data || !data.constructor) {
     return data
   }
   let copyData
