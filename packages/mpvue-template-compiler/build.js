@@ -2823,6 +2823,12 @@ var Observer = function Observer (value, key) {
       ? protoAugment
       : copyAugment;
     augment(value, arrayMethods, arrayKeys);
+    // 微信小程序中使用插件，数组对象上会直接挂载`push、pop、sort`等方法
+    // 导致mpvue对隐式原型的覆盖无效，无法感知用户对数组的操作
+    if (hasProto) {
+      var ownMethods = hasOwnArrayMethods(value, arrayKeys);
+      ownMethods.length && copyAugment(value, arrayMethods, ownMethods);
+    }
     this.observeArray(value);
   } else {
     this.walk(value);
@@ -2849,6 +2855,21 @@ Observer.prototype.observeArray = function observeArray (items) {
     observe(items[i]);
   }
 };
+
+/**
+ * 判断当前数组上是否被挂载了数组方法
+ */
+function hasOwnArrayMethods (value, keys) {
+  var ownMethods = [];
+  /* eslint-disable no-proto */
+  keys.forEach(function (key) {
+    if (value[key] !== value.__proto__[key]) {
+      ownMethods.push(key);
+    }
+  });
+  /* eslint-enable no-proto */
+  return ownMethods
+}
 
 // helpers
 

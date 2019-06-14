@@ -784,6 +784,12 @@ var Observer = function Observer (value, key) {
       ? protoAugment
       : copyAugment;
     augment(value, arrayMethods, arrayKeys);
+    // 微信小程序中使用插件，数组对象上会直接挂载`push、pop、sort`等方法
+    // 导致mpvue对隐式原型的覆盖无效，无法感知用户对数组的操作
+    if (hasProto) {
+      var ownMethods = hasOwnArrayMethods(value, arrayKeys);
+      ownMethods.length && copyAugment(value, arrayMethods, ownMethods);
+    }
     this.observeArray(value);
   } else {
     this.walk(value);
@@ -810,6 +816,21 @@ Observer.prototype.observeArray = function observeArray (items) {
     observe(items[i]);
   }
 };
+
+/**
+ * 判断当前数组上是否被挂载了数组方法
+ */
+function hasOwnArrayMethods (value, keys) {
+  var ownMethods = [];
+  /* eslint-disable no-proto */
+  keys.forEach(function (key) {
+    if (value[key] !== value.__proto__[key]) {
+      ownMethods.push(key);
+    }
+  });
+  /* eslint-enable no-proto */
+  return ownMethods
+}
 
 // helpers
 
@@ -4179,7 +4200,7 @@ Object.defineProperty(Vue$3.prototype, '$ssrContext', {
 });
 
 Vue$3.version = '2.4.1';
-Vue$3.mpvueVersion = '1.4.4';
+Vue$3.mpvueVersion = '1.4.6';
 
 /* globals renderer */
 
@@ -4237,6 +4258,48 @@ var eventTypeMap = {
   scrolltolower: ['scrolltolower'],
   scroll: ['scroll']
 };
+
+// vm上的数据深拷贝
+function isObject$1 (obj) {
+  return (typeof obj === 'object' || typeof obj === 'function') && obj !== null
+}
+
+function cloneDeep (data, hash) {
+  if ( hash === void 0 ) hash = new WeakMap();
+
+  if (!isObject$1(data)) {
+    return data
+  }
+  var copyData;
+  var Constructor = data.constructor;
+  // 实际情况中，正则表达式会被以{}存储，Date对象会以时间字符串形式存储
+  // 函数则变为null
+  switch (Constructor) {
+    case RegExp:
+      copyData = new Constructor(data);
+      break
+    case Date:
+      copyData = new Constructor(data.getTime());
+      break
+    default:
+      // 循环引用问题解决
+      if (hash.has(data)) {
+        return hash.get(data)
+      }
+      copyData = new Constructor();
+      hash.set(data, copyData);
+  }
+  var symbols = Object.getOwnPropertySymbols(data);
+  if (symbols && symbols.length) {
+    symbols.forEach(function (symkey) {
+      copyData[symkey] = isObject$1(data[symkey]) ? cloneDeep(data[symkey], hash) : data[symkey];
+    });
+  }
+  for (var key in data) {
+    copyData[key] = isObject$1(data[key]) ? cloneDeep(data[key], hash) : data[key];
+  }
+  return copyData
+}
 
 /*  */
 
@@ -5347,6 +5410,8 @@ function diffLog (updateData) {
   }
 }
 
+var KEY_SEP$1 = '_';
+
 function getDeepData (keyList, viewData) {
   if (keyList.length > 1) {
     var _key = keyList.splice(0, 1);
@@ -5365,15 +5430,68 @@ function getDeepData (keyList, viewData) {
   }
 }
 
-function compareAndSetDeepData (key, newData, vm, data, forceUpdate) {
+function deepDiff (oldData, newData, data, key) {
+  if (oldData === newData) {
+    return
+  }
+  // 新旧数据如果存在值为null则添加到需要更新的表中
+  if (oldData === null || newData === null) {
+    data[key] = newData;
+    return
+  }
+  if (Object.prototype.toString.call(oldData) !== Object.prototype.toString.call(newData)) {
+    data[key] = newData;
+    return
+  }
+  // 如果新旧数据均为数组，则进行diff
+  if (Array.isArray(newData) && Array.isArray(oldData)) {
+    if (newData.length === oldData.length) {
+      for (var i = 0, len = newData.length; i < len; i++) {
+        // 递归处理，处理数据中包含数据或者包含对象的情况
+        deepDiff(oldData[i], newData[i], data, key + '[' + i + ']');
+      }
+    } else {
+      // 数组长度不一样直接setData
+      data[key] = newData;
+    }
+    return
+  }
+  // 如果新旧数据均为对象，进行diff
+  if (typeof oldData === 'object' && typeof newData === 'object') {
+    var newKeys = Object.keys(newData);
+    var oldKeys = Object.keys(oldData);
+    var uniqueKeys = new Set(newKeys.concat( oldKeys));
+    uniqueKeys.forEach(function (itemKey) {
+      if (oldData[itemKey] &&
+        newData[itemKey] &&
+        typeof newData[itemKey] === 'object' &&
+        Object.prototype.toString.call(oldData) === Object.prototype.toString.call(newData)
+      ) {
+        deepDiff(oldData[itemKey], newData[itemKey], data, key + '.' + itemKey);
+        return
+      }
+      if (oldData[itemKey] !== newData[itemKey]) {
+        data[key + '.' + itemKey] = newData[itemKey] || '';
+      }
+    });
+    return
+  }
+  if (oldData !== newData) {
+    data[key] = newData;
+  }
+}
+
+function compareAndSetDeepData (key, newData, vm, data) {
   // 比较引用类型数据
   try {
     var keyList = key.split('.');
     // page.__viewData__老版小程序不存在，使用mpvue里绑的data比对
     var oldData = getDeepData(keyList, vm.$root.$mp.page.data);
-    if (oldData === null || JSON.stringify(oldData) !== JSON.stringify(newData) || forceUpdate) {
+    if (!oldData) {
       data[key] = newData;
+      return
     }
+    deepDiff(oldData, newData, data, key);
   } catch (e) {
     console.log(e, key, newData, vm);
   }
@@ -5391,7 +5509,7 @@ function minifyDeepData (rootKey, originKey, vmData, data, _mpValueSet, vm) {
   try {
     if (vmData instanceof Array) {
        // 数组
-      compareAndSetDeepData(rootKey + '.' + originKey, vmData, vm, data, true);
+      compareAndSetDeepData(rootKey + '.' + originKey, vmData, vm, data);
     } else {
       // Object
       var _keyPathOnThis = {}; // 存储这层对象的keyPath
@@ -5424,7 +5542,7 @@ function minifyDeepData (rootKey, originKey, vmData, data, _mpValueSet, vm) {
         compareAndSetDeepData(rootKey + '.' + originKey, vmData, vm, data);
       }
       // 标记是否是通过this.Obj = {} 赋值印发的改动，解决少更新问题#1305
-      vmData.__newReference = false;
+      def(vmData, '__newReference', false, false);
     }
   } catch (e) {
     console.log(e, rootKey, originKey, vmData, data);
@@ -5433,10 +5551,10 @@ function minifyDeepData (rootKey, originKey, vmData, data, _mpValueSet, vm) {
 
 function getRootKey (vm, rootKey) {
   if (!vm.$parent.$attrs) {
-    rootKey = '$root.0' + ',' + rootKey;
+    rootKey = '$root.0' + KEY_SEP$1 + rootKey;
     return rootKey
   } else {
-    rootKey = vm.$parent.$attrs.mpcomid + ',' + rootKey;
+    rootKey = vm.$parent.$attrs.mpcomid + KEY_SEP$1 + rootKey;
     return getRootKey(vm.$parent, rootKey)
   }
 }
@@ -5629,7 +5747,10 @@ function throttle (func, wait, options) {
 
 // 优化频繁的 setData: https://mp.weixin.qq.com/debug/wxadoc/dev/framework/performance/tips.html
 var throttleSetData = throttle(function (handle, data) {
-  handle(data);
+  if (!Object.keys(data).length) {
+    return
+  }
+  handle(cloneDeep(data));
 }, 50);
 
 function getPage (vm) {
@@ -5665,7 +5786,7 @@ function initDataToMP () {
   }
 
   var data = collectVmData(this.$root);
-  page.setData(data);
+  page.setData(cloneDeep(data));
 }
 
 // 虚拟dom的compid与真实dom的comkey匹配，多层嵌套的先补齐虚拟dom的compid直到完全匹配为止
@@ -5676,7 +5797,7 @@ function isVmKeyMatchedCompkey (k, comkey) {
   // 完全匹配 comkey = '1_0_1', k = '1_0_1'
   // 部分匹配 comkey = '1_0_10_1', k = '1_0_10'
   // k + KEY_SEP防止k = '1_0_1'误匹配comkey = '1_0_10_1'
-  return comkey === k || comkey.indexOf(k + KEY_SEP$1) === 0
+  return comkey === k || comkey.indexOf(k + KEY_SEP$2) === 0
 }
 
 function getVM (vm, comkeys) {
@@ -5686,7 +5807,7 @@ function getVM (vm, comkeys) {
   if (!keys.length) { return vm }
 
   // bugfix #1375: 虚拟dom的compid和真实dom的comkey在组件嵌套时匹配出错，comid会丢失前缀，需要从父节点补充
-  var comkey = keys.join(KEY_SEP$1);
+  var comkey = keys.join(KEY_SEP$2);
   var comidPrefix = '';
   return keys.reduce(function (res, key) {
     var len = res.$children.length;
@@ -5694,7 +5815,7 @@ function getVM (vm, comkeys) {
       var v = res.$children[i];
       var k = getComKey(v);
       if (comidPrefix) {
-        k = comidPrefix + KEY_SEP$1 + k;
+        k = comidPrefix + KEY_SEP$2 + k;
       }
       // 找到匹配的父节点
       if (isVmKeyMatchedCompkey(k, comkey)) {
@@ -5782,7 +5903,7 @@ function getWebEventByMP (e) {
 }
 
 
-var KEY_SEP$1 = '_';
+var KEY_SEP$2 = '_';
 function handleProxyWithVue (e) {
   var rootVueVM = this.$root;
   var type = e.type;
@@ -5792,7 +5913,7 @@ function handleProxyWithVue (e) {
   var dataset = ref.dataset; if ( dataset === void 0 ) dataset = {};
   var comkey = dataset.comkey; if ( comkey === void 0 ) comkey = '';
   var eventid = dataset.eventid;
-  var vm = getVM(rootVueVM, comkey.split(KEY_SEP$1));
+  var vm = getVM(rootVueVM, comkey.split(KEY_SEP$2));
 
   if (!vm) {
     return
