@@ -142,6 +142,11 @@ export function updateDataToMP () {
     return
   }
 
+  // 对于被销毁的节点，不更新data
+  if (this._isDestroyed) {
+    return
+  }
+
   const data = formatVmData(this)
   diffData(this, data)
   throttleSetData(page.setData.bind(page), data)
