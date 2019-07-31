@@ -4200,7 +4200,7 @@ Object.defineProperty(Vue$3.prototype, '$ssrContext', {
 });
 
 Vue$3.version = '2.4.1';
-Vue$3.mpvueVersion = '1.4.6';
+Vue$3.mpvueVersion = '1.4.7';
 
 /* globals renderer */
 
@@ -4270,6 +4270,9 @@ function cloneDeep (data, hash) {
   if (!isObject$1(data)) {
     return data
   }
+  if (!data || !data.constructor) {
+    return data
+  }
   var copyData;
   var Constructor = data.constructor;
   // 实际情况中，正则表达式会被以{}存储，Date对象会以时间字符串形式存储
@@ -4289,12 +4292,14 @@ function cloneDeep (data, hash) {
       copyData = new Constructor();
       hash.set(data, copyData);
   }
+  // 属性名称为Symbol类型的拷贝
   var symbols = Object.getOwnPropertySymbols(data);
   if (symbols && symbols.length) {
     symbols.forEach(function (symkey) {
       copyData[symkey] = isObject$1(data[symkey]) ? cloneDeep(data[symkey], hash) : data[symkey];
     });
   }
+  // 普通数组/纯对象遍历
   for (var key in data) {
     copyData[key] = isObject$1(data[key]) ? cloneDeep(data[key], hash) : data[key];
   }
