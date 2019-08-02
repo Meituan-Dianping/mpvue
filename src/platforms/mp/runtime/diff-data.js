@@ -63,7 +63,7 @@ function deepDiff (oldData, newData, data, key) {
         return
       }
       if (oldData[itemKey] !== newData[itemKey]) {
-        data[key + '.' + itemKey] = newData[itemKey] || ''
+        data[key + '.' + itemKey] = newData[itemKey]
       }
     })
     return

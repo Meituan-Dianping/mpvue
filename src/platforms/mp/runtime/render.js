@@ -32,7 +32,7 @@ function getVmData (vm) {
     Object.keys(vm._computedWatchers || {})
   )
   return dataKeys.reduce((res, key) => {
-    res[key] = vm[key]
+    res[key] = cloneDeep(vm[key])
     return res
   }, {})
 }
@@ -120,7 +120,7 @@ const throttleSetData = throttle((handle, data) => {
   if (!Object.keys(data).length) {
     return
   }
-  handle(cloneDeep(data))
+  handle(data)
 }, 50)
 
 function getPage (vm) {
