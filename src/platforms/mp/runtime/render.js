@@ -142,7 +142,7 @@ export function updateDataToMP () {
     return
   }
 
-  const data = formatVmData(this)
+  const data = {}
   diffData(this, data)
   throttleSetData(page.setData.bind(page), data)
 }

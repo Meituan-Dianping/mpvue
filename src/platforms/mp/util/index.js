@@ -90,14 +90,14 @@ export function cloneDeep (data, hash = new WeakMap()) {
       }
       copyData = new Constructor()
       if (Constructor === Map) {
-        for (const [key, value] of data.entries()) {
+        data.forEach((value, key) => {
           copyData.set(key, isObject(value) ? cloneDeep(value) : value)
-        }
+        })
       }
       if (Constructor === Set) {
-        for (const value of data.values()) {
+        data.forEach(value => {
           copyData.add(isObject(value) ? cloneDeep(value) : value)
-        }
+        })
       }
       hash.set(data, copyData)
   }
