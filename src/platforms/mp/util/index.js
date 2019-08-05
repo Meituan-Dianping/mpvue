@@ -63,9 +63,9 @@ export const eventTypeMap = {
   scroll: ['scroll']
 }
 
-// vm上的数据深拷贝
+// vm上的数据深拷贝，小程序里不支持eval函数，暂不支持函数拷贝
 function isObject (obj) {
-  return (typeof obj === 'object' || typeof obj === 'function') && obj !== null
+  return (typeof obj === 'object') && obj !== null
 }
 
 export function cloneDeep (data, hash = new WeakMap()) {
@@ -89,6 +89,16 @@ export function cloneDeep (data, hash = new WeakMap()) {
         return hash.get(data)
       }
       copyData = new Constructor()
+      if (Constructor === Map) {
+        data.forEach((value, key) => {
+          copyData.set(key, isObject(value) ? cloneDeep(value) : value)
+        })
+      }
+      if (Constructor === Set) {
+        data.forEach(value => {
+          copyData.add(isObject(value) ? cloneDeep(value) : value)
+        })
+      }
       hash.set(data, copyData)
   }
   const symbols = Object.getOwnPropertySymbols(data)
