@@ -216,7 +216,7 @@ export function createMP ({ mpType, init }) {
           this.rootVueVM = init()
           this.rootVueVM.$mp = {}
         }
-        const mp = this.rootVueVM
+        const mp = this.rootVueVM.$mp
         mp.mpType = 'app'
         mp.app = this
         mp.status = 'launch'
