@@ -128,13 +128,13 @@ function normalizeProps (props, res, vm) {
         item.value = item.default
       }
       const oldObserver = item.observer
-      item.observer = function (newVal, oldVal) {
+      item.observer = (name => (newVal, oldVal) => {
         vm[name] = newVal
         // 先修改值再触发原始的 observer，跟 watch 行为保持一致
         if (typeof oldObserver === 'function') {
           oldObserver.call(vm, newVal, oldVal)
         }
-      }
+      })(key)
     }
   }
 
