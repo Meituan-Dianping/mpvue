@@ -199,13 +199,19 @@ strats.watch = function (parentVal: ?Object, childVal: ?Object): ?Object {
  */
 strats.props =
 strats.methods =
-strats.inject =
 strats.computed = function (parentVal: ?Object, childVal: ?Object): ?Object {
   if (!childVal) return Object.create(parentVal || null)
   if (!parentVal) return childVal
   const ret = Object.create(null)
   extend(ret, parentVal)
   extend(ret, childVal)
+  return ret
+}
+strats.inject = function (parentVal: ?Object, childVal: ?Object): ?Object {
+  if (!parentVal) return childVal
+  const ret = Object.create(null)
+  extend(ret, parentVal)
+  if (childVal) extend(ret, childVal)
   return ret
 }
 strats.provide = mergeDataOrFn
@@ -267,15 +273,29 @@ function normalizeProps (options: Object) {
 }
 
 /**
- * Normalize all injections into Object-based format
+ * Normalize all injections into Object-based format (vue 2.5)
  */
-function normalizeInject (options: Object) {
+function normalizeInject (options: Object, vm: ?Component) {
   const inject = options.inject
+  if (!inject) return
+  const normalized = options.inject = {}
   if (Array.isArray(inject)) {
-    const normalized = options.inject = {}
     for (let i = 0; i < inject.length; i++) {
-      normalized[inject[i]] = inject[i]
+      normalized[inject[i]] = { from: inject[i] }
     }
+  } else if (isPlainObject(inject)) {
+    for (const key in inject) {
+      const val = inject[key]
+      normalized[key] = isPlainObject(val)
+        ? extend({ from: key }, val)
+        : { from: val }
+    }
+  } else if (process.env.NODE_ENV !== 'production') {
+    warn(
+      `Invalid value for option "inject": expected an Array or an Object, ` +
+      `but got ${inject}.`,
+      vm
+    )
   }
 }
 
