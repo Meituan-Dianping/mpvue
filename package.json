@@ -86,7 +86,7 @@
     "cz-conventional-changelog": "^2.0.0",
     "de-indent": "^1.0.2",
     "es6-promise": "^4.1.0",
-    "eslint": "^3.0.0",
+    "eslint": "^4.18.2",
     "eslint-loader": "^1.7.1",
     "eslint-plugin-flowtype": "^2.34.0",
     "eslint-plugin-jasmine": "^2.2.0",
