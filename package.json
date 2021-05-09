@@ -109,7 +109,7 @@
     "karma-sauce-launcher": "^1.1.0",
     "karma-sourcemap-loader": "^0.3.7",
     "karma-webpack": "^2.0.3",
-    "lodash": "^4.17.4",
+    "lodash": "^4.17.21",
     "lodash.template": "^4.4.0",
     "lodash.uniq": "^4.5.0",
     "lru-cache": "^4.1.1",
